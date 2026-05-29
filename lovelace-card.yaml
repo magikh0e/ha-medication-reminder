@@ -1,21 +1,40 @@
 # Medication Reminder — dashboard card.
-# `last-changed` gives a free "given X ago" readout when a dose is toggled on.
-# You can also flip a dose manually here (e.g. if given before the reminder),
-# which suppresses that dose's nag.
+#
+# Because doses are data-driven, the zero-maintenance option is an auto-entities
+# card (HACS: https://github.com/thomasloven/lovelace-auto-entities) that shows
+# every input_boolean.med_* automatically — add a dose and it appears, no card
+# edits. `last-changed` gives a free "given X ago" readout, and you can toggle a
+# dose manually here (which suppresses its nag).
 
-type: entities
-title: 💊 Medication
-show_header_toggle: false
-entities:
-  - entity: input_boolean.med_6am
-    name: 6 AM — Meds A, B, C
-    secondary_info: last-changed
-  - entity: input_boolean.med_2pm
-    name: 2 PM — Meds A, C
-    secondary_info: last-changed
-  - entity: input_boolean.med_6pm
-    name: 6 PM — Med B
-    secondary_info: last-changed
-  - entity: input_boolean.med_10pm
-    name: 10 PM — Meds A, C
-    secondary_info: last-changed
+type: custom:auto-entities
+card:
+  type: entities
+  title: 💊 Medication
+  show_header_toggle: false
+filter:
+  include:
+    - entity_id: "input_boolean.med_*"
+      secondary_info: last-changed
+sort:
+  method: friendly_name
+
+# ─────────────────────────────────────────────────────────────────────────────
+# No HACS? Use a plain entities card and list your doses manually instead:
+#
+# type: entities
+# title: 💊 Medication
+# show_header_toggle: false
+# entities:
+#   - entity: input_boolean.med_buddy_6am
+#     name: Buddy — 6 AM
+#     secondary_info: last-changed
+#   - entity: input_boolean.med_buddy_2pm
+#     name: Buddy — 2 PM
+#     secondary_info: last-changed
+#   - entity: input_boolean.med_buddy_6pm
+#     name: Buddy — 6 PM
+#     secondary_info: last-changed
+#   - entity: input_boolean.med_buddy_10pm
+#     name: Buddy — 10 PM
+#     secondary_info: last-changed
+# ─────────────────────────────────────────────────────────────────────────────
