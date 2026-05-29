@@ -1,4 +1,4 @@
-# Medication Reminder — Home Assistant package
+# Medication Reminder - Home Assistant package
 # https://github.com/magikh0e/ha-medication-reminder
 #
 # Drop this file in your packages/ directory. Enable packages once in
@@ -7,38 +7,38 @@
 #   homeassistant:
 #     packages: !include_dir_named packages
 #
-# ─────────────────────────────────────────────────────────────────────────────
-# TO CONFIGURE: you edit TWO things, both in this file —
+# ===========================================================================
+# TO CONFIGURE: you edit TWO things, both in this file.
 #   1) the `doses:` schedule list in the "med_reminder" automation below
 #      (each dose = who it's for, what time, which meds, optional notify target)
 #   2) one input_boolean per dose, named  input_boolean.med_<id>  (see below)
 # Everything else (reminders, nagging, missed-dose escalation, daily reset) is
 # generic and needs no editing.
-# ─────────────────────────────────────────────────────────────────────────────
+# ===========================================================================
 
-# ── State: one boolean per dose. Name MUST be input_boolean.med_<dose id>. ──
+# State: one boolean per dose. Name MUST be input_boolean.med_<dose id>.
 # (These are just plumbing; the human-readable details live in the schedule.)
 input_boolean:
   med_buddy_6am:
-    name: "Buddy — 6 AM"
+    name: "Buddy (6 AM)"
     icon: mdi:pill
   med_buddy_2pm:
-    name: "Buddy — 2 PM"
+    name: "Buddy (2 PM)"
     icon: mdi:pill
   med_buddy_6pm:
-    name: "Buddy — 6 PM"
+    name: "Buddy (6 PM)"
     icon: mdi:pill
   med_buddy_10pm:
-    name: "Buddy — 10 PM"
+    name: "Buddy (10 PM)"
     icon: mdi:pill
-  # Example: a second patient (a person), with their own dose —
+  # Example: a second patient (a person), with their own dose:
   # med_mom_8am:
-  #   name: "Mom — 8 AM"
+  #   name: "Mom (8 AM)"
   #   icon: mdi:pill
 
-# ── Who gets the reminders. HA syncs the GIVEN state across all Companion apps;
-#    this group just fans the push out to multiple people. A dose can override
-#    this with its own `notify:` field (see the schedule). ──
+# Who gets the reminders. HA syncs the GIVEN state across all Companion apps;
+# this group just fans the push out to multiple people. A dose can override
+# this with its own `notify:` field (see the schedule).
 notify:
   - platform: group
     name: caretakers
@@ -47,10 +47,10 @@ notify:
       # - service: mobile_app_partner_phone  # add more caretakers here
 
 automation:
-  # Reset every dose to "not given" at the start of each day. Generic — finds
+  # Reset every dose to "not given" at the start of each day. Generic: finds
   # all input_boolean.med_* automatically, so you never edit this.
   - id: med_reminder_reset
-    alias: "Medication — Daily reset"
+    alias: "Medication - Daily reset"
     trigger:
       - platform: time
         at: "00:01:00"
@@ -66,26 +66,26 @@ automation:
   # Runs every 15 min and, per dose: nags while it's within the window and not
   # given, then escalates once at the window-end. Restart-proof.
   - id: med_reminder
-    alias: "Medication — Reminders & missed-dose escalation"
+    alias: "Medication - Reminders & missed-dose escalation"
     trigger:
       - platform: time_pattern
         minutes: "/15"
     variables:
       nag_minutes: 45            # nag for the first 45 min, then escalate as missed
       default_notify: caretakers # used when a dose has no `notify:` of its own
-      # ═══════════════ EDIT YOUR SCHEDULE HERE ═══════════════
+      # ============= EDIT YOUR SCHEDULE HERE =============
       # id:      unique; MUST match an input_boolean named input_boolean.med_<id>
-      # patient: who it's for (pet or person) — used in the message
+      # patient: who it's for (pet or person), used in the message
       # time:    24h "HH:MM", on :00/:15/:30/:45 so the first reminder is on time
       # meds:    free text, read out in the reminder
-      # notify:  (optional) a specific notify service for this dose; omit to use the group
+      # notify:  (optional) a specific notify service for this dose; omit for the group
       doses:
         - { id: buddy_6am,  patient: "Buddy", time: "06:00", meds: "Medication A, Medication B, and Medication C" }
         - { id: buddy_2pm,  patient: "Buddy", time: "14:00", meds: "Medication A and Medication C" }
         - { id: buddy_6pm,  patient: "Buddy", time: "18:00", meds: "Medication B" }
         - { id: buddy_10pm, patient: "Buddy", time: "22:00", meds: "Medication A and Medication C" }
         # - { id: mom_8am, patient: "Mom", time: "08:00", meds: "Lisinopril", notify: "mobile_app_mom" }
-      # ════════════════════════════════════════════════════════
+      # ===================================================
     action:
       - repeat:
           for_each: "{{ doses }}"
@@ -96,26 +96,26 @@ automation:
                 clock: "{{ as_timestamp(today_at(repeat.item.time)) | timestamp_custom('%-I:%M %p') }}"
                 notify_service: "{{ repeat.item.notify | default(default_notify) }}"
             - choose:
-                # Within nag window, not yet given → reminder
+                # Within nag window, not yet given -> reminder
                 - conditions:
                     - "{{ is_state(bool, 'off') and mins_since >= 0 and mins_since < nag_minutes }}"
                   sequence:
                     - action: "notify.{{ notify_service }}"
                       data:
-                        title: "💊 {{ repeat.item.patient }} — {{ clock }}"
+                        title: "💊 {{ repeat.item.patient }} ({{ clock }})"
                         message: "Give {{ repeat.item.patient }}'s medication: {{ repeat.item.meds }}. Has it been given?"
                         data:
                           tag: "med_{{ repeat.item.id }}"
                           actions:
                             - action: "MED_GIVEN_{{ repeat.item.id }}"
                               title: "✅ Mark given"
-                # Just past window-end, still not given → escalate once
+                # Just past window-end, still not given -> escalate once
                 - conditions:
                     - "{{ is_state(bool, 'off') and mins_since >= nag_minutes and mins_since < nag_minutes + 15 }}"
                   sequence:
                     - action: "notify.{{ notify_service }}"
                       data:
-                        title: "⚠️ MISSED — {{ repeat.item.patient }} ({{ clock }})"
+                        title: "⚠️ MISSED: {{ repeat.item.patient }} ({{ clock }})"
                         message: "{{ repeat.item.patient }}'s {{ clock }} dose ({{ repeat.item.meds }}) was NOT marked given. Please check on it."
                         data:
                           tag: "med_missed_{{ repeat.item.id }}"
@@ -126,7 +126,7 @@ automation:
                           actions:
                             - action: "MED_GIVEN_{{ repeat.item.id }}"
                               title: "✅ Mark given"
-                    # Optional spoken backstop — adjust media_player / tts or remove.
+                    # Optional spoken backstop. Adjust media_player / tts, or remove.
                     - action: tts.speak
                       target:
                         entity_id: tts.home_assistant_cloud
@@ -136,9 +136,9 @@ automation:
     mode: single
 
   # Tapping "Mark given" (from any phone) flips that dose on and clears its
-  # notifications everywhere. Generic — derives the dose from the action.
+  # notifications everywhere. Generic: derives the dose from the action.
   - id: med_reminder_mark_given
-    alias: "Medication — Mark given from notification"
+    alias: "Medication - Mark given from notification"
     trigger:
       - platform: event
         event_type: mobile_app_notification_action
