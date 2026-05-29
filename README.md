@@ -22,7 +22,8 @@ auto-created entities? Use this.
 
 ## What it does
 
-- 🖱️ **UI configuration:** add a patient, then add doses (a time + the medications) from Settings. No YAML for the schedule.
+- 🖱️ **UI configuration:** add a patient, choose who to notify, then add doses (a time + the medications) from Settings. No YAML for the schedule.
+- 👥 **Per-patient notify target:** pick the person or group to remind for each patient in the UI (e.g. one dog's reminders to you, another's to a partner).
 - 🔀 **Auto-created entities:** each dose becomes a `switch` (on = given today), grouped under a device per patient.
 - ♻️ **Daily reset:** every dose flips back to "not given" at 00:01.
 - 💾 **Restart-safe:** dose state survives Home Assistant restarts.
@@ -49,24 +50,28 @@ territory. A future version may move reminders into the integration itself.
 ### 2. Add patients and doses
 
 1. **Settings, Devices & Services, Add Integration, Medication Reminder.**
-2. Enter the patient name (e.g. a pet or person). One patient per entry; add the integration again for more patients.
-3. On the entry, click **Configure** to **Add a dose** (pick a time, type the medications). Repeat for each dose. **Remove a dose** there too.
+2. Enter the patient name (e.g. a pet or person) and pick the **notify target** (the person or group to remind). One patient per entry; add the integration again for more patients.
+3. On the entry, click **Configure** to **Add a dose** (pick a time, type the medications). Repeat for each dose. **Remove a dose** or **Change notify target** there too.
 
 Each dose appears as `switch.<patient>_<time>` with attributes `patient`,
-`dose_time`, and `medications`.
+`dose_time`, `medications`, and `notify_service`.
 
 ### 3. Add the companion automations
 
 1. Copy the two automations from [`companion-automations.yaml`](companion-automations.yaml) into your `automations.yaml`.
-2. Define a `caretakers` notify group (or change `notify.caretakers` to your own notify service), for example:
-   ```yaml
-   notify:
-     - platform: group
-       name: caretakers
-       services:
-         - service: mobile_app_your_phone
-   ```
-3. Reload automations.
+2. Reload automations.
+
+Each patient's reminders go to the **notify target you chose in the UI** (read
+from the switch's `notify_service` attribute). The `default_notify` value in the
+automation (`caretakers`) is only a fallback if a switch has no target set; if
+you want a fallback group, define it, for example:
+```yaml
+notify:
+  - platform: group
+    name: caretakers
+    services:
+      - service: mobile_app_your_phone
+```
 
 They send a reminder when a dose is due and not given, nag every 15 minutes for
 45 minutes, then escalate once as a time-sensitive "missed" alert. Tapping
@@ -94,8 +99,8 @@ sort:
 
 ## How marking works (the contract)
 
-- The integration publishes `switch.*` entities carrying `patient` / `dose_time` / `medications` attributes.
-- The companion reminder automation iterates those switches, so adding a dose in the UI needs **no** automation edits.
+- The integration publishes `switch.*` entities carrying `patient` / `dose_time` / `medications` / `notify_service` attributes.
+- The companion reminder automation iterates those switches and routes each reminder to its `notify_service`, so adding a dose or changing the notify target in the UI needs **no** automation edits.
 - "Mark given" flips the switch on; the daily reset flips all off at 00:01.
 
 ## Roadmap
