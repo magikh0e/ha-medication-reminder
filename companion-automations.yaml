@@ -6,17 +6,19 @@
 # attributes (patient, dose_time, medications, notify_service). Add a patient or
 # dose in the UI and these pick it up automatically; no edits needed here.
 #
+# Cadence: reminders fire on a 5-minute tick (so the first ping is prompt),
+# re-nag roughly every nag_interval minutes, and escalate once at the window-end.
 # Each patient's reminders go to the notify target chosen in the UI
-# (state_attr notify_service). `default_notify` is only a fallback if a switch
-# somehow has no notify target set.
+# (state_attr notify_service); default_notify is only a fallback.
 
 - id: med_reminder
   alias: "Medication - Reminders & missed-dose escalation"
   trigger:
     - platform: time_pattern
-      minutes: "/15"
+      minutes: "/5"
   variables:
-    nag_minutes: 45
+    nag_minutes: 45        # how long to keep reminding after dose time
+    nag_interval: 15       # re-remind roughly every this many minutes
     default_notify: caretakers
   action:
     - repeat:
@@ -36,9 +38,9 @@
               mins_since: "{{ (now() - today_at(dtime)).total_seconds() / 60 }}"
               clock: "{{ as_timestamp(today_at(dtime)) | timestamp_custom('%-I:%M %p') }}"
           - choose:
-              # Within nag window, not yet given -> reminder
+              # Reminder: prompt first ping, then about every nag_interval minutes
               - conditions:
-                  - "{{ not given and mins_since >= 0 and mins_since < nag_minutes }}"
+                  - "{{ not given and mins_since >= 0 and mins_since < nag_minutes and (mins_since % nag_interval) < 5 }}"
                 sequence:
                   - action: "notify.{{ notify_service }}"
                     data:
@@ -49,9 +51,9 @@
                         actions:
                           - action: "MED_GIVEN_{{ oid }}"
                             title: "✅ Mark given"
-              # Just past window-end, still not given -> escalate once
+              # Missed: fires once at the first tick at/after the window-end
               - conditions:
-                  - "{{ not given and mins_since >= nag_minutes and mins_since < nag_minutes + 15 }}"
+                  - "{{ not given and mins_since >= nag_minutes and mins_since < nag_minutes + 5 }}"
                 sequence:
                   - action: "notify.{{ notify_service }}"
                     data:
