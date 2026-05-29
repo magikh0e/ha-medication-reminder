@@ -1,0 +1,41 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add a patient",
+        "description": "Create a medication schedule for a pet or person. Add one patient at a time; you can add their doses next.",
+        "data": {
+          "patient": "Patient name"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "A patient with this name is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Manage doses",
+        "menu_options": {
+          "add_dose": "Add a dose",
+          "remove_dose": "Remove a dose"
+        }
+      },
+      "add_dose": {
+        "title": "Add a dose",
+        "description": "Pick the time and list the medications given at it.",
+        "data": {
+          "time": "Time",
+          "meds": "Medications"
+        }
+      },
+      "remove_dose": {
+        "title": "Remove doses",
+        "data": {
+          "remove": "Doses to remove"
+        }
+      }
+    }
+  }
+}
