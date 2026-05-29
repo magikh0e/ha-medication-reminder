@@ -3,6 +3,21 @@
 set -e
 cd "$(dirname "$0")/.."
 
+# If a local virtualenv exists, activate it so `hass` is found
+# (the VS Code build task runs a fresh shell without it activated).
+if [[ -f "${PWD}/.venv/bin/activate" ]]; then
+    # shellcheck disable=SC1091
+    source "${PWD}/.venv/bin/activate"
+fi
+
+# Clear message if Home Assistant isn't installed yet.
+if ! command -v hass >/dev/null 2>&1; then
+    echo "Home Assistant ('hass') not found."
+    echo "Install it first:"
+    echo "  python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt"
+    exit 1
+fi
+
 CONFIG_DIR="${PWD}/config"
 
 # First run: create a default config.
