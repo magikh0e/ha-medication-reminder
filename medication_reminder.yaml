@@ -7,27 +7,38 @@
 #   homeassistant:
 #     packages: !include_dir_named packages
 #
-# Then edit the dose times, medication names, and the notify service below.
-# (Prefer to paste into your existing configuration.yaml / automations.yaml
-# instead? See the README "Manual install" section.)
+# ─────────────────────────────────────────────────────────────────────────────
+# TO CONFIGURE: you edit TWO things, both in this file —
+#   1) the `doses:` schedule list in the "med_reminder" automation below
+#      (each dose = who it's for, what time, which meds, optional notify target)
+#   2) one input_boolean per dose, named  input_boolean.med_<id>  (see below)
+# Everything else (reminders, nagging, missed-dose escalation, daily reset) is
+# generic and needs no editing.
+# ─────────────────────────────────────────────────────────────────────────────
 
+# ── State: one boolean per dose. Name MUST be input_boolean.med_<dose id>. ──
+# (These are just plumbing; the human-readable details live in the schedule.)
 input_boolean:
-  med_6am:
-    name: "Medication — 6 AM (Meds A, B, C)"
+  med_buddy_6am:
+    name: "Buddy — 6 AM"
     icon: mdi:pill
-  med_2pm:
-    name: "Medication — 2 PM (Meds A, C)"
+  med_buddy_2pm:
+    name: "Buddy — 2 PM"
     icon: mdi:pill
-  med_6pm:
-    name: "Medication — 6 PM (Med B)"
+  med_buddy_6pm:
+    name: "Buddy — 6 PM"
     icon: mdi:pill
-  med_10pm:
-    name: "Medication — 10 PM (Meds A, C)"
+  med_buddy_10pm:
+    name: "Buddy — 10 PM"
     icon: mdi:pill
+  # Example: a second patient (a person), with their own dose —
+  # med_mom_8am:
+  #   name: "Mom — 8 AM"
+  #   icon: mdi:pill
 
-# Reminders fan out to everyone in this group. Home Assistant already syncs the
-# GIVEN state (the input_booleans) across all Companion apps in real time — the
-# group only fans out the push notification to multiple people.
+# ── Who gets the reminders. HA syncs the GIVEN state across all Companion apps;
+#    this group just fans the push out to multiple people. A dose can override
+#    this with its own `notify:` field (see the schedule). ──
 notify:
   - platform: group
     name: caretakers
@@ -36,7 +47,8 @@ notify:
       # - service: mobile_app_partner_phone  # add more caretakers here
 
 automation:
-  # Reset all doses to "not given" at the start of each day.
+  # Reset every dose to "not given" at the start of each day. Generic — finds
+  # all input_boolean.med_* automatically, so you never edit this.
   - id: med_reminder_reset
     alias: "Medication — Daily reset"
     trigger:
@@ -45,132 +57,107 @@ automation:
     action:
       - action: input_boolean.turn_off
         target:
-          entity_id:
-            - input_boolean.med_6am
-            - input_boolean.med_2pm
-            - input_boolean.med_6pm
-            - input_boolean.med_10pm
+          entity_id: >
+            {{ states.input_boolean | map(attribute='entity_id')
+               | select('match', 'input_boolean.med_') | list }}
     mode: single
 
-  # Every 15 min: for each dose past its time, within the nag window, and not yet
-  # given -> actionable reminder naming that dose's meds. Restart-proof (it simply
-  # re-evaluates each tick rather than running a long-lived loop).
-  - id: med_reminder_nag
-    alias: "Medication — Reminder & nag"
+  # Reminders + missed-dose escalation, fully data-driven from the schedule.
+  # Runs every 15 min and, per dose: nags while it's within the window and not
+  # given, then escalates once at the window-end. Restart-proof.
+  - id: med_reminder
+    alias: "Medication — Reminders & missed-dose escalation"
     trigger:
       - platform: time_pattern
         minutes: "/15"
     variables:
-      nag_minutes: 45        # nag for the first 45 min; missed-alert takes over at +60
+      nag_minutes: 45            # nag for the first 45 min, then escalate as missed
+      default_notify: caretakers # used when a dose has no `notify:` of its own
+      # ═══════════════ EDIT YOUR SCHEDULE HERE ═══════════════
+      # id:      unique; MUST match an input_boolean named input_boolean.med_<id>
+      # patient: who it's for (pet or person) — used in the message
+      # time:    24h "HH:MM", on :00/:15/:30/:45 so the first reminder is on time
+      # meds:    free text, read out in the reminder
+      # notify:  (optional) a specific notify service for this dose; omit to use the group
       doses:
-        - { bool: input_boolean.med_6am,  time: "06:00", key: "6am",  label: "6 AM",  meds: "Medication A, Medication B, and Medication C" }
-        - { bool: input_boolean.med_2pm,  time: "14:00", key: "2pm",  label: "2 PM",  meds: "Medication A and Medication C" }
-        - { bool: input_boolean.med_6pm,  time: "18:00", key: "6pm",  label: "6 PM",  meds: "Medication B" }
-        - { bool: input_boolean.med_10pm, time: "22:00", key: "10pm", label: "10 PM", meds: "Medication A and Medication C" }
+        - { id: buddy_6am,  patient: "Buddy", time: "06:00", meds: "Medication A, Medication B, and Medication C" }
+        - { id: buddy_2pm,  patient: "Buddy", time: "14:00", meds: "Medication A and Medication C" }
+        - { id: buddy_6pm,  patient: "Buddy", time: "18:00", meds: "Medication B" }
+        - { id: buddy_10pm, patient: "Buddy", time: "22:00", meds: "Medication A and Medication C" }
+        # - { id: mom_8am, patient: "Mom", time: "08:00", meds: "Lisinopril", notify: "mobile_app_mom" }
+      # ════════════════════════════════════════════════════════
     action:
       - repeat:
           for_each: "{{ doses }}"
           sequence:
             - variables:
+                bool: "input_boolean.med_{{ repeat.item.id }}"
                 mins_since: "{{ (now() - today_at(repeat.item.time)).total_seconds() / 60 }}"
-            - if:
-                - condition: template
-                  value_template: >-
-                    {{ is_state(repeat.item.bool, 'off')
-                       and mins_since >= 0
-                       and mins_since <= nag_minutes }}
-              then:
-                - action: notify.caretakers
-                  data:
-                    title: "💊 Medication — {{ repeat.item.label }}"
-                    message: "Give {{ repeat.item.meds }}. Has it been given?"
-                    data:
-                      tag: "med_{{ repeat.item.key }}"
-                      actions:
-                        - action: "MED_GIVEN_{{ repeat.item.key }}"
-                          title: "✅ Mark given"
+                clock: "{{ as_timestamp(today_at(repeat.item.time)) | timestamp_custom('%-I:%M %p') }}"
+                notify_service: "{{ repeat.item.notify | default(default_notify) }}"
+            - choose:
+                # Within nag window, not yet given → reminder
+                - conditions:
+                    - "{{ is_state(bool, 'off') and mins_since >= 0 and mins_since < nag_minutes }}"
+                  sequence:
+                    - action: "notify.{{ notify_service }}"
+                      data:
+                        title: "💊 {{ repeat.item.patient }} — {{ clock }}"
+                        message: "Give {{ repeat.item.patient }}'s medication: {{ repeat.item.meds }}. Has it been given?"
+                        data:
+                          tag: "med_{{ repeat.item.id }}"
+                          actions:
+                            - action: "MED_GIVEN_{{ repeat.item.id }}"
+                              title: "✅ Mark given"
+                # Just past window-end, still not given → escalate once
+                - conditions:
+                    - "{{ is_state(bool, 'off') and mins_since >= nag_minutes and mins_since < nag_minutes + 15 }}"
+                  sequence:
+                    - action: "notify.{{ notify_service }}"
+                      data:
+                        title: "⚠️ MISSED — {{ repeat.item.patient }} ({{ clock }})"
+                        message: "{{ repeat.item.patient }}'s {{ clock }} dose ({{ repeat.item.meds }}) was NOT marked given. Please check on it."
+                        data:
+                          tag: "med_missed_{{ repeat.item.id }}"
+                          priority: high
+                          ttl: 0
+                          push:
+                            interruption-level: time-sensitive
+                          actions:
+                            - action: "MED_GIVEN_{{ repeat.item.id }}"
+                              title: "✅ Mark given"
+                    # Optional spoken backstop — adjust media_player / tts or remove.
+                    - action: tts.speak
+                      target:
+                        entity_id: tts.home_assistant_cloud
+                      data:
+                        media_player_entity_id: media_player.home_assistant_voice
+                        message: "Attention. {{ repeat.item.patient }}'s {{ repeat.item.meds }} dose has not been given."
     mode: single
 
-  # Tapping "Mark given" (from any phone) flips that dose on and clears the
-  # notification on every device.
+  # Tapping "Mark given" (from any phone) flips that dose on and clears its
+  # notifications everywhere. Generic — derives the dose from the action.
   - id: med_reminder_mark_given
     alias: "Medication — Mark given from notification"
     trigger:
       - platform: event
         event_type: mobile_app_notification_action
     condition:
-      - condition: template
-        value_template: "{{ trigger.event.data.action.startswith('MED_GIVEN_') }}"
+      - "{{ trigger.event.data.action.startswith('MED_GIVEN_') }}"
     variables:
-      key: "{{ trigger.event.data.action.split('_')[-1] }}"
-      bool_map:
-        "6am": input_boolean.med_6am
-        "2pm": input_boolean.med_2pm
-        "6pm": input_boolean.med_6pm
-        "10pm": input_boolean.med_10pm
+      dose_id: "{{ trigger.event.data.action | replace('MED_GIVEN_', '') }}"
     action:
       - action: input_boolean.turn_on
         target:
-          entity_id: "{{ bool_map[key] }}"
+          entity_id: "input_boolean.med_{{ dose_id }}"
       - action: notify.caretakers
         data:
           message: "clear_notification"
           data:
-            tag: "med_{{ key }}"
-    mode: parallel
-
-  # Missed-dose escalation at each dose's window-end (dose time + nag window):
-  # time-sensitive push to everyone + a spoken TTS backstop naming the missed meds.
-  - id: med_reminder_missed
-    alias: "Medication — Missed dose alert"
-    trigger:
-      - platform: time
-        at: "07:00:00"
-        id: "6am"
-      - platform: time
-        at: "15:00:00"
-        id: "2pm"
-      - platform: time
-        at: "19:00:00"
-        id: "6pm"
-      - platform: time
-        at: "23:00:00"
-        id: "10pm"
-    variables:
-      bool_map:
-        "6am": input_boolean.med_6am
-        "2pm": input_boolean.med_2pm
-        "6pm": input_boolean.med_6pm
-        "10pm": input_boolean.med_10pm
-      meds_map:
-        "6am": "Medication A, Medication B, and Medication C"
-        "2pm": "Medication A and Medication C"
-        "6pm": "Medication B"
-        "10pm": "Medication A and Medication C"
-      dose_bool: "{{ bool_map[trigger.id] }}"
-      dose_meds: "{{ meds_map[trigger.id] }}"
-    condition:
-      - condition: template
-        value_template: "{{ is_state(dose_bool, 'off') }}"
-    action:
+            tag: "med_{{ dose_id }}"
       - action: notify.caretakers
         data:
-          title: "⚠️ MISSED Medication — {{ trigger.id }}"
-          message: "The {{ trigger.id }} dose ({{ dose_meds }}) was NOT marked given. Please check on it."
+          message: "clear_notification"
           data:
-            tag: "med_missed_{{ trigger.id }}"
-            priority: high
-            ttl: 0
-            push:
-              interruption-level: time-sensitive
-            actions:
-              - action: "MED_GIVEN_{{ trigger.id }}"
-                title: "✅ Mark given"
-      # Optional spoken backstop — adjust the media_player / tts engine, or remove.
-      - action: tts.speak
-        target:
-          entity_id: tts.home_assistant_cloud
-        data:
-          media_player_entity_id: media_player.home_assistant_voice
-          message: "Attention. The {{ trigger.id }} medication dose, {{ dose_meds }}, has not been given."
-    mode: single
+            tag: "med_missed_{{ dose_id }}"
+    mode: parallel
