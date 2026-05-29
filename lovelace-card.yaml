@@ -1,0 +1,21 @@
+# Medication Reminder — dashboard card.
+# `last-changed` gives a free "given X ago" readout when a dose is toggled on.
+# You can also flip a dose manually here (e.g. if given before the reminder),
+# which suppresses that dose's nag.
+
+type: entities
+title: 💊 Medication
+show_header_toggle: false
+entities:
+  - entity: input_boolean.med_6am
+    name: 6 AM — Meds A, B, C
+    secondary_info: last-changed
+  - entity: input_boolean.med_2pm
+    name: 2 PM — Meds A, C
+    secondary_info: last-changed
+  - entity: input_boolean.med_6pm
+    name: 6 PM — Med B
+    secondary_info: last-changed
+  - entity: input_boolean.med_10pm
+    name: 10 PM — Meds A, C
+    secondary_info: last-changed
