@@ -1,13 +1,14 @@
 # Companion automations for the Medication Reminder integration.
 #
-# The integration creates a switch per dose (on = given today) and handles the
-# daily reset. These automations do the reminders, nagging, and missed-dose
-# escalation by reading EVERY dose switch's attributes (patient, dose_time,
-# medications). Add a patient or dose in the UI and these pick it up
-# automatically; no edits needed here.
+# The integration creates a switch per dose (on = given today), handles the
+# daily reset, and stores each patient's notify target. These automations do the
+# reminders, nagging, and missed-dose escalation by reading EVERY dose switch's
+# attributes (patient, dose_time, medications, notify_service). Add a patient or
+# dose in the UI and these pick it up automatically; no edits needed here.
 #
-# Setup: add both automations to automations.yaml, and define a `caretakers`
-# notify group (or change notify.caretakers below to your own notify service).
+# Each patient's reminders go to the notify target chosen in the UI
+# (state_attr notify_service). `default_notify` is only a fallback if a switch
+# somehow has no notify target set.
 
 - id: med_reminder
   alias: "Medication - Reminders & missed-dose escalation"
@@ -31,6 +32,7 @@
               dtime: "{{ state_attr(ent, 'dose_time') }}"
               patient: "{{ state_attr(ent, 'patient') }}"
               meds: "{{ state_attr(ent, 'medications') }}"
+              notify_service: "{{ state_attr(ent, 'notify_service') or default_notify }}"
               mins_since: "{{ (now() - today_at(dtime)).total_seconds() / 60 }}"
               clock: "{{ as_timestamp(today_at(dtime)) | timestamp_custom('%-I:%M %p') }}"
           - choose:
@@ -38,7 +40,7 @@
               - conditions:
                   - "{{ not given and mins_since >= 0 and mins_since < nag_minutes }}"
                 sequence:
-                  - action: "notify.{{ default_notify }}"
+                  - action: "notify.{{ notify_service }}"
                     data:
                       title: "💊 {{ patient }} ({{ clock }})"
                       message: "Give {{ patient }}'s medication: {{ meds }}. Has it been given?"
@@ -51,7 +53,7 @@
               - conditions:
                   - "{{ not given and mins_since >= nag_minutes and mins_since < nag_minutes + 15 }}"
                 sequence:
-                  - action: "notify.{{ default_notify }}"
+                  - action: "notify.{{ notify_service }}"
                     data:
                       title: "⚠️ MISSED: {{ patient }} ({{ clock }})"
                       message: "{{ patient }}'s {{ clock }} dose ({{ meds }}) was NOT marked given. Please check on it."
@@ -75,16 +77,18 @@
     - "{{ trigger.event.data.action.startswith('MED_GIVEN_') }}"
   variables:
     oid: "{{ trigger.event.data.action | replace('MED_GIVEN_', '') }}"
+    ent: "switch.{{ oid }}"
+    notify_service: "{{ state_attr(ent, 'notify_service') or 'caretakers' }}"
   action:
     - action: switch.turn_on
       target:
-        entity_id: "switch.{{ oid }}"
-    - action: notify.caretakers
+        entity_id: "{{ ent }}"
+    - action: "notify.{{ notify_service }}"
       data:
         message: "clear_notification"
         data:
           tag: "med_{{ oid }}"
-    - action: notify.caretakers
+    - action: "notify.{{ notify_service }}"
       data:
         message: "clear_notification"
         data:
