@@ -99,9 +99,35 @@ sort:
   method: friendly_name
 ```
 
+### Status panel (red/green, glanceable)
+
+A simple "all OK / attention needed" panel for the top of a dashboard, driven by
+the `needs_attention` sensors. Green when nothing is overdue, red (with who and
+what) when something needs investigating. Native card, no HACS needed:
+
+```yaml
+type: markdown
+content: |-
+  {% set s = states.binary_sensor | selectattr('entity_id','search','_needs_attention') | list %}
+  {% set red = s | selectattr('state','eq','on') | list %}
+  {% if red | length == 0 %}
+  # 🟢 All OK
+  {% else %}
+  # 🔴 Attention needed
+  {% for p in red %}
+  - **{{ p.attributes.patient }}**: {{ p.attributes.overdue | join(', ') }}
+  {% endfor %}
+  {% endif %}
+```
+
+Because `binary_sensor.<patient>_needs_attention` is a standard `problem` entity,
+you can also drive a light, siren, pager, or notification straight off it.
+
 ## How marking works (the contract)
 
-- The integration publishes `switch.*` entities carrying `patient` / `patient_type` / `dose_time` / `medications` / `notify_service` attributes, plus a per-patient `binary_sensor` (carrying the patient-type icon) that is on when all of that patient's doses are given today (with `total` / `given` / `remaining` / `pending` attributes).
+- The integration publishes `switch.*` entities carrying `patient` / `patient_type` / `dose_time` / `medications` / `notify_service` attributes. Per patient it also publishes two binary sensors:
+  - `binary_sensor.<patient>_all_doses_given` (patient-type icon) - on when all of that patient's doses are given today, with `total` / `given` / `remaining` / `pending` attributes.
+  - `binary_sensor.<patient>_needs_attention` (device class `problem`) - **red when a dose is overdue** (past its time by the nag window and still not given), green when all is well. It re-evaluates on a 60-second timer so it trips on elapsed time alone, and fails safe toward "problem". Attributes: `overdue` / `overdue_count`.
 - The companion reminder automation iterates those switches and routes each reminder to its `notify_service` / `nag_minutes` / `nag_interval`, so adding a dose or changing a patient's settings in the UI needs **no** automation edits.
 - "Mark given" flips the switch on; the daily reset flips all off at the configured reset time.
 
