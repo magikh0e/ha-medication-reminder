@@ -3,9 +3,10 @@
     "step": {
       "user": {
         "title": "Add a patient",
-        "description": "Create a medication schedule for a pet or person. Choose who should be reminded; you can add their doses next.",
+        "description": "Create a medication schedule for a pet or person. Pick the patient type (for the icon) and who should be reminded; you can add their doses next.",
         "data": {
           "patient": "Patient name",
+          "patient_type": "Patient type",
           "notify": "Notify target (person or group)"
         }
       }
@@ -40,8 +41,9 @@
       },
       "settings": {
         "title": "Reminder settings",
-        "description": "Who to notify, when doses reset for the day, and how the reminders nag.",
+        "description": "Patient type, who to notify, when doses reset for the day, and how the reminders nag.",
         "data": {
+          "patient_type": "Patient type",
           "notify": "Notify target (person or group)",
           "reset_time": "Daily reset time",
           "nag_minutes": "Nag window (minutes after dose)",
