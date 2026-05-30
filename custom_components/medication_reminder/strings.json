@@ -21,7 +21,7 @@
         "menu_options": {
           "add_dose": "Add a dose",
           "remove_dose": "Remove a dose",
-          "settings": "Change notify target"
+          "settings": "Reminder settings"
         }
       },
       "add_dose": {
@@ -39,10 +39,13 @@
         }
       },
       "settings": {
-        "title": "Notify target",
-        "description": "Who should receive this patient's medication reminders.",
+        "title": "Reminder settings",
+        "description": "Who to notify, when doses reset for the day, and how the reminders nag.",
         "data": {
-          "notify": "Notify target (person or group)"
+          "notify": "Notify target (person or group)",
+          "reset_time": "Daily reset time",
+          "nag_minutes": "Nag window (minutes after dose)",
+          "nag_interval": "Re-nag every (minutes)"
         }
       }
     }
