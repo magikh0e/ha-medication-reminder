@@ -1,7 +1,9 @@
 """Binary sensors for the Medication Reminder integration.
 
-- <patient> all doses given : on when every dose is given today.
+- <patient> all doses given : on when every dose scheduled today is given.
 - <patient> needs attention  : problem sensor, on (red) when a dose is overdue.
+
+Both consider only doses scheduled for the current day of the week.
 """
 
 from __future__ import annotations
@@ -22,10 +24,10 @@ from homeassistant.helpers.event import async_track_time_interval
 from .const import (
     CONF_PATIENT,
     CONF_PATIENT_TYPE,
-    DEFAULT_NAG_MINUTES,
     DEFAULT_PATIENT_TYPE,
     DOMAIN,
     PATIENT_ICONS,
+    WEEKDAYS,
 )
 
 # Re-check the overdue status this often, so it trips on time alone.
@@ -63,6 +65,15 @@ class _DoseLookupMixin:
             and s.attributes.get("patient") == self._patient
         ]
 
+    def _todays_doses(self) -> list:
+        """This patient's doses scheduled for the current weekday."""
+        today = WEEKDAYS[dt_util.now().weekday()]
+        return [
+            s
+            for s in self._doses()
+            if today in (s.attributes.get("days") or WEEKDAYS)
+        ]
+
     @callback
     def _track_dose_changes(self) -> None:
         """Re-evaluate when one of this patient's dose switches changes."""
@@ -84,7 +95,7 @@ class _DoseLookupMixin:
 
 
 class AllDosesGivenBinarySensor(_DoseLookupMixin, BinarySensorEntity):
-    """On when every dose for this patient is marked given today."""
+    """On when every dose scheduled today for this patient is marked given."""
 
     _attr_should_poll = False
 
@@ -102,14 +113,14 @@ class AllDosesGivenBinarySensor(_DoseLookupMixin, BinarySensorEntity):
 
     @property
     def is_on(self) -> bool | None:
-        doses = self._doses()
+        doses = self._todays_doses()
         if not doses:
             return None
         return all(s.state == "on" for s in doses)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        doses = self._doses()
+        doses = self._todays_doses()
         total = len(doses)
         given = sum(1 for s in doses if s.state == "on")
         return {
@@ -127,7 +138,7 @@ class AllDosesGivenBinarySensor(_DoseLookupMixin, BinarySensorEntity):
 
 
 class NeedsAttentionBinarySensor(_DoseLookupMixin, BinarySensorEntity):
-    """Problem sensor: on (red) when a dose is overdue and not given.
+    """Problem sensor: on (red) when a dose scheduled today is overdue.
 
     Re-evaluates every minute (not just on changes), so a dose crossing into
     "overdue" trips it red with no interaction. Fails safe toward "problem"
@@ -148,10 +159,12 @@ class NeedsAttentionBinarySensor(_DoseLookupMixin, BinarySensorEntity):
         }
 
     def _overdue(self) -> list:
-        """Doses past their time + nag window and still not given."""
+        """Today's doses past their time + nag window and still not given."""
+        from .const import DEFAULT_NAG_MINUTES
+
         now = dt_util.now()
         overdue: list = []
-        for s in self._doses():
+        for s in self._todays_doses():
             if s.state == "on":
                 continue  # given -> fine
             dose_time = s.attributes.get("dose_time")
@@ -181,9 +194,7 @@ class NeedsAttentionBinarySensor(_DoseLookupMixin, BinarySensorEntity):
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
-        # Update on dose changes...
         self._track_dose_changes()
-        # ...and on a timer, so "overdue" trips on elapsed time alone.
         self.async_on_remove(
             async_track_time_interval(
                 self.hass, self._handle_interval, _CHECK_INTERVAL
