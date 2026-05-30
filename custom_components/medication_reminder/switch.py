@@ -19,10 +19,12 @@ from .const import (
     CONF_NAG_MINUTES,
     CONF_NOTIFY,
     CONF_PATIENT,
+    CONF_PATIENT_TYPE,
     CONF_RESET_TIME,
     CONF_TIME,
     DEFAULT_NAG_INTERVAL,
     DEFAULT_NAG_MINUTES,
+    DEFAULT_PATIENT_TYPE,
     DEFAULT_RESET_TIME,
     DOMAIN,
 )
@@ -35,13 +37,14 @@ async def async_setup_entry(
 ) -> None:
     """Create a switch per dose and wire up the daily reset."""
     patient: str = entry.data[CONF_PATIENT]
+    patient_type: str = entry.options.get(CONF_PATIENT_TYPE, DEFAULT_PATIENT_TYPE)
     notify_target: str = entry.options.get(CONF_NOTIFY, "")
     nag_minutes: int = entry.options.get(CONF_NAG_MINUTES, DEFAULT_NAG_MINUTES)
     nag_interval: int = entry.options.get(CONF_NAG_INTERVAL, DEFAULT_NAG_INTERVAL)
     doses: list[dict[str, Any]] = entry.options.get(CONF_DOSES, [])
     entities = [
         MedicationDoseSwitch(
-            entry, patient, notify_target, nag_minutes, nag_interval, dose
+            entry, patient, patient_type, notify_target, nag_minutes, nag_interval, dose
         )
         for dose in doses
     ]
@@ -70,18 +73,20 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
     """A single scheduled dose. on = given today, off = not yet given."""
 
     _attr_should_poll = False
-    _attr_icon = "mdi:pill"
+    _attr_icon = "mdi:pill"  # doses keep the pill icon regardless of patient type
 
     def __init__(
         self,
         entry: ConfigEntry,
         patient: str,
+        patient_type: str,
         notify_target: str,
         nag_minutes: int,
         nag_interval: int,
         dose: dict[str, Any],
     ) -> None:
         self._patient = patient
+        self._patient_type = patient_type
         self._notify = notify_target
         self._nag_minutes = nag_minutes
         self._nag_interval = nag_interval
@@ -116,6 +121,7 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         """Metadata the companion automations read to build reminders."""
         return {
             "patient": self._patient,
+            "patient_type": self._patient_type,
             "dose_time": self._time,
             "medications": self._meds,
             "notify_service": self._notify,
