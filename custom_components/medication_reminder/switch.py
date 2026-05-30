@@ -15,9 +15,15 @@ from homeassistant.util import slugify
 from .const import (
     CONF_DOSES,
     CONF_MEDS,
+    CONF_NAG_INTERVAL,
+    CONF_NAG_MINUTES,
     CONF_NOTIFY,
     CONF_PATIENT,
+    CONF_RESET_TIME,
     CONF_TIME,
+    DEFAULT_NAG_INTERVAL,
+    DEFAULT_NAG_MINUTES,
+    DEFAULT_RESET_TIME,
     DOMAIN,
 )
 
@@ -30,20 +36,33 @@ async def async_setup_entry(
     """Create a switch per dose and wire up the daily reset."""
     patient: str = entry.data[CONF_PATIENT]
     notify_target: str = entry.options.get(CONF_NOTIFY, "")
+    nag_minutes: int = entry.options.get(CONF_NAG_MINUTES, DEFAULT_NAG_MINUTES)
+    nag_interval: int = entry.options.get(CONF_NAG_INTERVAL, DEFAULT_NAG_INTERVAL)
     doses: list[dict[str, Any]] = entry.options.get(CONF_DOSES, [])
     entities = [
-        MedicationDoseSwitch(entry, patient, notify_target, dose) for dose in doses
+        MedicationDoseSwitch(
+            entry, patient, notify_target, nag_minutes, nag_interval, dose
+        )
+        for dose in doses
     ]
     async_add_entities(entities)
+
+    # Parse the configured daily-reset time (defaults to 00:01).
+    reset_time = entry.options.get(CONF_RESET_TIME, DEFAULT_RESET_TIME)
+    try:
+        reset_hour, reset_minute = (int(p) for p in reset_time.split(":")[:2])
+    except (ValueError, AttributeError):
+        reset_hour, reset_minute = 0, 1
 
     @callback
     def _reset_all(_now) -> None:
         for entity in entities:
             entity.reset_given()
 
-    # Clear every dose's "given" flag at the start of each day.
     entry.async_on_unload(
-        async_track_time_change(hass, _reset_all, hour=0, minute=1, second=0)
+        async_track_time_change(
+            hass, _reset_all, hour=reset_hour, minute=reset_minute, second=0
+        )
     )
 
 
@@ -58,10 +77,14 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         entry: ConfigEntry,
         patient: str,
         notify_target: str,
+        nag_minutes: int,
+        nag_interval: int,
         dose: dict[str, Any],
     ) -> None:
         self._patient = patient
         self._notify = notify_target
+        self._nag_minutes = nag_minutes
+        self._nag_interval = nag_interval
         self._time = str(dose[CONF_TIME])[:5]  # 24h "HH:MM" (used by automations)
         self._meds = dose[CONF_MEDS]
         # 12h display, with the medications inline: "Patient 2:00 PM (Meds)"
@@ -96,6 +119,8 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
             "dose_time": self._time,
             "medications": self._meds,
             "notify_service": self._notify,
+            "nag_minutes": self._nag_minutes,
+            "nag_interval": self._nag_interval,
         }
 
     async def async_added_to_hass(self) -> None:
