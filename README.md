@@ -159,6 +159,7 @@ off the `needs_attention` sensor so the alert is visible from across the room.
 Each patient has its own **Configure, Reminder settings** with:
 
 - **Notify target** - who gets that patient's reminders.
+- **Time format** - 12-hour (`2:00 PM`) or 24-hour (`14:00`) in the dose entity names (default 12-hour).
 - **Daily reset time** - when the day's doses reset to "not given" (default 00:01).
 - **Nag window** - how long to keep reminding after a dose time (default 45 min).
 - **Re-nag interval** - how often to re-remind within that window (default 15 min).
