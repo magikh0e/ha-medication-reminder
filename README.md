@@ -102,13 +102,24 @@ sort:
 ## How marking works (the contract)
 
 - The integration publishes `switch.*` entities carrying `patient` / `dose_time` / `medications` / `notify_service` attributes.
-- The companion reminder automation iterates those switches and routes each reminder to its `notify_service`, so adding a dose or changing the notify target in the UI needs **no** automation edits.
-- "Mark given" flips the switch on; the daily reset flips all off at 00:01.
+- The companion reminder automation iterates those switches and routes each reminder to its `notify_service` / `nag_minutes` / `nag_interval`, so adding a dose or changing a patient's settings in the UI needs **no** automation edits.
+- "Mark given" flips the switch on; the daily reset flips all off at the configured reset time.
+
+## Settings (per patient)
+
+Each patient has its own **Configure, Reminder settings** with:
+
+- **Notify target** - who gets that patient's reminders.
+- **Daily reset time** - when the day's doses reset to "not given" (default 00:01).
+- **Nag window** - how long to keep reminding after a dose time (default 45 min).
+- **Re-nag interval** - how often to re-remind within that window (default 15 min).
+
+The reset time is applied by the integration; the nag window/interval are exposed
+as switch attributes that the companion automations read.
 
 ## Roadmap
 
 - Optional in-integration notifications/nagging (so YAML companions become optional).
-- Configurable reset time and nag window in the UI.
 - A per-patient "all doses given today" sensor.
 - HACS default-store submission once validated.
 
