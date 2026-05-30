@@ -20,10 +20,12 @@ from .const import (
     CONF_PATIENT_TYPE,
     CONF_RESET_TIME,
     CONF_TIME,
+    CONF_TIME_FORMAT,
     DEFAULT_NAG_INTERVAL,
     DEFAULT_NAG_MINUTES,
     DEFAULT_PATIENT_TYPE,
     DEFAULT_RESET_TIME,
+    DEFAULT_TIME_FORMAT,
     DOMAIN,
 )
 
@@ -51,6 +53,19 @@ def _type_selector() -> selector.SelectSelector:
                 {"value": "bird", "label": "Bird"},
                 {"value": "rabbit", "label": "Rabbit"},
                 {"value": "other", "label": "Other"},
+            ],
+            mode=selector.SelectSelectorMode.DROPDOWN,
+        )
+    )
+
+
+def _time_format_selector() -> selector.SelectSelector:
+    """12-hour vs 24-hour display for dose times in entity names."""
+    return selector.SelectSelector(
+        selector.SelectSelectorConfig(
+            options=[
+                {"value": "12h", "label": "12-hour (2:00 PM)"},
+                {"value": "24h", "label": "24-hour (14:00)"},
             ],
             mode=selector.SelectSelectorMode.DROPDOWN,
         )
@@ -94,6 +109,7 @@ class MedicationReminderConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_RESET_TIME: DEFAULT_RESET_TIME,
                     CONF_NAG_MINUTES: DEFAULT_NAG_MINUTES,
                     CONF_NAG_INTERVAL: DEFAULT_NAG_INTERVAL,
+                    CONF_TIME_FORMAT: DEFAULT_TIME_FORMAT,
                 },
             )
         schema = vol.Schema(
@@ -177,7 +193,7 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
     async def async_step_settings(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:
-        """Patient type, notify target, daily reset time, and nag window/interval."""
+        """Patient type, notify target, reset time, nag window, and time format."""
         if user_input is not None:
             options = dict(self._entry.options)
             options[CONF_PATIENT_TYPE] = user_input[CONF_PATIENT_TYPE]
@@ -185,6 +201,7 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
             options[CONF_RESET_TIME] = str(user_input[CONF_RESET_TIME])
             options[CONF_NAG_MINUTES] = int(user_input[CONF_NAG_MINUTES])
             options[CONF_NAG_INTERVAL] = int(user_input[CONF_NAG_INTERVAL])
+            options[CONF_TIME_FORMAT] = user_input[CONF_TIME_FORMAT]
             return self.async_create_entry(title="", data=options)
         opts = self._entry.options
         schema = vol.Schema(
@@ -196,6 +213,10 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
                 vol.Required(
                     CONF_NOTIFY, default=opts.get(CONF_NOTIFY, "")
                 ): _notify_selector(self.hass),
+                vol.Required(
+                    CONF_TIME_FORMAT,
+                    default=opts.get(CONF_TIME_FORMAT, DEFAULT_TIME_FORMAT),
+                ): _time_format_selector(),
                 vol.Required(
                     CONF_RESET_TIME,
                     default=opts.get(CONF_RESET_TIME, DEFAULT_RESET_TIME),
