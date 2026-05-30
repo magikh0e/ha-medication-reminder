@@ -13,9 +13,15 @@ from homeassistant.helpers import config_validation as cv, selector
 from .const import (
     CONF_DOSES,
     CONF_MEDS,
+    CONF_NAG_INTERVAL,
+    CONF_NAG_MINUTES,
     CONF_NOTIFY,
     CONF_PATIENT,
+    CONF_RESET_TIME,
     CONF_TIME,
+    DEFAULT_NAG_INTERVAL,
+    DEFAULT_NAG_MINUTES,
+    DEFAULT_RESET_TIME,
     DOMAIN,
 )
 
@@ -28,6 +34,19 @@ def _notify_selector(hass: HomeAssistant) -> selector.SelectSelector:
             options=services,
             mode=selector.SelectSelectorMode.DROPDOWN,
             custom_value=True,
+        )
+    )
+
+
+def _minutes_selector(low: int, high: int) -> selector.NumberSelector:
+    """A minutes number box in steps of 5."""
+    return selector.NumberSelector(
+        selector.NumberSelectorConfig(
+            min=low,
+            max=high,
+            step=5,
+            mode=selector.NumberSelectorMode.BOX,
+            unit_of_measurement="min",
         )
     )
 
@@ -49,7 +68,13 @@ class MedicationReminderConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_create_entry(
                 title=patient,
                 data={CONF_PATIENT: patient},
-                options={CONF_DOSES: [], CONF_NOTIFY: user_input[CONF_NOTIFY]},
+                options={
+                    CONF_DOSES: [],
+                    CONF_NOTIFY: user_input[CONF_NOTIFY],
+                    CONF_RESET_TIME: DEFAULT_RESET_TIME,
+                    CONF_NAG_MINUTES: DEFAULT_NAG_MINUTES,
+                    CONF_NAG_INTERVAL: DEFAULT_NAG_INTERVAL,
+                },
             )
         schema = vol.Schema(
             {
@@ -70,7 +95,7 @@ class MedicationReminderConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
-    """Add or remove doses, and change the notify target."""
+    """Add or remove doses, and change reminder settings."""
 
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         self._entry = config_entry
@@ -129,17 +154,32 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
     async def async_step_settings(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:
-        """Change which notify target this patient's reminders go to."""
+        """Notify target, daily reset time, and the nag window/interval."""
         if user_input is not None:
             options = dict(self._entry.options)
             options[CONF_NOTIFY] = user_input[CONF_NOTIFY]
+            options[CONF_RESET_TIME] = str(user_input[CONF_RESET_TIME])
+            options[CONF_NAG_MINUTES] = int(user_input[CONF_NAG_MINUTES])
+            options[CONF_NAG_INTERVAL] = int(user_input[CONF_NAG_INTERVAL])
             return self.async_create_entry(title="", data=options)
-        current = self._entry.options.get(CONF_NOTIFY, "")
+        opts = self._entry.options
         schema = vol.Schema(
             {
-                vol.Required(CONF_NOTIFY, default=current): _notify_selector(
-                    self.hass
-                )
+                vol.Required(
+                    CONF_NOTIFY, default=opts.get(CONF_NOTIFY, "")
+                ): _notify_selector(self.hass),
+                vol.Required(
+                    CONF_RESET_TIME,
+                    default=opts.get(CONF_RESET_TIME, DEFAULT_RESET_TIME),
+                ): selector.TimeSelector(),
+                vol.Required(
+                    CONF_NAG_MINUTES,
+                    default=opts.get(CONF_NAG_MINUTES, DEFAULT_NAG_MINUTES),
+                ): _minutes_selector(5, 240),
+                vol.Required(
+                    CONF_NAG_INTERVAL,
+                    default=opts.get(CONF_NAG_INTERVAL, DEFAULT_NAG_INTERVAL),
+                ): _minutes_selector(5, 120),
             }
         )
         return self.async_show_form(step_id="settings", data_schema=schema)
