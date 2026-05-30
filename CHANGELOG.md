@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-05-30
+### Added
+- Time format option (12-hour or 24-hour) in Reminder settings. Dose entity names show the time in the chosen format (e.g. `2:00 PM` or `14:00`). Exposed as a `time_format` attribute. Defaults to 12-hour, so existing setups are unchanged.
+
 ## [0.6.0] - 2026-05-30
 ### Added
 - Per-patient "needs attention" sensor (`binary_sensor`, device class `problem`): red when a dose is overdue (past its time by the nag window and still not given), green when all is well. It re-evaluates on a 60-second timer so it trips on elapsed time alone, with no interaction, and fails safe toward "problem" rather than a false "all clear". Drives a simple red/green status panel and any light, siren, or notification you wire to it.
