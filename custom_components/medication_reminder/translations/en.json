@@ -41,10 +41,11 @@
       },
       "settings": {
         "title": "Reminder settings",
-        "description": "Patient type, who to notify, when doses reset for the day, and how the reminders nag.",
+        "description": "Patient type, who to notify, time display, when doses reset for the day, and how the reminders nag.",
         "data": {
           "patient_type": "Patient type",
           "notify": "Notify target (person or group)",
+          "time_format": "Time format",
           "reset_time": "Daily reset time",
           "nag_minutes": "Nag window (minutes after dose)",
           "nag_interval": "Re-nag every (minutes)"
