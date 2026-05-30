@@ -53,7 +53,7 @@ territory. A future version may move reminders into the integration itself.
 
 1. **Settings, Devices & Services, Add Integration, Medication Reminder.**
 2. Enter the patient name (e.g. a pet or person), pick the **patient type** (Person / Dog / Cat / ..., which sets the icon), and the **notify target** (the person or group to remind). One patient per entry; add the integration again for more patients.
-3. On the entry, click **Configure** to **Add a dose** (pick a time, type the medications). Repeat for each dose. **Remove a dose** or open **Reminder settings** (type, notify target, reset time, nag window/interval) there too.
+3. On the entry, click **Configure** to **Add a dose** (pick a time, type the medications, and choose the **days of the week** it applies to - all days = daily). Repeat for each dose. **Remove a dose** or open **Reminder settings** (type, notify target, time format, reset time, nag window/interval) there too.
 
 Each dose appears as `switch.<patient>_<time>` with attributes `patient`,
 `dose_time`, `medications`, and `notify_service`.
@@ -148,7 +148,7 @@ off the `needs_attention` sensor so the alert is visible from across the room.
 
 ## How marking works (the contract)
 
-- The integration publishes `switch.*` entities carrying `patient` / `patient_type` / `dose_time` / `medications` / `notify_service` attributes. Per patient it also publishes two binary sensors:
+- The integration publishes `switch.*` entities carrying `patient` / `patient_type` / `dose_time` / `medications` / `days` / `notify_service` attributes (a dose is only reminded, counted, or flagged overdue on its scheduled `days`). Per patient it also publishes two binary sensors:
   - `binary_sensor.<patient>_all_doses_given` (patient-type icon) - on when all of that patient's doses are given today, with `total` / `given` / `remaining` / `pending` attributes.
   - `binary_sensor.<patient>_needs_attention` (device class `problem`) - **red when a dose is overdue** (past its time by the nag window and still not given), green when all is well. It re-evaluates on a 60-second timer so it trips on elapsed time alone, and fails safe toward "problem". Attributes: `overdue` / `overdue_count`.
 - The companion reminder automation iterates those switches and routes each reminder to its `notify_service` / `nag_minutes` / `nag_interval`, so adding a dose or changing a patient's settings in the UI needs **no** automation edits.
