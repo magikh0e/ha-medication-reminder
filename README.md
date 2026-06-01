@@ -22,6 +22,15 @@ auto-created entities? Use this.
 > until you trust it. It is a reminder aid, **not** a medical device. Confirm
 > dosing schedules with your doctor or vet.
 
+## Highlights
+
+- **Pets and people, all in the UI.** Add patients and their dose schedule from Settings, no YAML; entities auto-create per patient and survive restarts.
+- **Glanceable, fail-safe status.** A per-patient red/green "needs attention" sensor that trips on elapsed time alone and fails safe toward "problem", wire it to a panel, light, or siren.
+- **Supply & refill tracking.** Per-medication counts that decrement as doses are given, with doses-left, a run-out estimate, a low-stock red flag at your reorder threshold, and a refill reminder.
+- **Flexible scheduling.** Each dose daily or on specific days of the week, 12h or 24h display.
+- **Actionable reminders.** Nagging, missed-dose escalation, and a "Mark given" button from the notification, routed per patient.
+- **Zero-edit dashboard.** Auto-discovers every patient and dose, no names to maintain.
+
 ## What it does
 
 - 🖱️ **UI configuration:** add a patient, choose who to notify, then add doses (a time + the medications) from Settings. No YAML for the schedule.
