@@ -106,8 +106,11 @@ Pick one of two ways to add them:
 
 **Blueprints (recommended), one-click import and easy updates.** In **Settings,
 Automations & Scenes, Blueprints, Import Blueprint**, paste each URL you want,
-then create an automation from it. To update later, re-import the blueprint and
-the automations created from it pick up the change automatically.
+then create an automation from it. To update later, re-import the blueprint (its
+**three-dot menu, Re-import**) and the automations created from it pick up the
+change automatically, with their inputs preserved. A HACS integration update
+does **not** need a re-import; only re-import when a release note says a
+blueprint itself changed.
 
 - Reminders and missed-dose escalation (core):
   `https://github.com/magikh0e/ha-medication-reminder-hacs/blob/main/blueprints/automation/medication_reminder/medication_reminders.yaml`
