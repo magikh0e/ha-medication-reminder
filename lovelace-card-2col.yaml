@@ -33,11 +33,11 @@ cards:
       {% set s = states.binary_sensor | selectattr('entity_id','search','_needs_attention') | list %}
       {% set red = s | selectattr('state','eq','on') | list %}
       {% if red | length == 0 %}
-      # 🟢 All OK
+      # 🟢 All caught up
       {% else %}
       # 🔴 Attention needed
       {% for p in red %}
-      - **{{ p.attributes.patient }}**: {{ p.attributes.overdue | join(', ') }}
+      - **{{ p.attributes.patient }}**: {{ p.attributes.overdue | map('replace', p.attributes.patient ~ ' ', '', 1) | join(', ') }}
       {% endfor %}
       {% endif %}
 
@@ -90,7 +90,7 @@ cards:
               {% endif %}
               {% if given|length > 0 %}
 
-              **Given:**
+              **Already given:**
               {% for x in given | sort(attribute='last_changed') %}
               - ✅ {{ x.attributes.patient }} {{ as_timestamp(today_at(x.attributes.dose_time)) | timestamp_custom('%-I:%M %p') }} at {{ as_timestamp(x.last_changed) | timestamp_custom('%-I:%M %p') }}
               {%- endfor %}
