@@ -4,6 +4,8 @@
 ![HACS: Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)
 ![Status: alpha](https://img.shields.io/badge/status-alpha-red.svg)
 
+[![Open your Home Assistant instance and add this repository to HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=magikh0e&repository=ha-medication-reminder-hacs&category=integration)
+
 A Home Assistant custom integration for tracking medication doses, for pets *and*
 people. Add patients and their dose schedule **in the UI**; the integration
 auto-creates a switch per dose (on = given today) and resets them daily. Pair it
@@ -55,15 +57,37 @@ territory. A future version may move reminders into the integration itself.
 
 ### 1. Install the integration (HACS custom repository)
 
-[![Open your Home Assistant instance and add this repository to HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=magikh0e&repository=ha-medication-reminder-hacs&category=integration)
-
-Click the button above to add this repo to HACS in one step, then install and restart, or do it manually:
+Use the **Open your Home Assistant instance** button at the top of this page to add the repo to HACS in one step, then install and restart, or do it manually:
 
 1. HACS, top-right menu, **Custom repositories**.
 2. Add `https://github.com/magikh0e/ha-medication-reminder-hacs` as an **Integration**.
 3. Install **Medication Reminder**, then restart Home Assistant.
 
 (Or copy `custom_components/medication_reminder/` into your HA `config/custom_components/` and restart.)
+
+### Updating from an earlier version
+
+Already running an older version? You keep all your patients, doses, schedules,
+and supplies. You only need to update, and for the new early-dose warning, add
+one automation.
+
+1. **Update the integration:** in HACS, open **Medication Reminder**, use the
+   three-dot menu, **Redownload**, choose the latest version, then **restart Home
+   Assistant**. Your existing config is preserved.
+2. **Core changes apply automatically** after the restart, including the
+   `medication_reminder_dose_given` and `medication_reminder_dose_undone` events
+   and supply-restore-on-undo (un-marking a dose puts its supply count back).
+3. **For the early-dose warning (new in 0.10.0), add its automation** (see
+   **3. Add the reminder automations** below). Import the
+   [`early_dose.yaml`](blueprints/automation/medication_reminder/early_dose.yaml)
+   blueprint, or if you use the pasted
+   [`companion-automations.yaml`](companion-automations.yaml), re-paste the
+   updated file. If you copy the YAML, **replace** your existing
+   `medication_reminder_*` automations rather than adding a second copy, so
+   reminders are not duplicated.
+4. *(Optional)* **Switch from pasted YAML to blueprints.** Blueprints are new in
+   0.10.0; to manage automations by one-click import and update, delete your old
+   pasted automations and import the blueprints described below.
 
 ### 2. Add patients and doses
 
