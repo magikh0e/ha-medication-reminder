@@ -134,6 +134,11 @@ colours; without card-mod the pills fall back to amber). Paste it as a manual
 card, no names or entity_ids to change. The standalone status panel is below if
 you only want that piece, and it needs no HACS cards at all.
 
+For a wide area, [`lovelace-card-2col.yaml`](lovelace-card-2col.yaml) lays the
+same cards out as a full-width status banner above two columns, sized to fill a
+2-column-wide [Sections](https://www.home-assistant.io/dashboards/sections/)
+view section: add a section, set its width to 2, and paste it as a manual card.
+
 ![Medication Reminder dashboard layouts](dashboardupdates.png)
 
 *The auto-discovering layout, single-column and the optional two-column variant.*
