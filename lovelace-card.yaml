@@ -66,12 +66,14 @@ cards:
       {%- else -%}
       {% if ns2.overdue %}**⚠️ Overdue:**
       {% for x in ns2.overdue | sort(attribute='attributes.dose_time') %}
-      - {{ x.attributes.patient }} {{ as_timestamp(today_at(x.attributes.dose_time)) | timestamp_custom('%-I:%M %p') }} ({{ x.attributes.medications }})
+      {%- set f = '%H:%M' if x.attributes.time_format == '24h' else '%-I:%M %p' %}
+      - {{ x.attributes.patient }} {{ as_timestamp(today_at(x.attributes.dose_time)) | timestamp_custom(f) }} ({{ x.attributes.medications }})
       {%- endfor %}
       {% endif %}
       {% if ns2.upcoming %}**⏳ Upcoming:**
       {% for x in ns2.upcoming | sort(attribute='attributes.dose_time') %}
-      - {{ x.attributes.patient }} {{ as_timestamp(today_at(x.attributes.dose_time)) | timestamp_custom('%-I:%M %p') }} ({{ x.attributes.medications }})
+      {%- set f = '%H:%M' if x.attributes.time_format == '24h' else '%-I:%M %p' %}
+      - {{ x.attributes.patient }} {{ as_timestamp(today_at(x.attributes.dose_time)) | timestamp_custom(f) }} ({{ x.attributes.medications }})
       {%- endfor %}
       {% endif %}
       {%- endif %}
@@ -85,7 +87,8 @@ cards:
       **Already given:**
       {% for x in given | sort(attribute='last_changed') %}
       {%- set gat = x.attributes.given_at or x.last_changed %}
-      - ✅ {{ x.attributes.patient }} {{ as_timestamp(today_at(x.attributes.dose_time)) | timestamp_custom('%-I:%M %p') }} at {{ as_timestamp(gat) | timestamp_custom('%-I:%M %p') }}
+      {%- set f = '%H:%M' if x.attributes.time_format == '24h' else '%-I:%M %p' %}
+      - ✅ {{ x.attributes.patient }} {{ x.attributes.medications }} at {{ as_timestamp(gat) | timestamp_custom(f) }}
       {%- endfor %}
       {% endif %}
 
