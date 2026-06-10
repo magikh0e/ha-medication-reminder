@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0] - 2026-06-09
+### Added
+- New **`medication_reminder.mark_given` service** to record a dose taken at a specified time. Target a dose switch and pass an optional `given_at`; with no time it records "now" (the same as tapping the switch). This is the "Specify Time" counterpart to the one-tap "Take Now", e.g. logging at 9:00 that a dose was actually taken at 8:00. Correcting the time on a dose already marked given updates the timestamp without re-warning or re-decrementing supply, and the early-dose warning now reflects the recorded give-time.
+### Changed
+- Bundled dashboards: the today-summary lines (overdue, upcoming, and "already given") now lead with the medication and only show the patient name in multi-patient households, so a single-patient setup reads "Macrogol at 21:42" instead of "Bossie Macrogol at 21:42". Re-copy the dashboard to pick this up.
+
 ## [0.15.1] - 2026-06-09
 ### Changed
 - As-needed (PRN) display polish: a PRN dose is now named by its medication (e.g. "Ibuprofen (as needed)") instead of a meaningless time, and the schedule-overview no longer shows a placeholder 00:00 for it. Re-copy the bundled dashboard to pick up the schedule-overview change.

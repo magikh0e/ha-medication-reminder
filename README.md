@@ -255,6 +255,7 @@ content: |-
 - It also publishes `sensor.<patient>_next_dose` (timestamp of the next upcoming dose, with the medications as an attribute) and `calendar.<patient>_medication` (the schedule as calendar events). The entry offers **downloadable diagnostics** on its device page, and raises a **Repairs** warning if a tracked supply's medication matches no dose (so it would never decrement).
 - The companion reminder automation iterates those switches and routes each reminder to its `notify_service` / `nag_minutes` / `nag_interval`, so adding a dose or changing a patient's settings in the UI needs **no** automation edits.
 - "Mark given" flips the switch on; the daily reset flips all off at the configured reset time.
+- To log a dose taken at a **different time** than now, call the `medication_reminder.mark_given` service (target the dose's switch) with a `given_at` time. The plain switch is "Take Now"; the service is the "Specify Time" equivalent. Correcting the time on an already-given dose just updates the timestamp (it does not re-warn or re-decrement supply).
 - When a dose is marked given, the switch fires a `medication_reminder_dose_given` event (with `patient`, `dose_time`, `medications`, `scheduled_today`, `minutes_early`, `notify_service`), so companion automations can react cleanly. The bundled `med_early_given` automation uses it to warn when a dose is marked given well before its scheduled time, with an "undo" button that turns the dose back off. Un-marking a dose fires `medication_reminder_dose_undone`, which restores that dose's supply count.
 
 ## Settings (per patient)
@@ -347,7 +348,7 @@ max-per-day cap) is on the [Roadmap](#roadmap).
 - More schedule types beyond day-of-week, all shipped: every-N-days (0.11.0), on/off cycles e.g. 21 on / 7 off (0.12.0), as-needed PRN (0.14.0), and day-of-month / monthly (0.15.0). (Suggested by community members.)
 - Edit an existing dose in place (e.g. fix its time) without removing and re-adding it. (Suggested by a community member.)
 - Per-medication detail: optional strength/mg, a dosage summary (e.g. "2 tablets twice a day"), and a full name separate from the short reminder name, plus a "current medications" summary view for handing a provider the "what" rather than the "when". (Suggested by a community member.)
-- Specify the time a dose was taken: record "taken at 8:00" even when you tap at 9:00, via a mark-given service with an optional time and/or an editable given-at. The Medisafe "Take Now" vs "Specify Time" split. (Suggested by a community member.)
+- Specify the time a dose was taken (record "taken at 8:00" even when you tap at 9:00): shipped in 0.16.0 as the `medication_reminder.mark_given` service with an optional `given_at`. (Suggested by a community member.)
 - As-needed (PRN) display polish: name PRN doses by their medication (e.g. "Ibuprofen (as needed)") and drop the placeholder 00:00 time from the schedule view, since PRN doses have no scheduled time. (Suggested by a community member.)
 
 ## Acknowledgements

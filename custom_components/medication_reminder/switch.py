@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 
 import homeassistant.util.dt as dt_util
+import voluptuous as vol
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import config_validation as cv, entity_platform
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.restore_state import ExtraStoredData, RestoreEntity
@@ -47,6 +50,7 @@ from .const import (
     EVENT_DOSE_UNDONE,
     SCHEDULE_PRN,
     SCHEDULE_WEEKDAYS,
+    SERVICE_MARK_GIVEN,
     is_due,
 )
 
@@ -93,6 +97,15 @@ async def async_setup_entry(
         for dose in doses
     ]
     async_add_entities(entities)
+
+    # mark_given service: the plain toggle is "Take Now"; this records a dose
+    # taken at a specified time (e.g. log at 9:00 that it was taken at 8:00).
+    platform = entity_platform.async_get_current_platform()
+    platform.async_register_entity_service(
+        SERVICE_MARK_GIVEN,
+        {vol.Optional("given_at"): cv.datetime},
+        "async_mark_given_at",
+    )
 
     # Parse the configured daily-reset time (defaults to 00:01).
     reset_time = entry.options.get(CONF_RESET_TIME, DEFAULT_RESET_TIME)
@@ -242,10 +255,23 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
             self._given_at = last_state.last_changed.isoformat()
 
     async def async_turn_on(self, **kwargs: Any) -> None:
-        """Mark this dose given."""
+        """Mark this dose given now ("Take Now")."""
+        await self.async_mark_given_at()
+
+    async def async_mark_given_at(self, given_at: datetime | None = None) -> None:
+        """Mark this dose given, optionally at a specified time.
+
+        Backs the ``mark_given`` service. With no time it behaves like the
+        toggle (records "now"); a ``given_at`` lets you log that the dose was
+        taken at a different time than when you are tapping. Correcting the time
+        on a dose already marked given just updates the timestamp; it does not
+        re-fire the given event, so it will not re-warn or re-decrement supply.
+        """
         was_on = self._attr_is_on
         self._attr_is_on = True
-        if not was_on:
+        if given_at is not None:
+            self._given_at = dt_util.as_local(given_at).isoformat()
+        elif not was_on:
             self._given_at = dt_util.now().isoformat()
         self.async_write_ha_state()
         if not was_on:
@@ -254,12 +280,14 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
     @callback
     def _fire_dose_given_event(self) -> None:
         """Announce a dose was marked given, for companion automations."""
-        now = dt_util.now()
+        # Use the give-time (now for a plain tap, or the specified time) so the
+        # early-dose warning and scheduled-today flag reflect when it was taken.
+        when = dt_util.parse_datetime(self._given_at or "") or dt_util.now()
         minutes_early: int | None = None
         try:
             hour, minute = (int(p) for p in self._time.split(":")[:2])
-            due = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
-            minutes_early = round((due - now).total_seconds() / 60)
+            due = when.replace(hour=hour, minute=minute, second=0, microsecond=0)
+            minutes_early = round((due - when).total_seconds() / 60)
         except (ValueError, AttributeError):
             minutes_early = None
         self.hass.bus.async_fire(
@@ -271,7 +299,7 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
                 "medications": self._meds,
                 "days": self._days,
                 "notify_service": self._notify,
-                "scheduled_today": is_due(self._schedule_attrs(), now.date()),
+                "scheduled_today": is_due(self._schedule_attrs(), when.date()),
                 "minutes_early": minutes_early,
             },
         )

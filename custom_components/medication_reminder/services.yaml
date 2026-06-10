@@ -1,0 +1,19 @@
+mark_given:
+  name: Mark dose given
+  description: >-
+    Mark a medication dose given, optionally at a specified time. With no time
+    it records "now" (the same as tapping the dose switch). A time lets you log
+    that the dose was actually taken earlier or later than when you call the
+    service, for example logging at 9:00 that it was taken at 8:00.
+  target:
+    entity:
+      integration: medication_reminder
+      domain: switch
+  fields:
+    given_at:
+      name: Taken at
+      description: When the dose was actually taken. Defaults to now.
+      required: false
+      example: "2026-06-09 08:00:00"
+      selector:
+        datetime:

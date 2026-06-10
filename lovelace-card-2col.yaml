@@ -51,6 +51,7 @@ cards:
             content: |-
               {% set today = ['mon','tue','wed','thu','fri','sat','sun'][now().weekday()] %}
               {% set week = ['mon','tue','wed','thu','fri','sat','sun'] %}
+              {% set show_patient = (states.switch | selectattr('attributes.medications','defined') | map(attribute='attributes.patient') | unique | list | length) > 1 %}
               {% set ns = namespace(meds=[]) %}
               {% for s in states.switch if s.attributes.medications is defined and s.attributes.get('scheduled_today', today in (s.attributes.days or week)) %}
               {% set ns.meds = ns.meds + [s] %}
@@ -75,13 +76,13 @@ cards:
               {% if ns2.overdue %}**⚠️ Overdue:**
               {% for x in ns2.overdue | sort(attribute='attributes.dose_time') %}
               {%- set f = '%H:%M' if x.attributes.time_format == '24h' else '%-I:%M %p' %}
-              - {{ x.attributes.patient }} {{ as_timestamp(today_at(x.attributes.dose_time)) | timestamp_custom(f) }} ({{ x.attributes.medications }})
+              - {% if show_patient %}{{ x.attributes.patient }} {% endif %}{{ as_timestamp(today_at(x.attributes.dose_time)) | timestamp_custom(f) }} ({{ x.attributes.medications }})
               {%- endfor %}
               {% endif %}
               {% if ns2.upcoming %}**⏳ Upcoming:**
               {% for x in ns2.upcoming | sort(attribute='attributes.dose_time') %}
               {%- set f = '%H:%M' if x.attributes.time_format == '24h' else '%-I:%M %p' %}
-              - {{ x.attributes.patient }} {{ as_timestamp(today_at(x.attributes.dose_time)) | timestamp_custom(f) }} ({{ x.attributes.medications }})
+              - {% if show_patient %}{{ x.attributes.patient }} {% endif %}{{ as_timestamp(today_at(x.attributes.dose_time)) | timestamp_custom(f) }} ({{ x.attributes.medications }})
               {%- endfor %}
               {% endif %}
               {%- endif %}
@@ -96,7 +97,7 @@ cards:
               {% for x in given | sort(attribute='last_changed') %}
               {%- set gat = x.attributes.given_at or x.last_changed %}
               {%- set f = '%H:%M' if x.attributes.time_format == '24h' else '%-I:%M %p' %}
-              - ✅ {{ x.attributes.patient }} {{ x.attributes.medications }} at {{ as_timestamp(gat) | timestamp_custom(f) }}
+              - ✅ {% if show_patient %}{{ x.attributes.patient }} {% endif %}{{ x.attributes.medications }} at {{ as_timestamp(gat) | timestamp_custom(f) }}
               {%- endfor %}
               {% endif %}
 

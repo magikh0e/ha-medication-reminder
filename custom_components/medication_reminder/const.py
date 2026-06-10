@@ -13,6 +13,9 @@ EVENT_DOSE_LOGGED = f"{DOMAIN}_dose_logged"  # one as-needed (PRN) dose taken
 # Fired when a refill button is pressed; the matching supply restocks to full.
 EVENT_SUPPLY_REFILL = f"{DOMAIN}_supply_refill"
 
+# Services.
+SERVICE_MARK_GIVEN = "mark_given"  # mark a dose given, optionally at a set time
+
 CONF_PATIENT = "patient"
 CONF_PATIENT_TYPE = "patient_type"
 CONF_DOSES = "doses"
