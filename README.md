@@ -347,6 +347,8 @@ max-per-day cap) is on the [Roadmap](#roadmap).
 - More schedule types beyond day-of-week, all shipped: every-N-days (0.11.0), on/off cycles e.g. 21 on / 7 off (0.12.0), as-needed PRN (0.14.0), and day-of-month / monthly (0.15.0). (Suggested by community members.)
 - Edit an existing dose in place (e.g. fix its time) without removing and re-adding it. (Suggested by a community member.)
 - Per-medication detail: optional strength/mg, a dosage summary (e.g. "2 tablets twice a day"), and a full name separate from the short reminder name, plus a "current medications" summary view for handing a provider the "what" rather than the "when". (Suggested by a community member.)
+- Specify the time a dose was taken: record "taken at 8:00" even when you tap at 9:00, via a mark-given service with an optional time and/or an editable given-at. The Medisafe "Take Now" vs "Specify Time" split. (Suggested by a community member.)
+- As-needed (PRN) display polish: name PRN doses by their medication (e.g. "Ibuprofen (as needed)") and drop the placeholder 00:00 time from the schedule view, since PRN doses have no scheduled time. (Suggested by a community member.)
 
 ## Acknowledgements
 
