@@ -5,6 +5,14 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0] - 2026-06-10
+### Added
+- As-needed (PRN) doses now record **when they were last taken**. Each PRN dose gains a `sensor.<patient>_<med>_last_taken` (device class `timestamp`) that updates every time the dose is logged and survives restarts, so you can see how long it has been since the last one.
+- New **`medication_reminder.log_dose` service** to log a PRN dose at a specified time. Target a "Log dose" button and pass an optional `taken_at`; with no time it records "now" (the same as tapping the button). This is the "Specify Time" counterpart for PRN meds, matching `mark_given` for scheduled doses. Logging via the service decrements the supply and updates the "last taken" sensor just like a button tap.
+- The bundled dashboards' "As needed (PRN)" card now shows each med's "last taken" time alongside its Log dose button. Re-copy the dashboard to pick this up.
+### Notes
+- This is the groundwork for a PRN over-dose guard (warn when a med is logged again sooner than a set interval, e.g. a pain med taken no less than 4 hours apart); the warning automation builds on the new "last taken" sensor next.
+
 ## [0.16.0] - 2026-06-09
 ### Added
 - New **`medication_reminder.mark_given` service** to record a dose taken at a specified time. Target a dose switch and pass an optional `given_at`; with no time it records "now" (the same as tapping the switch). This is the "Specify Time" counterpart to the one-tap "Take Now", e.g. logging at 9:00 that a dose was actually taken at 8:00. Correcting the time on a dose already marked given updates the timestamp without re-warning or re-decrementing supply, and the early-dose warning now reflects the recorded give-time.

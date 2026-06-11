@@ -127,7 +127,8 @@ cards:
             sort:
               method: name
 
-          # As-needed (PRN) meds: tap "Log dose" to record one. Hidden if none.
+          # As-needed (PRN) meds: tap "Log dose" to record one, with each med's
+          # "last taken" time beside it. Hidden if none.
           - type: custom:auto-entities
             show_empty: false
             card:
@@ -143,6 +144,9 @@ cards:
             filter:
               template: >
                 {% for s in states.button if s.name and 'Log ' in s.name and s.name.endswith('dose') %}
+                {{ s.entity_id }}
+                {% endfor %}
+                {% for s in states.sensor if s.name and s.name.endswith('last taken') %}
                 {{ s.entity_id }}
                 {% endfor %}
             sort:

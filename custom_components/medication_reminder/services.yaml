@@ -17,3 +17,23 @@ mark_given:
       example: "2026-06-09 08:00:00"
       selector:
         datetime:
+
+log_dose:
+  name: Log dose (as needed)
+  description: >-
+    Log an as-needed (PRN) dose, optionally at a specified time. With no time it
+    records "now" (the same as tapping the Log dose button). A time lets you log
+    that the dose was actually taken earlier than when you call the service. The
+    matching supply decrements and the medication's "last taken" sensor updates.
+  target:
+    entity:
+      integration: medication_reminder
+      domain: button
+  fields:
+    taken_at:
+      name: Taken at
+      description: When the dose was actually taken. Defaults to now.
+      required: false
+      example: "2026-06-09 14:30:00"
+      selector:
+        datetime:

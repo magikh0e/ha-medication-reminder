@@ -38,7 +38,7 @@ auto-created entities? Use this.
 
 - 🖱️ **UI configuration:** add a patient, choose who to notify, then add doses (a time + the medications) from Settings. No YAML for the schedule.
 - 🗓️ **Flexible scheduling:** each dose can be daily, limited to specific days of the week (e.g. Mondays only, or Mon/Wed/Fri), every N days from a start date (e.g. every other day), an on/off cycle (e.g. 21 days on / 7 off), or on specific days of the month (e.g. the 1st, or the 1st and 15th; a day past a short month's length falls on its last day). It only reminds and counts on the days it is due.
-- 💊 **As-needed (PRN) meds:** mark a dose "as needed" and it never reminds, nags, or shows as overdue, and it stays off the next-dose sensor and calendar (no schedule). Each PRN dose gets a **"Log dose" button**, press it every time you take the med (pain meds, rescue inhalers, etc., including several times a day) and it decrements that medication's supply, so refill and run-out tracking stay accurate.
+- 💊 **As-needed (PRN) meds:** mark a dose "as needed" and it never reminds, nags, or shows as overdue, and it stays off the next-dose sensor and calendar (no schedule). Each PRN dose gets a **"Log dose" button**, press it every time you take the med (pain meds, rescue inhalers, etc., including several times a day) and it decrements that medication's supply, so refill and run-out tracking stay accurate. A **"last taken" timestamp sensor** records when you last logged it (and the `log_dose` service can record a dose taken earlier than now), so you can see how long it has been and build a "not before N hours" guard on it.
 - 📅 **Next-dose sensor and calendar:** each patient gets a `sensor.<patient>_next_dose` (timestamp of the next upcoming dose) and a `calendar.<patient>_medication` that lays the schedule out as calendar events, handy for the every-N-days and on/off-cycle schedules.
 - 👥 **Per-patient notify target:** pick the person or group to remind for each patient in the UI (e.g. one dog's reminders to you, another's to a partner).
 - 🔀 **Auto-created entities:** each dose becomes a `switch` (on = given today), grouped under a device per patient.
@@ -292,7 +292,12 @@ amount. Each tracked medication then gets:
   once-per-day limit**, so a med taken several times a day is counted each press.
   It fires a `medication_reminder_dose_logged` event. PRN doses have no schedule,
   so the daily on/off switch does not count them; this button is how their supply
-  tracks.
+  tracks. Call the `medication_reminder.log_dose` service on it with an optional
+  `taken_at` to record a dose taken earlier than now.
+- `sensor.<patient>_<med>_last_taken` (device class `timestamp`) - only created
+  for **as-needed (PRN)** doses. **When that med was last logged** (button tap or
+  the `log_dose` service), restart-safe. Drives the dashboard's "last taken" line
+  and is the basis for a PRN over-dose guard (warn if logged again too soon).
 - `binary_sensor.<patient>_supplies_low` (device class `problem`) - **red when any
   of that patient's supplies reaches its threshold**, with a `low` list of which
   medications are short.
@@ -344,11 +349,11 @@ max-per-day cap) is on the [Roadmap](#roadmap).
 
 - Optional in-integration notifications/nagging (so YAML companions become optional).
 - HACS default-store submission once validated.
-- Over-dose guard: a minimum interval between doses and a max-per-day cap, warning before a dose is marked given too soon or too often. An early-dose warning (a dose given before its scheduled time) shipped in 0.10.0 as a first step; the interval and daily cap remain. For as-needed (PRN) meds (e.g. a pain med taken no less than 4 hours apart) this first needs PRN doses to record their taken-time. (Idea from community member IOT7712.)
+- Over-dose guard: a minimum interval between doses and a max-per-day cap, warning before a dose is marked given too soon or too often. An early-dose warning (a dose given before its scheduled time) shipped in 0.10.0 as a first step; the interval and daily cap remain. For as-needed (PRN) meds (e.g. a pain med taken no less than 4 hours apart) the groundwork shipped in 0.17.0: each PRN dose now records its taken-time via a `<med>_last_taken` sensor, so a minimum-interval warning can build on it next. (Idea from community member IOT7712.)
 - More schedule types beyond day-of-week, all shipped: every-N-days (0.11.0), on/off cycles e.g. 21 on / 7 off (0.12.0), as-needed PRN (0.14.0), and day-of-month / monthly (0.15.0). (Suggested by community members.)
 - Edit an existing dose in place (e.g. fix its time) without removing and re-adding it. (Suggested by a community member.)
 - Per-medication detail: optional strength/mg, a dosage summary (e.g. "2 tablets twice a day"), and a full name separate from the short reminder name, plus a "current medications" summary view for handing a provider the "what" rather than the "when". (Suggested by a community member.)
-- Specify the time a dose was taken (record "taken at 8:00" even when you tap at 9:00): shipped in 0.16.0 for scheduled (switch) doses as the `medication_reminder.mark_given` service with an optional `given_at`. As-needed (PRN) doses use a button and do not record a taken-time yet; that part remains. (Suggested by community members.)
+- Specify the time a dose was taken (record "taken at 8:00" even when you tap at 9:00): shipped in 0.16.0 for scheduled (switch) doses as the `medication_reminder.mark_given` service with an optional `given_at`, and in 0.17.0 for as-needed (PRN) doses as the `medication_reminder.log_dose` service with an optional `taken_at`, which also updates that med's `<med>_last_taken` sensor. (Suggested by community members.)
 - As-needed (PRN) display polish: name PRN doses by their medication (e.g. "Ibuprofen (as needed)") and drop the placeholder 00:00 time from the schedule view, since PRN doses have no scheduled time. (Suggested by a community member.)
 
 ## Acknowledgements

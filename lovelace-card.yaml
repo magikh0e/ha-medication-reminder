@@ -120,8 +120,9 @@ cards:
     sort:
       method: name
 
-  # 3b. As-needed (PRN) meds: tap "Log dose" to record one (decrements supply).
-  # Hidden if you have no PRN doses.
+  # 3b. As-needed (PRN) meds: tap "Log dose" to record one (decrements supply),
+  # with each med's "last taken" time shown beside it. Hidden if you have no PRN
+  # doses.
   - type: custom:auto-entities
     show_empty: false
     card:
@@ -137,6 +138,9 @@ cards:
     filter:
       template: >
         {% for s in states.button if s.name and 'Log ' in s.name and s.name.endswith('dose') %}
+        {{ s.entity_id }}
+        {% endfor %}
+        {% for s in states.sensor if s.name and s.name.endswith('last taken') %}
         {{ s.entity_id }}
         {% endfor %}
     sort:

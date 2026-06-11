@@ -13,11 +13,15 @@ Two button types:
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
+import homeassistant.util.dt as dt_util
+import voluptuous as vol
 from homeassistant.components.button import ButtonEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import config_validation as cv, entity_platform
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import slugify
 
@@ -33,6 +37,7 @@ from .const import (
     EVENT_DOSE_LOGGED,
     EVENT_SUPPLY_REFILL,
     SCHEDULE_PRN,
+    SERVICE_LOG_DOSE,
 )
 
 
@@ -58,6 +63,15 @@ async def async_setup_entry(
         if (dose.get(CONF_SCHEDULE_TYPE) or "") == SCHEDULE_PRN
     )
     async_add_entities(entities)
+
+    # Service to log a PRN dose at a specified time (the "Specify Time" counterpart
+    # to tapping the Log dose button, which records "now"). Target a Log dose button.
+    platform = entity_platform.async_get_current_platform()
+    platform.async_register_entity_service(
+        SERVICE_LOG_DOSE,
+        {vol.Optional("taken_at"): cv.datetime},
+        "async_log_dose",
+    )
 
 
 class MedicationRefillButton(ButtonEntity):
@@ -105,8 +119,24 @@ class MedicationLogDoseButton(ButtonEntity):
         }
 
     async def async_press(self) -> None:
-        """Log one dose taken; matching supplies decrement by their per-dose amount."""
+        """Log one dose taken now (button tap); records the current time."""
+        await self.async_log_dose(taken_at=None)
+
+    async def async_log_dose(self, taken_at: datetime | None = None) -> None:
+        """Log one dose taken, optionally at a specified time.
+
+        `taken_at` lets you record a dose that was taken earlier than now (the
+        "Specify Time" counterpart to a plain button tap). Matching supplies
+        decrement by their per-dose amount on every call. The recorded time is
+        carried on the event as `logged_at` (ISO), which the "last taken" sensor
+        reads.
+        """
+        when = dt_util.as_local(taken_at) if taken_at else dt_util.now()
         self.hass.bus.async_fire(
             EVENT_DOSE_LOGGED,
-            {"patient": self._patient, "medications": self._meds},
+            {
+                "patient": self._patient,
+                "medications": self._meds,
+                "logged_at": when.isoformat(),
+            },
         )

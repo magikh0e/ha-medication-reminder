@@ -15,6 +15,7 @@ EVENT_SUPPLY_REFILL = f"{DOMAIN}_supply_refill"
 
 # Services.
 SERVICE_MARK_GIVEN = "mark_given"  # mark a dose given, optionally at a set time
+SERVICE_LOG_DOSE = "log_dose"  # log an as-needed (PRN) dose, optionally at a set time
 
 CONF_PATIENT = "patient"
 CONF_PATIENT_TYPE = "patient_type"
