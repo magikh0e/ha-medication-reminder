@@ -161,7 +161,7 @@ same cards out as a full-width status banner above two columns, sized to fill a
 2-column-wide [Sections](https://www.home-assistant.io/dashboards/sections/)
 view section: add a section, set its width to 2, and paste it as a manual card.
 
-![Single-column dashboard layout](dashboard-1col.png)
+![Single-column dashboard layout](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder-hacs/main/dashboard-1col.png?v=2)
 
 *The auto-discovering single-column layout ([`lovelace-card.yaml`](lovelace-card.yaml)); the wide two-column variant is described just above.*
 
@@ -227,7 +227,7 @@ and which days it applies), not just today. Auto-discovers all patients, respect
 each one's 12h/24h setting, and shows "Daily" or the specific days. Native
 markdown card, no HACS needed:
 
-![Schedule overview](ScheduleOverview.png)
+![Schedule overview](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder-hacs/main/ScheduleOverview.png?v=2)
 
 ```yaml
 type: markdown
