@@ -347,14 +347,19 @@ max-per-day cap) is on the [Roadmap](#roadmap).
 
 ## Roadmap
 
-- Optional in-integration notifications/nagging (so YAML companions become optional).
+**Planned:**
+
+- Optional in-integration notifications/nagging (so the YAML companion automations become optional).
 - HACS default-store submission once validated.
-- Over-dose guard: a minimum interval between doses and a max-per-day cap, warning before a dose is marked given too soon or too often. An early-dose warning (a dose given before its scheduled time) shipped in 0.10.0 as a first step; the interval and daily cap remain. For as-needed (PRN) meds (e.g. a pain med taken no less than 4 hours apart) the groundwork shipped in 0.17.0: each PRN dose now records its taken-time via a `<med>_last_taken` sensor, so a minimum-interval warning can build on it next. (Idea from community member IOT7712.)
-- More schedule types beyond day-of-week, all shipped: every-N-days (0.11.0), on/off cycles e.g. 21 on / 7 off (0.12.0), as-needed PRN (0.14.0), and day-of-month / monthly (0.15.0). (Suggested by community members.)
+- Over-dose guard: a minimum interval between doses and a max-per-day cap, warning before a dose is marked given too soon or too often. The early-dose warning (0.10.0) and PRN taken-time recording (0.17.0, the `<med>_last_taken` sensor) are the groundwork; the interval and daily-cap warnings build on them next. (Idea from community member IOT7712.)
 - Edit an existing dose in place (e.g. fix its time) without removing and re-adding it. (Suggested by a community member.)
 - Per-medication detail: optional strength/mg, a dosage summary (e.g. "2 tablets twice a day"), and a full name separate from the short reminder name, plus a "current medications" summary view for handing a provider the "what" rather than the "when". (Suggested by a community member.)
-- Specify the time a dose was taken (record "taken at 8:00" even when you tap at 9:00): shipped in 0.16.0 for scheduled (switch) doses as the `medication_reminder.mark_given` service with an optional `given_at`, and in 0.17.0 for as-needed (PRN) doses as the `medication_reminder.log_dose` service with an optional `taken_at`, which also updates that med's `<med>_last_taken` sensor. (Suggested by community members.)
-- As-needed (PRN) display polish: name PRN doses by their medication (e.g. "Ibuprofen (as needed)") and drop the placeholder 00:00 time from the schedule view, since PRN doses have no scheduled time. (Suggested by a community member.)
+
+**Shipped from the roadmap:**
+
+- More schedule types beyond day-of-week: every-N-days (0.11.0), on/off cycles e.g. 21 on / 7 off (0.12.0), as-needed PRN (0.14.0), and day-of-month / monthly (0.15.0). (Suggested by community members.)
+- As-needed (PRN) display polish: PRN doses named by their medication (e.g. "Ibuprofen (as needed)"), with the placeholder 00:00 time dropped from the schedule view (0.15.1). (Suggested by a community member.)
+- Specify the time a dose was taken: the `medication_reminder.mark_given` service with `given_at` for scheduled (switch) doses (0.16.0), and `medication_reminder.log_dose` with `taken_at` for as-needed (PRN) doses (0.17.0), each updating a `<med>_last_taken` sensor. (Suggested by community members.)
 
 ## Acknowledgements
 
