@@ -24,29 +24,19 @@ auto-created entities? Use this.
 > until you trust it. It is a reminder aid, **not** a medical device. Confirm
 > dosing schedules with your doctor or vet.
 
+**Jump to:** [Highlights](#highlights) · [Installation](#installation) · [Dashboard](#dashboard) · [Settings](#settings-per-patient) · [Supply & refill](#supply--refill-tracking) · [Safety](#safety--fail-safes) · [Roadmap](#roadmap)
+
 ## Highlights
 
 - **Pets and people, all in the UI.** Add patients and their dose schedule from Settings, no YAML; entities auto-create per patient and survive restarts.
-- **Glanceable, fail-safe status.** A per-patient red/green "needs attention" sensor that trips on elapsed time alone and fails safe toward "problem", wire it to a panel, light, or siren.
+- **Flexible scheduling.** Each dose daily, on specific days of the week, every N days, an on/off cycle (e.g. 21 on / 7 off), specific days of the month, or as-needed (PRN, no reminders), in 12h or 24h.
+- **As-needed (PRN) meds.** A "Log dose" button (and `log_dose` service) records each dose taken, with a last-taken timestamp, a doses-today count, and a supply decrement, so meds taken several times a day stay tracked.
+- **Glanceable, fail-safe status.** A per-patient red/green "needs attention" sensor that trips on elapsed time alone and errs toward "problem"; wire it to a panel, light, or siren.
+- **Actionable reminders.** Nagging, missed-dose escalation, and a "Mark given" button from the notification, routed to each patient's own notify target.
 - **Supply & refill tracking.** Per-medication counts that decrement as doses are given, with doses-left, a run-out estimate, a low-stock red flag at your reorder threshold, and a refill reminder.
-- **Flexible scheduling.** Each dose daily, on specific days of the week, every N days, an on/off cycle (e.g. 21 on / 7 off), specific days of the month, or as needed (PRN, no reminders), 12h or 24h display.
-- **Actionable reminders.** Nagging, missed-dose escalation, and a "Mark given" button from the notification, routed per patient.
+- **Next-dose sensor and calendar.** A `next_dose` timestamp and a read-only medication calendar per patient, handy for "remind me before" automations and seeing long cycles laid out.
 - **Zero-edit dashboard.** Auto-discovers every patient and dose, no names to maintain.
 - **Fail-safe by design.** Overdue detection trips on elapsed time alone and errs toward "problem", marking is reversible, dose state survives restarts, and every guard warns rather than blocks. See [Safety & fail-safes](#safety--fail-safes).
-
-## What it does
-
-- 🖱️ **UI configuration:** add a patient, choose who to notify, then add doses (a time + the medications) from Settings. No YAML for the schedule.
-- 🗓️ **Flexible scheduling:** each dose can be daily, limited to specific days of the week (e.g. Mondays only, or Mon/Wed/Fri), every N days from a start date (e.g. every other day), an on/off cycle (e.g. 21 days on / 7 off), or on specific days of the month (e.g. the 1st, or the 1st and 15th; a day past a short month's length falls on its last day). It only reminds and counts on the days it is due.
-- 💊 **As-needed (PRN) meds:** mark a dose "as needed" and it never reminds, nags, or shows as overdue, and it stays off the next-dose sensor and calendar (no schedule). Each PRN dose gets a **"Log dose" button**, press it every time you take the med (pain meds, rescue inhalers, etc., including several times a day) and it decrements that medication's supply, so refill and run-out tracking stay accurate. A **"last taken" timestamp sensor** records when you last logged it (and the `log_dose` service can record a dose taken earlier than now), so you can see how long it has been and build a "not before N hours" guard on it. A **doses-today counter** tallies how many you have logged since the daily reset, so "how many have I taken today?" is one glance.
-- 📅 **Next-dose sensor and calendar:** each patient gets a `sensor.<patient>_next_dose` (timestamp of the next upcoming dose) and a `calendar.<patient>_medication` that lays the schedule out as calendar events, handy for the every-N-days and on/off-cycle schedules.
-- 👥 **Per-patient notify target:** pick the person or group to remind for each patient in the UI (e.g. one dog's reminders to you, another's to a partner).
-- 🔀 **Auto-created entities:** each dose becomes a `switch` (on = given today), grouped under a device per patient.
-- ♻️ **Daily reset:** every dose flips back to "not given" at 00:01.
-- 💾 **Restart-safe:** dose state survives Home Assistant restarts.
-- 🔔 **Reminders via companion automations:** the included `companion-automations.yaml` reads the dose switches and sends actionable, nagging, missed-dose notifications (the current version keeps notifications in YAML so you reuse proven logic).
-- 📦 **Supply & refill tracking (optional):** track how many doses of a medication you have on hand. It counts down as doses are marked given, shows doses left and an estimated run-out date, flags low stock red at your threshold, and can send a refill reminder.
-- ⏰ **Early-dose warning (optional):** if a dose is marked given well before its scheduled time, a companion automation warns the caretaker, with an "undo" button to un-mark it if it was a mistake. A soft over-dose guard that flags likely slips without blocking you.
 
 ## Why entities + YAML (not all-in-one, yet)
 
@@ -144,11 +134,12 @@ They send a reminder when a dose is due and not given, nag every 15 minutes for
 45 minutes, then escalate once as a time-sensitive "missed" alert. Tapping
 **Mark given** turns the dose's switch on and clears the notification.
 
-### 4. Dashboard (optional)
+## Dashboard
 
-The bundled [`lovelace-card.yaml`](lovelace-card.yaml) is an auto-discovering,
-day-of-week-aware dashboard that needs **no editing**: it finds every patient and
-dose automatically, so adding, renaming, or removing a patient just updates it.
+A dashboard is optional, but the bundled [`lovelace-card.yaml`](lovelace-card.yaml)
+is an auto-discovering, day-of-week-aware one that needs **no editing**: it finds
+every patient and dose automatically, so adding, renaming, or removing a patient
+just updates it.
 Six parts:
 
 1. a red/green status panel (from the `needs_attention` sensors),
