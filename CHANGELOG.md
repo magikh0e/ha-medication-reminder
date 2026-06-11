@@ -5,7 +5,9 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.18.0] - 2026-06-10
+### Added
+- As-needed (PRN) doses now track **how many were taken today**. Each PRN dose gains a `sensor.<patient>_<med>_doses_today` count that increments on every Log dose press (or `log_dose` call) and resets at the patient's daily reset time, restart-safe, so you can answer "how many doses of this have I had today?" at a glance. The bundled dashboards' "As needed (PRN)" card now shows it next to the Log dose button and last-taken time (re-copy the dashboard to pick it up). (Suggested by a community member.)
 ### Fixed
 - Dashboards: the status banner no longer throws a template error when another integration also exposes a `*_needs_attention` sensor (e.g. a plant monitor). The medication banner now only counts sensors that carry a `patient` attribute. Re-copy `lovelace-card.yaml` or `lovelace-card-2col.yaml` to pick this up.
 

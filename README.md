@@ -38,7 +38,7 @@ auto-created entities? Use this.
 
 - 🖱️ **UI configuration:** add a patient, choose who to notify, then add doses (a time + the medications) from Settings. No YAML for the schedule.
 - 🗓️ **Flexible scheduling:** each dose can be daily, limited to specific days of the week (e.g. Mondays only, or Mon/Wed/Fri), every N days from a start date (e.g. every other day), an on/off cycle (e.g. 21 days on / 7 off), or on specific days of the month (e.g. the 1st, or the 1st and 15th; a day past a short month's length falls on its last day). It only reminds and counts on the days it is due.
-- 💊 **As-needed (PRN) meds:** mark a dose "as needed" and it never reminds, nags, or shows as overdue, and it stays off the next-dose sensor and calendar (no schedule). Each PRN dose gets a **"Log dose" button**, press it every time you take the med (pain meds, rescue inhalers, etc., including several times a day) and it decrements that medication's supply, so refill and run-out tracking stay accurate. A **"last taken" timestamp sensor** records when you last logged it (and the `log_dose` service can record a dose taken earlier than now), so you can see how long it has been and build a "not before N hours" guard on it.
+- 💊 **As-needed (PRN) meds:** mark a dose "as needed" and it never reminds, nags, or shows as overdue, and it stays off the next-dose sensor and calendar (no schedule). Each PRN dose gets a **"Log dose" button**, press it every time you take the med (pain meds, rescue inhalers, etc., including several times a day) and it decrements that medication's supply, so refill and run-out tracking stay accurate. A **"last taken" timestamp sensor** records when you last logged it (and the `log_dose` service can record a dose taken earlier than now), so you can see how long it has been and build a "not before N hours" guard on it. A **doses-today counter** tallies how many you have logged since the daily reset, so "how many have I taken today?" is one glance.
 - 📅 **Next-dose sensor and calendar:** each patient gets a `sensor.<patient>_next_dose` (timestamp of the next upcoming dose) and a `calendar.<patient>_medication` that lays the schedule out as calendar events, handy for the every-N-days and on/off-cycle schedules.
 - 👥 **Per-patient notify target:** pick the person or group to remind for each patient in the UI (e.g. one dog's reminders to you, another's to a partner).
 - 🔀 **Auto-created entities:** each dose becomes a `switch` (on = given today), grouped under a device per patient.
@@ -299,6 +299,10 @@ amount. Each tracked medication then gets:
   for **as-needed (PRN)** doses. **When that med was last logged** (button tap or
   the `log_dose` service), restart-safe. Drives the dashboard's "last taken" line
   and is the basis for a PRN over-dose guard (warn if logged again too soon).
+- `sensor.<patient>_<med>_doses_today` - only created for **as-needed (PRN)**
+  doses. **How many doses were logged so far today**, incrementing on each Log
+  dose press (or `log_dose` call) and resetting at the patient's daily reset
+  time, restart-safe. Answers "how many have I taken today?".
 - `binary_sensor.<patient>_supplies_low` (device class `problem`) - **red when any
   of that patient's supplies reaches its threshold**, with a `low` list of which
   medications are short.

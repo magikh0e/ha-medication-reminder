@@ -2,9 +2,10 @@
 
 * `sensor.<patient>_next_dose` is a timestamp of the soonest dose still in the
   future, computed from each dose's schedule (any schedule type) via is_due.
-* one `sensor.<patient>_<med>_last_taken` per as-needed (PRN) dose, a timestamp
-  of when that med was last logged (button tap or the log_dose service), which
-  survives restarts.
+* per as-needed (PRN) dose: a `sensor.<patient>_<med>_last_taken` timestamp of
+  when that med was last logged, and a `sensor.<patient>_<med>_doses_today`
+  count of how many times it was logged since the daily reset. Both survive
+  restarts.
 """
 
 from __future__ import annotations
@@ -21,15 +22,20 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.event import async_track_time_interval
+from homeassistant.helpers.event import (
+    async_track_time_change,
+    async_track_time_interval,
+)
 from homeassistant.util import slugify
 
 from .const import (
     CONF_DOSES,
     CONF_MEDS,
     CONF_PATIENT,
+    CONF_RESET_TIME,
     CONF_SCHEDULE_TYPE,
     CONF_TIME,
+    DEFAULT_RESET_TIME,
     DOMAIN,
     EVENT_DOSE_LOGGED,
     SCHEDULE_PRN,
@@ -47,17 +53,20 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Create the next-dose sensor, plus a last-taken sensor per PRN dose."""
+    """Create the next-dose sensor, plus last-taken and doses-today per PRN dose."""
     patient: str = entry.data[CONF_PATIENT]
     doses: list[dict[str, Any]] = entry.options.get(CONF_DOSES, [])
+    reset_time: str = entry.options.get(CONF_RESET_TIME, DEFAULT_RESET_TIME)
     entities: list[SensorEntity] = [MedicationNextDoseSensor(entry, patient)]
-    entities.extend(
-        MedicationLastTakenSensor(
-            entry, patient, str(dose[CONF_TIME])[:5], str(dose[CONF_MEDS])
+    for dose in doses:
+        if (dose.get(CONF_SCHEDULE_TYPE) or "") != SCHEDULE_PRN:
+            continue
+        time = str(dose[CONF_TIME])[:5]
+        meds = str(dose[CONF_MEDS])
+        entities.append(MedicationLastTakenSensor(entry, patient, time, meds))
+        entities.append(
+            MedicationDosesTodaySensor(entry, patient, time, meds, reset_time)
         )
-        for dose in doses
-        if (dose.get(CONF_SCHEDULE_TYPE) or "") == SCHEDULE_PRN
-    )
     async_add_entities(entities)
 
 
@@ -178,4 +187,116 @@ class MedicationLastTakenSensor(RestoreSensor):
             return
         when = dt_util.parse_datetime(data.get("logged_at") or "") or dt_util.now()
         self._value = dt_util.as_local(when)
+        self.async_write_ha_state()
+
+
+class MedicationDosesTodaySensor(RestoreSensor):
+    """Count of PRN doses logged so far today (since the daily reset).
+
+    Increments on each Log dose press or `log_dose` call for this med, and
+    resets to 0 at the patient's daily reset time. Restart-safe, and it drops
+    back to 0 on restore if the stored count is from an earlier day. Answers
+    "how many doses of this have I taken today?" without changing the button.
+    """
+
+    _attr_should_poll = False
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:counter"
+    _attr_native_unit_of_measurement = "doses"
+
+    def __init__(
+        self, entry: ConfigEntry, patient: str, time: str, meds: str, reset_time: str
+    ) -> None:
+        self._patient = patient
+        self._meds = meds
+        self._reset_time = reset_time
+        self._count = 0
+        self._period: str | None = None
+        self._attr_name = f"{meds} doses today"
+        self._attr_unique_id = (
+            f"{entry.entry_id}_dosestoday_{slugify(time + '_' + meds)}"
+        )
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, entry.entry_id)},
+            "name": patient,
+            "manufacturer": "Medication Reminder",
+        }
+
+    def _reset_hms(self) -> tuple[int, int, int]:
+        """The daily reset time as (hour, minute, second); 00:01:00 on bad input."""
+        try:
+            parts = [int(p) for p in str(self._reset_time).split(":")]
+            h, m = parts[0], parts[1]
+            s = parts[2] if len(parts) > 2 else 0
+        except (ValueError, IndexError, TypeError):
+            h, m, s = 0, 1, 0
+        return h % 24, m % 60, s % 60
+
+    def _period_key(self) -> str:
+        """The date of the counting period now belongs to (reset to reset)."""
+        now = dt_util.now()
+        h, m, s = self._reset_hms()
+        boundary = now.replace(hour=h, minute=m, second=s, microsecond=0)
+        if now < boundary:
+            boundary -= timedelta(days=1)
+        return boundary.date().isoformat()
+
+    def _roll(self) -> None:
+        """Zero the count if we have crossed into a new reset period."""
+        cur = self._period_key()
+        if self._period != cur:
+            self._period = cur
+            self._count = 0
+
+    @property
+    def native_value(self) -> int:
+        return self._count
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {
+            "patient": self._patient,
+            "medications": self._meds,
+            "period": self._period,
+        }
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        # Restore the count, but only if it is still from today's reset period.
+        cur = self._period_key()
+        last = await self.async_get_last_sensor_data()
+        last_state = await self.async_get_last_state()
+        prev_period = last_state.attributes.get("period") if last_state else None
+        if last is not None and last.native_value is not None and prev_period == cur:
+            try:
+                self._count = int(last.native_value)
+            except (ValueError, TypeError):
+                self._count = 0
+        self._period = cur
+        self.async_on_remove(
+            self.hass.bus.async_listen(EVENT_DOSE_LOGGED, self._on_dose_logged)
+        )
+        h, m, s = self._reset_hms()
+        self.async_on_remove(
+            async_track_time_change(
+                self.hass, self._on_reset, hour=h, minute=m, second=s
+            )
+        )
+
+    @callback
+    def _on_dose_logged(self, event: Event) -> None:
+        data = event.data
+        if (
+            data.get("patient") != self._patient
+            or data.get("medications") != self._meds
+        ):
+            return
+        self._roll()
+        self._count += 1
+        self.async_write_ha_state()
+
+    @callback
+    def _on_reset(self, _now: datetime) -> None:
+        self._period = self._period_key()
+        self._count = 0
         self.async_write_ha_state()
