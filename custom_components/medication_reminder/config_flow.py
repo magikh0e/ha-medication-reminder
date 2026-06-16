@@ -18,7 +18,9 @@ from .const import (
     CONF_DAYS,
     CONF_DOSES,
     CONF_INTERVAL_DAYS,
+    CONF_MAX_PER_DAY,
     CONF_MEDS,
+    CONF_MIN_INTERVAL_HOURS,
     CONF_MONTH_DAYS,
     CONF_NAG_INTERVAL,
     CONF_NAG_MINUTES,
@@ -39,6 +41,8 @@ from .const import (
     DEFAULT_CYCLE_ON,
     DEFAULT_DAYS,
     DEFAULT_INTERVAL_DAYS,
+    DEFAULT_MAX_PER_DAY,
+    DEFAULT_MIN_INTERVAL_HOURS,
     DEFAULT_MONTH_DAYS,
     DEFAULT_NAG_INTERVAL,
     DEFAULT_NAG_MINUTES,
@@ -172,6 +176,32 @@ def _cycle_selector(low: int) -> selector.NumberSelector:
             step=1,
             mode=selector.NumberSelectorMode.BOX,
             unit_of_measurement="days",
+        )
+    )
+
+
+def _min_interval_selector() -> selector.NumberSelector:
+    """Hours between as-needed doses for the over-dose guard (0 = no limit)."""
+    return selector.NumberSelector(
+        selector.NumberSelectorConfig(
+            min=0,
+            max=48,
+            step=0.5,
+            mode=selector.NumberSelectorMode.BOX,
+            unit_of_measurement="hours",
+        )
+    )
+
+
+def _max_per_day_selector() -> selector.NumberSelector:
+    """Daily cap on as-needed doses for the over-dose guard (0 = no limit)."""
+    return selector.NumberSelector(
+        selector.NumberSelectorConfig(
+            min=0,
+            max=24,
+            step=1,
+            mode=selector.NumberSelectorMode.BOX,
+            unit_of_measurement="doses",
         )
     )
 
@@ -319,7 +349,14 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
             elif stype == SCHEDULE_PRN:
                 # As needed: no schedule fields. days are ignored by is_due()
                 # for PRN, but keep the key present for a uniform dose shape.
+                # The over-dose guard (min interval / max per day) applies here.
                 dose[CONF_DAYS] = list(DEFAULT_DAYS)
+                dose[CONF_MIN_INTERVAL_HOURS] = float(
+                    user_input.get(CONF_MIN_INTERVAL_HOURS, DEFAULT_MIN_INTERVAL_HOURS)
+                )
+                dose[CONF_MAX_PER_DAY] = int(
+                    user_input.get(CONF_MAX_PER_DAY, DEFAULT_MAX_PER_DAY)
+                )
             else:
                 dose[CONF_DAYS] = user_input.get(CONF_DAYS) or list(DEFAULT_DAYS)
             doses.append(dose)
@@ -349,6 +386,12 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
                     CONF_MONTH_DAYS,
                     default=[str(d) for d in DEFAULT_MONTH_DAYS],
                 ): _month_days_selector(),
+                vol.Optional(
+                    CONF_MIN_INTERVAL_HOURS, default=DEFAULT_MIN_INTERVAL_HOURS
+                ): _min_interval_selector(),
+                vol.Optional(
+                    CONF_MAX_PER_DAY, default=DEFAULT_MAX_PER_DAY
+                ): _max_per_day_selector(),
             }
         )
         return self.async_show_form(step_id="add_dose", data_schema=schema)

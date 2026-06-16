@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.0] - 2026-06-15
+### Added
+- Over-dose guard for as-needed (PRN) doses. When you add a PRN dose you can set a **minimum number of hours between doses** and a **maximum number of doses per day** (0 for either means no limit). With at least one set, the dose gains a `binary_sensor.<patient>_<med>_dose_guard` (device class `problem`) that turns on when taking another dose right now would be too soon (within the interval since the last log) or would exceed the daily cap. It only warns, never blocks, and exposes `too_soon`, `over_cap`, `next_allowed`, `doses_today`, and `remaining_today` attributes for dashboards and automations. This is the "no less than 4 hours apart" pain-med case. (Idea from community member IOT7712.)
+
 ## [0.18.5] - 2026-06-15
 ### Fixed
 - README screenshots render correctly on the HACS info page again. Repository housekeeping moved the images into an `images/` folder; the previous release's README still pointed at the old paths, so this release ships the updated README with absolute image URLs. No change to the integration itself.

@@ -44,10 +44,14 @@
           "interval_days": "Every N days (for the interval option)",
           "cycle_on": "Days on (for the on/off cycle)",
           "cycle_off": "Days off (for the on/off cycle)",
-          "anchor_date": "Start date (for the interval or cycle option)"
+          "anchor_date": "Start date (for the interval or cycle option)",
+          "min_interval_hours": "Minimum hours between doses (as-needed only; 0 = no limit)",
+          "max_per_day": "Max doses per day (as-needed only; 0 = no limit)"
         },
         "data_description": {
-          "meds": "Separate multiple medications with &, +, or a comma. A slash only splits with spaces around it, so a name like 'Carbimazol 5mg (1/2)' stays whole."
+          "meds": "Separate multiple medications with &, +, or a comma. A slash only splits with spaces around it, so a name like 'Carbimazol 5mg (1/2)' stays whole.",
+          "min_interval_hours": "For an as-needed medication, warn (never block) when it is logged again sooner than this many hours, e.g. a pain med no less than 4 hours apart.",
+          "max_per_day": "For an as-needed medication, warn once this many doses have been logged today."
         }
       },
       "remove_dose": {

@@ -35,7 +35,7 @@ setup with no custom integration? Use that one; otherwise use this.
 
 - **Pets and people, all in the UI.** Add patients and their dose schedule from Settings, no YAML; entities auto-create per patient and survive restarts.
 - **Flexible scheduling.** Each dose daily, on specific days of the week, every N days, an on/off cycle (e.g. 21 on / 7 off), specific days of the month, or as-needed (PRN, no reminders), in 12h or 24h.
-- **As-needed (PRN) meds.** A "Log dose" button (and `log_dose` service) records each dose taken, with a last-taken timestamp, a doses-today count, and a supply decrement, so meds taken several times a day stay tracked.
+- **As-needed (PRN) meds.** A "Log dose" button (and `log_dose` service) records each dose taken, with a last-taken timestamp, a doses-today count, and a supply decrement, so meds taken several times a day stay tracked. Optional **over-dose guard**: set a minimum interval and/or a daily cap, and a `problem` sensor warns (never blocks) when another dose now would be too soon or over the cap.
 - **Glanceable, fail-safe status.** A per-patient red/green "needs attention" sensor that trips on elapsed time alone and errs toward "problem"; wire it to a panel, light, or siren.
 - **Actionable reminders.** Nagging, missed-dose escalation, and a "Mark given" button from the notification, routed to each patient's own notify target.
 - **Supply & refill tracking.** Per-medication counts that decrement as doses are given, with doses-left, a run-out estimate, a low-stock red flag at your reorder threshold, and a refill reminder.
@@ -333,6 +333,12 @@ amount. Each tracked medication then gets:
   doses. **How many doses were logged so far today**, incrementing on each Log
   dose press (or `log_dose` call) and resetting at the patient's daily reset
   time, restart-safe. Answers "how many have I taken today?".
+- `binary_sensor.<patient>_<med>_dose_guard` (device class `problem`) - only
+  created for an **as-needed (PRN)** dose that sets a minimum interval and/or a
+  daily cap. **Red when another dose now would be too soon** (within the minimum
+  hours since the last log) or over the daily cap; otherwise off. It warns, never
+  blocks. Attributes: `too_soon`, `over_cap`, `next_allowed` (when it is safe
+  again), `doses_today`, `remaining_today`, `min_interval_hours`, `max_per_day`.
 - `binary_sensor.<patient>_supplies_low` (device class `problem`) - **red when any
   of that patient's supplies reaches its threshold**, with a `low` list of which
   medications are short.
@@ -391,8 +397,9 @@ safety-relevant behaviours:
 
 **By design, every guard warns, it never blocks.** The integration will not stop
 you marking a dose early or twice; it surfaces the risk and leaves the decision to
-the caretaker. A fuller over-dose guard (a minimum interval between doses and a
-max-per-day cap) is on the [Roadmap](#roadmap).
+the caretaker. For as-needed (PRN) meds you can set a minimum interval between
+doses and a daily cap; the `<med>_dose_guard` sensor goes red when another dose
+now would be too soon or over the cap (the "no less than 4 hours apart" case).
 
 ## Why entities + YAML (not all-in-one, yet)
 
@@ -407,16 +414,16 @@ territory. A future version may move reminders into the integration itself.
 **Planned:**
 
 - Optional in-integration notifications/nagging (so the YAML companion automations become optional).
-- HACS default-store submission once validated.
-- Over-dose guard: a minimum interval between doses and a max-per-day cap, warning before a dose is marked given too soon or too often. The early-dose warning (0.10.0) and PRN taken-time recording (0.17.0, the `<med>_last_taken` sensor) are the groundwork; the interval and daily-cap warnings build on them next. (Idea from community member IOT7712.)
 - Edit an existing dose in place (e.g. fix its time) without removing and re-adding it. (Suggested by a community member.)
-- Per-medication detail: optional strength/mg, a dosage summary (e.g. "2 tablets twice a day"), and a full name separate from the short reminder name, plus a "current medications" summary view for handing a provider the "what" rather than the "when". (Suggested by a community member.)
+- Per-medication detail: optional strength/mg, brand, the condition it was prescribed for, a dosage summary (e.g. "2 tablets twice a day"), and a full name separate from the short reminder name, plus a "current medications" summary view for handing a provider the "what" rather than the "when". (Suggested by community members.)
 
 **Shipped from the roadmap:**
 
 - More schedule types beyond day-of-week: every-N-days (0.11.0), on/off cycles e.g. 21 on / 7 off (0.12.0), as-needed PRN (0.14.0), and day-of-month / monthly (0.15.0). (Suggested by community members.)
 - As-needed (PRN) display polish: PRN doses named by their medication (e.g. "Ibuprofen (as needed)"), with the placeholder 00:00 time dropped from the schedule view (0.15.1). (Suggested by a community member.)
 - Specify the time a dose was taken: the `medication_reminder.mark_given` service with `given_at` for scheduled (switch) doses (0.16.0), and `medication_reminder.log_dose` with `taken_at` for as-needed (PRN) doses (0.17.0), each updating a `<med>_last_taken` sensor. (Suggested by community members.)
+- HACS default-store submission: validated and submitted; the PR sits in the maintainer review queue, and the integration appears in the default HACS store once it merges.
+- Over-dose guard for as-needed (PRN) meds: a minimum interval between doses and a max-per-day cap, surfaced as a `<med>_dose_guard` problem sensor that warns when another dose now would be too soon or over the cap (0.19.0). Builds on the early-dose warning (0.10.0) and PRN taken-time recording (0.17.0). (Idea from community member IOT7712.)
 
 ## Acknowledgements
 

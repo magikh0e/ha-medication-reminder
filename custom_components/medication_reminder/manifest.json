@@ -6,5 +6,5 @@
   "documentation": "https://github.com/magikh0e/ha-medication-reminder",
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/magikh0e/ha-medication-reminder/issues",
-  "version": "0.18.5"
+  "version": "0.19.0"
 }

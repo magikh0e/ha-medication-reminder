@@ -5,7 +5,7 @@ triggering the integration package __init__, which does import HA). That keeps
 these tests fast and dependency-free, needing only pytest.
 """
 import importlib.util
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 _CONST = (
@@ -23,6 +23,11 @@ doses_per_week = const.doses_per_week
 WEEKDAYS = const.WEEKDAYS
 split_medications = const.split_medications
 meds_contains = const.meds_contains
+dose_min_interval_hours = const.dose_min_interval_hours
+dose_max_per_day = const.dose_max_per_day
+next_dose_allowed = const.next_dose_allowed
+dose_too_soon = const.dose_too_soon
+dose_over_cap = const.dose_over_cap
 
 # A known Monday, for weekday tests that don't hardcode the mapping.
 MON = date(2026, 6, 1)
@@ -260,3 +265,42 @@ def test_meds_contains_case_insensitive():
 def test_meds_contains_empty_is_false():
     assert meds_contains("Med A", "") is False
     assert meds_contains("", "Med A") is False
+
+
+def test_dose_min_interval_hours():
+    assert dose_min_interval_hours({"min_interval_hours": 4}) == 4.0
+    assert dose_min_interval_hours({}) == 0.0
+    assert dose_min_interval_hours({"min_interval_hours": "bad"}) == 0.0
+    assert dose_min_interval_hours({"min_interval_hours": -2}) == 0.0
+
+
+def test_dose_max_per_day():
+    assert dose_max_per_day({"max_per_day": 3}) == 3
+    assert dose_max_per_day({}) == 0
+    assert dose_max_per_day({"max_per_day": "x"}) == 0
+
+
+def test_next_dose_allowed():
+    last = datetime(2026, 6, 1, 8, 0)
+    assert next_dose_allowed(last, 4) == datetime(2026, 6, 1, 12, 0)
+    assert next_dose_allowed(last, 0) is None
+    assert next_dose_allowed(None, 4) is None
+
+
+def test_dose_too_soon():
+    last = datetime(2026, 6, 1, 8, 0)
+    # 2 hours in, 4-hour minimum -> too soon
+    assert dose_too_soon(last, 4, datetime(2026, 6, 1, 10, 0)) is True
+    # exactly at the boundary -> allowed
+    assert dose_too_soon(last, 4, datetime(2026, 6, 1, 12, 0)) is False
+    assert dose_too_soon(last, 4, datetime(2026, 6, 1, 14, 0)) is False
+    # no interval / no last dose -> never too soon
+    assert dose_too_soon(last, 0, datetime(2026, 6, 1, 8, 30)) is False
+    assert dose_too_soon(None, 4, datetime(2026, 6, 1, 8, 30)) is False
+
+
+def test_dose_over_cap():
+    assert dose_over_cap(3, 3) is True
+    assert dose_over_cap(4, 3) is True
+    assert dose_over_cap(2, 3) is False
+    assert dose_over_cap(5, 0) is False  # 0 = no cap

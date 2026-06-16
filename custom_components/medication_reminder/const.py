@@ -2,7 +2,7 @@
 
 import calendar
 import re
-from datetime import date
+from datetime import date, timedelta
 
 DOMAIN = "medication_reminder"
 
@@ -36,6 +36,12 @@ CONF_ANCHOR_DATE = "anchor_date"
 CONF_CYCLE_ON = "cycle_on"
 CONF_CYCLE_OFF = "cycle_off"
 CONF_MONTH_DAYS = "month_days"
+
+# Over-dose guard for as-needed (PRN) doses: warn when taken too soon or too often.
+CONF_MIN_INTERVAL_HOURS = "min_interval_hours"
+CONF_MAX_PER_DAY = "max_per_day"
+DEFAULT_MIN_INTERVAL_HOURS = 0
+DEFAULT_MAX_PER_DAY = 0
 
 # Supply / refill tracking (per medication).
 CONF_SUPPLIES = "supplies"
@@ -211,3 +217,40 @@ def doses_per_week(data):
         return len(_month_days(data)) * 12.0 / 52.0
     days = data.get(CONF_DAYS) or WEEKDAYS
     return float(len(days))
+
+
+def dose_min_interval_hours(data):
+    """The minimum hours between as-needed doses (0 means no limit)."""
+    try:
+        return max(float(data.get(CONF_MIN_INTERVAL_HOURS) or 0), 0.0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def dose_max_per_day(data):
+    """The maximum as-needed doses allowed per day (0 means no limit)."""
+    try:
+        return max(int(data.get(CONF_MAX_PER_DAY) or 0), 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def next_dose_allowed(last_taken, min_interval_hours):
+    """When another dose is allowed after `last_taken`, or None.
+
+    None when there is no minimum interval or no recorded last dose.
+    """
+    if not last_taken or not min_interval_hours:
+        return None
+    return last_taken + timedelta(hours=min_interval_hours)
+
+
+def dose_too_soon(last_taken, min_interval_hours, now):
+    """Whether taking another dose at `now` is inside the minimum interval."""
+    allowed = next_dose_allowed(last_taken, min_interval_hours)
+    return bool(allowed and now < allowed)
+
+
+def dose_over_cap(doses_today, max_per_day):
+    """Whether the daily cap has already been reached."""
+    return bool(max_per_day and doses_today >= max_per_day)
