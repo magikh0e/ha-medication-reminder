@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.3] - 2026-06-15
+### Changed
+- Dropped the alpha label now that the integration has been through real-world user testing. The README and repository description no longer mark it as alpha. The safety guidance stays: it is a reminder aid, not a medical device, so confirm dosing with your doctor or vet.
+
 ## [0.18.2] - 2026-06-15
 ### Added
 - Brand icon bundled with the integration (`custom_components/medication_reminder/brand/icon.png` and `icon@2x.png`), so the Medication Reminder logo shows on the HACS card and in Settings, Devices & Services. Home Assistant 2026.3 and later loads brand images directly from the integration, so no entry in the home-assistant/brands repository is needed; on older versions there is no change.
