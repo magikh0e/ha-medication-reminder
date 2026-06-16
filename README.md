@@ -1,14 +1,14 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/magikh0e/ha-medication-reminder-hacs/main/med-reminder.png" alt="Medication Reminder logo" width="180">
+  <img src="https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/med-reminder.png" alt="Medication Reminder logo" width="180">
 </p>
 
 # Medication Reminder (Home Assistant integration)
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 ![HACS: Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)
-![Release](https://img.shields.io/github/v/release/magikh0e/ha-medication-reminder-hacs)
+![Release](https://img.shields.io/github/v/release/magikh0e/ha-medication-reminder)
 
-[![Open your Home Assistant instance and add this repository to HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=magikh0e&repository=ha-medication-reminder-hacs&category=integration)
+[![Open your Home Assistant instance and add this repository to HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=magikh0e&repository=ha-medication-reminder&category=integration)
 
 A Home Assistant custom integration for tracking medication doses, for pets *and*
 people. Add patients and their dose schedule **in the UI**; the integration
@@ -17,11 +17,11 @@ with the included companion automations for actionable, nagging, missed-dose
 reminders synced across every Companion app.
 
 This is the UI-driven sibling of the YAML package at
-[ha-medication-reminder](https://github.com/magikh0e/ha-medication-reminder).
+[ha-medication-reminder-yaml](https://github.com/magikh0e/ha-medication-reminder-yaml).
 Prefer pure YAML? Use that one. Want point-and-click dose management with
 auto-created entities? Use this.
 
-![Medication Reminder dashboard](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder-hacs/main/dashboard.png?v=3)
+![Medication Reminder dashboard](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/dashboard.png?v=3)
 
 > ⚠️ **Important.** This is a reminder aid, **not** a medical device. Validate it
 > on your own Home Assistant and keep a backup reminder method until you trust it,
@@ -48,7 +48,7 @@ auto-created entities? Use this.
 Use the **Open your Home Assistant instance** button at the top of this page to add the repo to HACS in one step, then install and restart, or do it manually:
 
 1. HACS, top-right menu, **Custom repositories**.
-2. Add `https://github.com/magikh0e/ha-medication-reminder-hacs` as an **Integration**.
+2. Add `https://github.com/magikh0e/ha-medication-reminder` as an **Integration**.
 3. Install **Medication Reminder**, then restart Home Assistant.
 
 (Or copy `custom_components/medication_reminder/` into your HA `config/custom_components/` and restart.)
@@ -101,13 +101,13 @@ does **not** need a re-import; only re-import when a release note says a
 blueprint itself changed.
 
 - Reminders and missed-dose escalation (core):
-  `https://github.com/magikh0e/ha-medication-reminder-hacs/blob/main/blueprints/automation/medication_reminder/medication_reminders.yaml`
+  `https://github.com/magikh0e/ha-medication-reminder/blob/main/blueprints/automation/medication_reminder/medication_reminders.yaml`
 - Mark given from notification (core, pairs with the above):
-  `https://github.com/magikh0e/ha-medication-reminder-hacs/blob/main/blueprints/automation/medication_reminder/mark_given.yaml`
+  `https://github.com/magikh0e/ha-medication-reminder/blob/main/blueprints/automation/medication_reminder/mark_given.yaml`
 - Early-dose warning (optional):
-  `https://github.com/magikh0e/ha-medication-reminder-hacs/blob/main/blueprints/automation/medication_reminder/early_dose.yaml`
+  `https://github.com/magikh0e/ha-medication-reminder/blob/main/blueprints/automation/medication_reminder/early_dose.yaml`
 - Low-supply refill reminder (optional):
-  `https://github.com/magikh0e/ha-medication-reminder-hacs/blob/main/blueprints/automation/medication_reminder/low_supply.yaml`
+  `https://github.com/magikh0e/ha-medication-reminder/blob/main/blueprints/automation/medication_reminder/low_supply.yaml`
 
 **Or copy the YAML.** Paste the automations from
 [`companion-automations.yaml`](companion-automations.yaml) into your
@@ -156,7 +156,7 @@ same cards out as a full-width status banner above two columns, sized to fill a
 2-column-wide [Sections](https://www.home-assistant.io/dashboards/sections/)
 view section: add a section, set its width to 2, and paste it as a manual card.
 
-![Single-column dashboard layout](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder-hacs/main/dashboard-1col.png?v=2)
+![Single-column dashboard layout](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/dashboard-1col.png?v=2)
 
 *The auto-discovering single-column layout ([`lovelace-card.yaml`](lovelace-card.yaml)); the wide two-column variant is described just above.*
 
@@ -174,7 +174,7 @@ A simple "all OK / attention needed" panel for the top of a dashboard, driven by
 the `needs_attention` sensors. Green when nothing is overdue, red (with who and
 what) when something needs investigating. Native card, no HACS needed:
 
-![Attention needed state](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder-hacs/main/dashboard-attention-needed.png?v=3)
+![Attention needed state](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/dashboard-attention-needed.png?v=3)
 
 ```yaml
 type: markdown
@@ -222,7 +222,7 @@ and which days it applies), not just today. Auto-discovers all patients, respect
 each one's 12h/24h setting, and shows "Daily" or the specific days. Native
 markdown card, no HACS needed:
 
-![Schedule overview](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder-hacs/main/ScheduleOverview.png?v=2)
+![Schedule overview](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/ScheduleOverview.png?v=2)
 
 ```yaml
 type: markdown

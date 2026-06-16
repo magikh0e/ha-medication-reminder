@@ -3,8 +3,8 @@
   "name": "Medication Reminder",
   "codeowners": ["@magikh0e"],
   "config_flow": true,
-  "documentation": "https://github.com/magikh0e/ha-medication-reminder-hacs",
+  "documentation": "https://github.com/magikh0e/ha-medication-reminder",
   "iot_class": "local_push",
-  "issue_tracker": "https://github.com/magikh0e/ha-medication-reminder-hacs/issues",
-  "version": "0.18.3"
+  "issue_tracker": "https://github.com/magikh0e/ha-medication-reminder/issues",
+  "version": "0.18.4"
 }

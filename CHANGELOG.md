@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.4] - 2026-06-15
+### Changed
+- Renamed the repository from `ha-medication-reminder-hacs` to `ha-medication-reminder` (the HACS default store does not allow "HACS" in repository names). Updated the documentation and issue-tracker URLs, README links and images, and blueprint source URLs. The integration domain (`medication_reminder`) and your existing setup are unchanged; HACS follows the rename automatically.
+
 ## [0.18.3] - 2026-06-15
 ### Changed
 - Dropped the alpha label now that the integration has been through real-world user testing. The README and repository description no longer mark it as alpha. The safety guidance stays: it is a reminder aid, not a medical device, so confirm dosing with your doctor or vet.

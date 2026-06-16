@@ -6,7 +6,7 @@ blueprint:
     Import this alongside the dose-reminders blueprint.
   domain: automation
   author: magikh0e
-  source_url: https://github.com/magikh0e/ha-medication-reminder-hacs/blob/main/blueprints/automation/medication_reminder/mark_given.yaml
+  source_url: https://github.com/magikh0e/ha-medication-reminder/blob/main/blueprints/automation/medication_reminder/mark_given.yaml
   input:
     fallback_notify:
       name: Fallback notify target
