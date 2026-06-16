@@ -7,7 +7,6 @@ interval and on/off-cycle schedules easy to see laid out over the weeks.
 from __future__ import annotations
 
 from datetime import datetime, time as dtime, timedelta
-from typing import Any
 
 import homeassistant.util.dt as dt_util
 from homeassistant.components.calendar import CalendarEntity, CalendarEvent
@@ -76,9 +75,7 @@ class MedicationCalendar(CalendarEntity):
                     ev_end = ev_start + _EVENT_LENGTH
                     if ev_end > start and ev_start < end:
                         events.append(
-                            CalendarEvent(
-                                start=ev_start, end=ev_end, summary=summary
-                            )
+                            CalendarEvent(start=ev_start, end=ev_end, summary=summary)
                         )
                 day += timedelta(days=1)
         events.sort(key=lambda e: e.start)
