@@ -2,13 +2,15 @@
 #
 # Drop-in: this needs no editing. It discovers every patient and dose
 # automatically, so adding, renaming, or removing a patient just updates it.
-# Six parts:
+# Seven parts:
 #   1. a red/green status panel (from the needs_attention sensors)
 #   2. a summary of TODAY's scheduled doses (given / still to give, with times)
 #   3. one combined "Mark given" card with every dose due today (tap to mark)
 #   4. an "As needed (PRN)" card with a Log dose button per as-needed med
 #   5. one combined supplies card (units on hand, shown only if you track any)
 #   6. a per-patient schedule overview (every dose, time, medications, and days)
+#   7. a per-patient "current medications" list (full name, strength, brand,
+#      what it is for, dosage) for handing to a vet or doctor
 #
 # Needs two HACS cards:
 #   - auto-entities  https://github.com/thomasloven/lovelace-auto-entities
@@ -202,5 +204,22 @@ cards:
       {%- else %}
       - **{{ as_timestamp(today_at(d.attributes.dose_time)) | timestamp_custom(fmt) }}** {{ d.attributes.medications }} ({{ cadence }})
       {%- endif %}
+      {%- endfor %}
+      {% endfor %}
+
+  # 7. Per-patient "current medications" (read-only): the "what" to hand a
+  # provider, with any full name / strength / brand / condition / dosage detail
+  # you have added under Configure. Auto-discovers every patient.
+  - type: markdown
+    content: |-
+      ## 💊 Current medications
+      {% set sensors = states.sensor | selectattr('entity_id','search','_medications$') | selectattr('attributes.medications','defined') | selectattr('attributes.patient','defined') | list %}
+      {% set medsw = states.switch | selectattr('attributes.medications','defined') | list %}
+      {% for s in sensors | sort(attribute='attributes.patient') %}
+      {%- set sw = medsw | selectattr('attributes.patient','eq',s.attributes.patient) | list | first %}
+      {%- set ptype = (sw.attributes.patient_type if sw else 'person') | default('person') %}
+      ### {{ {'dog':'🐕','cat':'🐈','person':'🧑','bird':'🐦','rabbit':'🐇','other':'🐾'}.get(ptype,'💊') }} {{ s.attributes.patient }}
+      {% for m in s.attributes.medications %}
+      - **{{ m.full_name or m.name }}**{% if m.brand %} ({{ m.brand }}){% endif %}{% if m.strength %} {{ m.strength }}{% endif %}{% if m.prescribed_for %}, for {{ m.prescribed_for }}{% endif %}{% if m.dosage %}, {{ m.dosage }}{% endif %}
       {%- endfor %}
       {% endfor %}
