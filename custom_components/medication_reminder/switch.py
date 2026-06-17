@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
@@ -15,6 +16,7 @@ from homeassistant.helpers import config_validation as cv, entity_platform
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.restore_state import ExtraStoredData, RestoreEntity
+from homeassistant.helpers.storage import Store
 from homeassistant.util import slugify
 
 from .const import (
@@ -70,6 +72,19 @@ class _DoseExtraData(ExtraStoredData):
         return {"given_at": self.given_at}
 
 
+# Crash-safe store of each dose's give-time. RestoreEntity only flushes to disk
+# every ~15 min and on a graceful shutdown, so an ungraceful stop (crash, OOM,
+# power loss, hard reboot) shortly after marking a dose given would lose it and
+# revert the dose to "not given", a double-dose risk. This store is written on
+# every mark/un-mark/reset, so the given state survives those too.
+_STORAGE_VERSION = 1
+
+
+def _given_store(hass: HomeAssistant, entry_id: str) -> Store:
+    """The per-entry store mapping a dose's unique_id to its give-time (or None)."""
+    return Store(hass, _STORAGE_VERSION, f"{DOMAIN}.{entry_id}.doses")
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -83,6 +98,14 @@ async def async_setup_entry(
     nag_interval: int = entry.options.get(CONF_NAG_INTERVAL, DEFAULT_NAG_INTERVAL)
     time_format: str = entry.options.get(CONF_TIME_FORMAT, DEFAULT_TIME_FORMAT)
     doses: list[dict[str, Any]] = entry.options.get(CONF_DOSES, [])
+
+    # Crash-safe given-state: load the saved map and a coroutine to persist it.
+    store = _given_store(hass, entry.entry_id)
+    given_state: dict[str, str | None] = await store.async_load() or {}
+
+    async def _save_given() -> None:
+        await store.async_save(given_state)
+
     entities = [
         MedicationDoseSwitch(
             entry,
@@ -93,6 +116,8 @@ async def async_setup_entry(
             nag_interval,
             time_format,
             dose,
+            given_state,
+            _save_given,
         )
         for dose in doses
     ]
@@ -118,6 +143,8 @@ async def async_setup_entry(
     def _reset_all(_now) -> None:
         for entity in entities:
             entity.reset_given()
+        # One disk write for the whole reset, not one per dose.
+        hass.async_create_task(_save_given())
 
     entry.async_on_unload(
         async_track_time_change(
@@ -143,7 +170,12 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         nag_interval: int,
         time_format: str,
         dose: dict[str, Any],
+        given_state: dict[str, str | None],
+        save_given: Callable[[], Awaitable[None]],
     ) -> None:
+        # Shared crash-safe given-state map (unique_id -> give-time) and its saver.
+        self._given_state = given_state
+        self._save_given = save_given
         self._patient = patient
         self._patient_type = patient_type
         self._notify = notify_target
@@ -246,6 +278,12 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         restored = await self.async_get_last_extra_data()
         if restored is not None:
             self._given_at = restored.as_dict().get("given_at")
+        # The crash-safe store is authoritative when it has a record for this
+        # dose: it is written on every change, so it survives an ungraceful
+        # shutdown that RestoreEntity's periodic dump would miss.
+        if self._attr_unique_id in self._given_state:
+            self._given_at = self._given_state[self._attr_unique_id]
+            self._attr_is_on = self._given_at is not None
         if not self._attr_is_on:
             self._given_at = None
         elif not self._given_at and last_state is not None:
@@ -253,6 +291,11 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
             # missing): freeze its last known change time so the displayed
             # give-time stops drifting to the startup time on each restart.
             self._given_at = last_state.last_changed.isoformat()
+        # Migration: a dose marked given under a pre-store version is not in the
+        # store yet. Seed it now so it is crash-safe without waiting for a re-mark.
+        if self._attr_is_on and self._attr_unique_id not in self._given_state:
+            self._given_state[self._attr_unique_id] = self._given_at
+            await self._save_given()
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Mark this dose given now ("Take Now")."""
@@ -273,6 +316,8 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
             self._given_at = dt_util.as_local(given_at).isoformat()
         elif not was_on:
             self._given_at = dt_util.now().isoformat()
+        self._given_state[self._attr_unique_id] = self._given_at
+        await self._save_given()
         self.async_write_ha_state()
         if not was_on:
             self._fire_dose_given_event()
@@ -310,6 +355,8 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         was_on = self._attr_is_on
         self._attr_is_on = False
         self._given_at = None
+        self._given_state[self._attr_unique_id] = None
+        await self._save_given()
         self.async_write_ha_state()
         if was_on:
             self.hass.bus.async_fire(
@@ -323,7 +370,9 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
 
     @callback
     def reset_given(self) -> None:
-        """Daily reset: clear the given flag and give-time."""
+        """Daily reset: clear the given flag and give-time. The shared store is
+        saved once by the reset loop, not per dose."""
         self._attr_is_on = False
         self._given_at = None
+        self._given_state[self._attr_unique_id] = None
         self.async_write_ha_state()

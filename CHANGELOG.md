@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.2] - 2026-06-16
+### Fixed
+- A dose marked given could revert to "not given" after an ungraceful Home Assistant shutdown (crash, OOM-kill, power loss, hard reboot) shortly after it was marked, a double-dose risk. The give-time was only flushed to disk by Home Assistant's periodic restore dump (about every 15 minutes) and on a graceful stop. It is now written to a dedicated store on every mark, un-mark, and daily reset, so the given state survives ungraceful shutdowns too. Doses already marked given are migrated to the store on upgrade, and the store is removed when a patient is deleted.
+
 ## [0.20.1] - 2026-06-16
 ### Added
 - Un-mark alert: an optional companion automation and blueprint (`unmark_alert.yaml`) that notifies caretakers when a dose that was marked given is un-marked (flipped back to not given), so an accidental tap by another caretaker is visible instead of silent. Fires on the `medication_reminder_dose_undone` event; the daily reset does not trigger it.

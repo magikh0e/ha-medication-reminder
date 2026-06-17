@@ -53,7 +53,10 @@ async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> Non
 
 
 async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Clear any repair issues this patient raised when it is removed."""
+    """Clear this patient's repair issues and crash-safe dose store on removal."""
+    from .switch import _given_store
+
+    await _given_store(hass, entry.entry_id).async_remove()
     registry = ir.async_get(hass)
     prefix = f"supply_no_dose_{entry.entry_id}_"
     for dom, issue_id in list(registry.issues):

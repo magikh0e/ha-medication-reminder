@@ -432,9 +432,9 @@ safety-relevant behaviours:
 - **Reversible marking.** Un-marking a dose fires `medication_reminder_dose_undone`
   and restores the supply count, so an accidental "given" tap is fully undone, not
   left as a permanent miscount.
-- **Restart-safe state.** Dose state and the `given_at` time survive Home Assistant
-  restarts, so a reboot cannot silently lose "already given" and invite a double
-  dose.
+- **Crash-safe state.** Dose state and the `given_at` time are written to disk on
+  every change, so they survive Home Assistant restarts, crashes, and power loss
+  without silently losing "already given" and inviting a double dose.
 - **Supply run-out protection.** `binary_sensor.<patient>_supplies_low` (device
   class `problem`) flags low stock at your threshold, with doses-left and an
   estimated run-out date, plus a once-a-day refill reminder.
