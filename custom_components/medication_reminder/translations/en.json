@@ -22,6 +22,9 @@
     }
   },
   "options": {
+    "abort": {
+      "no_medications": "Add a dose first. Medication detail attaches to a medication already used in one of this patient's doses."
+    },
     "step": {
       "init": {
         "title": "Manage doses",
@@ -64,7 +67,7 @@
       },
       "add_supply": {
         "title": "Track a medication supply",
-        "description": "Count how much of a medication is on hand. It decrements each time a dose containing this medication is marked given, flags low at your threshold, and estimates a run-out date from the schedule. Use the medication name exactly as it appears in the dose (e.g. Keppra).",
+        "description": "Count how much of a medication is on hand. It decrements each time a dose containing this medication is marked given, flags low at your threshold, and estimates a run-out date from the schedule. Pick the medication from your doses.",
         "data": {
           "supply_med": "Medication name",
           "supply_units": "Units on hand now",
@@ -81,7 +84,7 @@
       },
       "medication_detail": {
         "title": "Medication detail",
-        "description": "Optional reference info for a medication, kept separate from the short dose name. Use the name exactly as it appears in a dose. Saving a name that already has detail updates it.",
+        "description": "Optional reference info for a medication, kept separate from the short dose name. Pick a medication from this patient's doses; saving detail for one that already has it updates it.",
         "data": {
           "med_name": "Medication name",
           "full_name": "Full name (optional)",

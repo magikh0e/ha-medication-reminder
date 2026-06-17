@@ -66,6 +66,7 @@ from .const import (
     SCHEDULE_INTERVAL,
     SCHEDULE_MONTHLY,
     SCHEDULE_PRN,
+    split_medications,
 )
 
 
@@ -425,10 +426,23 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
         )
         return self.async_show_form(step_id="remove_dose", data_schema=schema)
 
+    def _dose_medications(self) -> list[str]:
+        """Distinct medications used across this patient's doses, sorted."""
+        seen: dict[str, str] = {}
+        for dose in self._entry.options.get(CONF_DOSES, []):
+            for med in split_medications(dose.get(CONF_MEDS)):
+                seen.setdefault(med.lower(), med)
+        return [seen[k] for k in sorted(seen)]
+
     async def async_step_add_supply(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:
         """Track supply for one medication: units on hand, per-dose, threshold."""
+        # Supply attaches to a medication from the doses, so it always matches
+        # one and decrements (no free-typed name that would never decrement).
+        med_names = self._dose_medications()
+        if not med_names:
+            return self.async_abort(reason="no_medications")
         if user_input is not None:
             options = dict(self._entry.options)
             supplies = list(options.get(CONF_SUPPLIES, []))
@@ -445,7 +459,12 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
             return self.async_create_entry(title="", data=options)
         schema = vol.Schema(
             {
-                vol.Required(CONF_SUPPLY_MED): selector.TextSelector(),
+                vol.Required(CONF_SUPPLY_MED): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=med_names,
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                    )
+                ),
                 vol.Required(
                     CONF_SUPPLY_UNITS, default=DEFAULT_SUPPLY_UNITS
                 ): _count_selector(),
@@ -489,9 +508,14 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
         """Add or update reference detail for one medication.
 
         Optional fields (full name, strength, brand, prescribed-for, dosage) are
-        kept separate from the short dose name. Records are keyed by medication
-        name; saving one with an existing name replaces it.
+        kept separate from the short dose name. The medication is chosen from the
+        ones already used in this patient's doses (not free text), so detail
+        can only attach to a real medication and cannot be misspelled into a
+        duplicate. Records are keyed by name; saving one again replaces it.
         """
+        med_names = self._dose_medications()
+        if not med_names:
+            return self.async_abort(reason="no_medications")
         if user_input is not None:
             name = str(user_input[CONF_MED_NAME]).strip()
             record = {
@@ -515,7 +539,12 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
             return self.async_create_entry(title="", data=options)
         schema = vol.Schema(
             {
-                vol.Required(CONF_MED_NAME): selector.TextSelector(),
+                vol.Required(CONF_MED_NAME): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=med_names,
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                    )
+                ),
                 vol.Optional(CONF_MED_FULL_NAME): selector.TextSelector(),
                 vol.Optional(CONF_MED_STRENGTH): selector.TextSelector(),
                 vol.Optional(CONF_MED_BRAND): selector.TextSelector(),

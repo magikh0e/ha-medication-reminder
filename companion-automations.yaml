@@ -211,3 +211,36 @@
                 data:
                   tag: "med_early_{{ oid }}"
   mode: parallel
+
+# Un-mark alert. Listens for the integration's `medication_reminder_dose_undone`
+# event, fired when a dose that was marked given is flipped back to not given
+# (e.g. an accidental tap by another caretaker), and notifies the patient's
+# notify target, so an un-mark is visible instead of silent. The daily reset
+# does NOT fire this event. (An "undo" on an early-dose warning also un-marks, so
+# it can surface here too.) Optional.
+- id: med_unmark_alert
+  alias: "Medication - Un-mark alert"
+  trigger:
+    - platform: event
+      event_type: medication_reminder_dose_undone
+  variables:
+    default_notify: caretakers
+    ent: "{{ trigger.event.data.entity_id }}"
+    oid: "{{ ent.split('.')[1] }}"
+    patient: "{{ trigger.event.data.patient }}"
+    meds: "{{ trigger.event.data.medications }}"
+    notify_service: "{{ state_attr(ent, 'notify_service') or default_notify }}"
+    dtime: "{{ state_attr(ent, 'dose_time') }}"
+    stype: "{{ state_attr(ent, 'schedule_type') }}"
+    clock: "{{ as_timestamp(today_at(dtime)) | timestamp_custom('%-I:%M %p') if (dtime and stype != 'prn') else '' }}"
+  action:
+    - action: "notify.{{ notify_service }}"
+      data:
+        title: "↩️ Un-marked: {{ patient }}"
+        message: >-
+          {{ patient }}'s {{ (clock ~ ' ') if clock else '' }}dose ({{ meds }})
+          was un-marked (flipped back to not given). Mark it given again if that
+          was not intended.
+        data:
+          tag: "med_unmark_{{ oid }}"
+  mode: parallel

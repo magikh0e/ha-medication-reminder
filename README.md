@@ -96,8 +96,8 @@ Each dose appears as `switch.<patient>_<time>` with attributes `patient`,
 ### 3. Add the reminder automations
 
 The integration creates the entities; the reminders, nagging, missed-dose
-escalation, refill reminders, and early-dose warning are driven by automations.
-Pick one of two ways to add them:
+escalation, refill reminders, early-dose warning, and un-mark alert are driven
+by automations. Pick one of two ways to add them:
 
 **Blueprints (recommended), one-click import and easy updates.** In **Settings,
 Automations & Scenes, Blueprints, Import Blueprint**, paste each URL you want,
@@ -115,6 +115,8 @@ blueprint itself changed.
   `https://github.com/magikh0e/ha-medication-reminder/blob/main/blueprints/automation/medication_reminder/early_dose.yaml`
 - Low-supply refill reminder (optional):
   `https://github.com/magikh0e/ha-medication-reminder/blob/main/blueprints/automation/medication_reminder/low_supply.yaml`
+- Un-mark alert (optional):
+  `https://github.com/magikh0e/ha-medication-reminder/blob/main/blueprints/automation/medication_reminder/unmark_alert.yaml`
 
 **Or copy the YAML.** Paste the automations from
 [`companion-automations.yaml`](companion-automations.yaml) into your
@@ -346,9 +348,9 @@ as switch attributes that the companion automations read.
 *The supplies-on-hand card; a medication at or below its threshold turns red.*
 
 Optionally track how much of each medication you have on hand. In **Configure,
-Track a medication supply**, set the medication name (exactly as it appears in the
-dose), units on hand, units consumed per dose, a low-stock threshold, and a refill
-amount. Each tracked medication then gets:
+Track a medication supply**, pick the medication from your doses, then set units
+on hand, units consumed per dose, a low-stock threshold, and a refill amount.
+Each tracked medication then gets:
 
 - `number.<patient>_<med>_supply` - units on hand, settable. It **decrements when
   a dose containing that medication is marked given** (once per dose per day,

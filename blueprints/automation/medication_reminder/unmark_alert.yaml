@@ -1,0 +1,44 @@
+blueprint:
+  name: Medication Reminder - un-mark alert
+  description: >
+    Notifies caretakers when a dose that was marked given is un-marked (flipped
+    back to not given), for example an accidental tap by another caretaker, so it
+    is visible instead of silent. Listens for the integration's
+    medication_reminder_dose_undone event. The daily reset does not trigger it.
+    An "undo" on an early-dose warning also un-marks, so it can surface here too.
+    Optional.
+  domain: automation
+  author: magikh0e
+  source_url: https://github.com/magikh0e/ha-medication-reminder/blob/main/blueprints/automation/medication_reminder/unmark_alert.yaml
+  input:
+    fallback_notify:
+      name: Fallback notify target
+      description: Notify service used when a patient has no target set.
+      default: caretakers
+      selector:
+        text:
+
+trigger:
+  - platform: event
+    event_type: medication_reminder_dose_undone
+variables:
+  default_notify: !input fallback_notify
+  ent: "{{ trigger.event.data.entity_id }}"
+  oid: "{{ ent.split('.')[1] }}"
+  patient: "{{ trigger.event.data.patient }}"
+  meds: "{{ trigger.event.data.medications }}"
+  notify_service: "{{ state_attr(ent, 'notify_service') or default_notify }}"
+  dtime: "{{ state_attr(ent, 'dose_time') }}"
+  stype: "{{ state_attr(ent, 'schedule_type') }}"
+  clock: "{{ as_timestamp(today_at(dtime)) | timestamp_custom('%-I:%M %p') if (dtime and stype != 'prn') else '' }}"
+action:
+  - action: "notify.{{ notify_service }}"
+    data:
+      title: "↩️ Un-marked: {{ patient }}"
+      message: >-
+        {{ patient }}'s {{ (clock ~ ' ') if clock else '' }}dose ({{ meds }}) was
+        un-marked (flipped back to not given). Mark it given again if that was
+        not intended.
+      data:
+        tag: "med_unmark_{{ oid }}"
+mode: parallel
