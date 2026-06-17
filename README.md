@@ -84,7 +84,11 @@ one automation.
 
 1. **Settings, Devices & Services, Add Integration, Medication Reminder.**
 2. Enter the patient name (e.g. a pet or person), pick the **patient type** (Person / Dog / Cat / ..., which sets the icon), and the **notify target** (the person or group to remind). One patient per entry; add the integration again for more patients.
-3. On the entry, click **Configure** to **Add a dose** (pick a time, type the medications, and choose the **schedule**: days of the week - all days = daily - or every N days, an on/off cycle, specific days of the month, or as-needed/PRN). Repeat for each dose. **Remove a dose** or open **Reminder settings** (type, notify target, time format, reset time, nag window/interval) there too.
+3. On the entry, click **Configure** to **Add a dose** (pick a time, type the medications, and choose the **schedule**: days of the week - all days = daily - or every N days, an on/off cycle, specific days of the month, or as-needed/PRN). Repeat for each dose. **Remove a dose**, **Add medication detail**, or open **Reminder settings** (type, notify target, time format, reset time, nag window/interval) there too.
+
+![Manage doses menu](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/managed-doses.png)
+
+![Add a dose form](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/add-a-dose.png)
 
 Each dose appears as `switch.<patient>_<time>` with attributes `patient`,
 `dose_time`, `medications`, and `notify_service`.
@@ -132,20 +136,29 @@ They send a reminder when a dose is due and not given, nag every 15 minutes for
 45 minutes, then escalate once as a time-sensitive "missed" alert. Tapping
 **Mark given** turns the dose's switch on and clears the notification.
 
+The automations send four kinds of notification:
+
+![Notification types](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/notification-types.png)
+
+To preview any of these on demand (no waiting for a dose time, handy for a
+screenshot), add [`examples/simulate-reminder.yaml`](examples/simulate-reminder.yaml)
+and run the `script.simulate_med_reminder` action.
+
 ## Dashboard
 
 A dashboard is optional, but the bundled [`lovelace-card.yaml`](dashboards/lovelace-card.yaml)
 is an auto-discovering, day-of-week-aware one that needs **no editing**: it finds
 every patient and dose automatically, so adding, renaming, or removing a patient
 just updates it.
-Six parts:
+Seven parts:
 
 1. a red/green status panel (from the `needs_attention` sensors),
 2. a summary of **today's** scheduled doses (given / still to give, with times),
 3. one combined "Mark given" card with every dose due today (tap to mark),
 4. an "As needed (PRN)" card with a Log dose button per as-needed med and its "last taken" time,
 5. one combined supplies card (units on hand, shown only if you track supplies),
-6. a per-patient schedule overview (every dose, time, medications, and days).
+6. a per-patient schedule overview (every dose, time, medications, and days),
+7. a per-patient "current medications" list (full name, strength, brand, what it is for, dosage) for handing to a vet or doctor.
 
 It needs two HACS cards: [auto-entities](https://github.com/thomasloven/lovelace-auto-entities)
 (the auto-discovering lists) and [card-mod](https://github.com/thomasloven/lovelace-card-mod)
@@ -289,8 +302,13 @@ they keep using the `selectattr` form like the rest.
 ### Current medications
 
 A read-only list of every medication a patient takes, with the optional detail
-(strength, brand, what it is for, dosage), for handing to a vet or doctor. Reads
-the `medications` sensor; native markdown card, no HACS needed:
+(strength, brand, what it is for, dosage), for handing to a vet or doctor.
+
+Add the detail per medication in **Configure, Add medication detail**:
+
+![Medication detail form](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/medication-detail.png)
+
+It reads the `medications` sensor; native markdown card, no HACS needed:
 
 ```yaml
 type: markdown
@@ -304,6 +322,8 @@ content: |-
   {% endfor %}
 ```
 
+![Current medications card](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/current-medications.png)
+
 ## Settings (per patient)
 
 Each patient has its own **Configure, Reminder settings** with:
@@ -316,6 +336,8 @@ Each patient has its own **Configure, Reminder settings** with:
 
 The reset time is applied by the integration; the nag window/interval are exposed
 as switch attributes that the companion automations read.
+
+![Reminder settings](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/reminder-settings.png)
 
 ## Supply & refill tracking
 
@@ -381,6 +403,11 @@ notify target for anything low.
 - "Mark given" flips the switch on; the daily reset flips all off at the configured reset time.
 - To log a dose taken at a **different time** than now, call the `medication_reminder.mark_given` service (target the dose's switch) with a `given_at` time. The plain switch is "Take Now"; the service is the "Specify Time" equivalent. Correcting the time on an already-given dose just updates the timestamp (it does not re-warn or re-decrement supply).
 - When a dose is marked given, the switch fires a `medication_reminder_dose_given` event (with `patient`, `dose_time`, `medications`, `scheduled_today`, `minutes_early`, `notify_service`), so companion automations can react cleanly. The bundled `med_early_given` automation uses it to warn when a dose is marked given well before its scheduled time, with an "undo" button that turns the dose back off. Un-marking a dose fires `medication_reminder_dose_undone`, which restores that dose's supply count.
+
+The `calendar.<patient>_medication` entity lays the whole schedule out by day,
+which makes every-N-days and on/off-cycle doses easy to see at a glance:
+
+![Medication calendar](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/calendar.png)
 
 ## Safety & fail-safes
 

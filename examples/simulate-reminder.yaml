@@ -1,0 +1,99 @@
+# ---------------------------------------------------------------------------
+# Simulate a Medication Reminder notification (example / testing helper).
+#
+# Sends the EXACT notifications the companion automations send, so you can
+# preview them or grab a screenshot without waiting for a real dose time.
+#
+# Install: paste the block below into your scripts.yaml, or into the Script
+# editor (Settings > Automations & scenes > Scripts > Add Script > top-right
+# three dots > "Edit in YAML"). If you paste into configuration.yaml instead,
+# nest it under a top-level "script:" key.
+#
+# Run: Developer Tools > Actions > action "script.simulate_med_reminder".
+#   - notify_service: your phone, e.g. mobile_app_pixel_7 (no "notify." prefix),
+#     to get the tappable action button. Left at the default
+#     persistent_notification it shows in the HA UI instead (no buttons).
+#   - kind: reminder (default), missed, refill, or early.
+# ---------------------------------------------------------------------------
+simulate_med_reminder:
+  alias: Simulate medication reminder
+  icon: mdi:bell-ring-outline
+  fields:
+    notify_service:
+      name: Notify service
+      description: Notify target without the "notify." prefix.
+      example: mobile_app_pixel_7
+      default: persistent_notification
+    kind:
+      name: Kind
+      description: Which notification to simulate.
+      default: reminder
+      selector:
+        select:
+          options:
+            - reminder
+            - missed
+            - refill
+            - early
+    patient:
+      name: Patient
+      default: Kali
+    meds:
+      name: Medications
+      default: Trazodone & Gabapentin
+    clock:
+      name: Dose time label
+      default: "2:00 PM"
+    mins_early:
+      name: Minutes early (for the early variant)
+      default: 23
+  sequence:
+    - variables:
+        oid: "sim_{{ now().timestamp() | int }}"
+    - choose:
+        - conditions: "{{ kind == 'missed' }}"
+          sequence:
+            - action: "notify.{{ notify_service }}"
+              data:
+                title: "⚠️ MISSED: {{ patient }} ({{ clock }})"
+                message: "{{ patient }}'s {{ clock }} dose ({{ meds }}) was NOT marked given. Please check on it."
+                data:
+                  tag: "med_missed_{{ oid }}"
+                  priority: high
+                  ttl: 0
+                  push:
+                    interruption-level: time-sensitive
+                  actions:
+                    - action: "MED_GIVEN_{{ oid }}"
+                      title: "✅ Mark given"
+        - conditions: "{{ kind == 'refill' }}"
+          sequence:
+            - action: "notify.{{ notify_service }}"
+              data:
+                title: "💊 Refill soon: {{ patient }}"
+                message: "Low medication supply for {{ patient }}: {{ meds }}."
+                data:
+                  tag: "med_supply_{{ oid }}"
+        - conditions: "{{ kind == 'early' }}"
+          sequence:
+            - action: "notify.{{ notify_service }}"
+              data:
+                title: "⚠️ Given early: {{ patient }}"
+                message: "{{ patient }}'s {{ clock }} dose ({{ meds }}) was marked given {{ mins_early }} min early. Was that on purpose?"
+                data:
+                  tag: "med_early_{{ oid }}"
+                  actions:
+                    - action: "MED_UNDO_{{ oid }}"
+                      title: "↩️ No, undo it"
+                    - action: "MED_KEEP_{{ oid }}"
+                      title: "✅ Yes, intended"
+      default:
+        - action: "notify.{{ notify_service }}"
+          data:
+            title: "💊 {{ patient }} ({{ clock }})"
+            message: "Give {{ patient }}'s medication: {{ meds }}. Has it been given?"
+            data:
+              tag: "med_{{ oid }}"
+              actions:
+                - action: "MED_GIVEN_{{ oid }}"
+                  title: "✅ Mark given"
