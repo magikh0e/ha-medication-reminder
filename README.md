@@ -88,6 +88,14 @@ one automation.
 
 ![Manage medications menu](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/managed-doses.png)
 
+Each group opens its actions:
+
+<p>
+  <img src="https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/doses-menu.png" alt="Doses submenu" width="32%">
+  <img src="https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/supplies-menu.png" alt="Supplies submenu" width="32%">
+  <img src="https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/med-details-menu.png" alt="Medication details submenu" width="32%">
+</p>
+
 ![Add a dose form](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/add-a-dose.png)
 
 Each dose appears as `switch.<patient>_<time>` with attributes `patient`,
