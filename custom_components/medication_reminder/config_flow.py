@@ -302,19 +302,34 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:
+        """Top menu, grouped into submenus to keep it short."""
         return self.async_show_menu(
             step_id="init",
-            menu_options=[
-                "add_dose",
-                "edit_dose",
-                "remove_dose",
-                "add_supply",
-                "remove_supply",
-                "medication_detail",
-                "edit_medication",
-                "remove_medication",
-                "settings",
-            ],
+            menu_options=["doses", "supplies", "med_details", "settings"],
+        )
+
+    async def async_step_doses(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        return self.async_show_menu(
+            step_id="doses",
+            menu_options=["add_dose", "edit_dose", "remove_dose"],
+        )
+
+    async def async_step_supplies(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        return self.async_show_menu(
+            step_id="supplies",
+            menu_options=["add_supply", "remove_supply"],
+        )
+
+    async def async_step_med_details(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        return self.async_show_menu(
+            step_id="med_details",
+            menu_options=["medication_detail", "edit_medication", "remove_medication"],
         )
 
     async def async_step_add_dose(

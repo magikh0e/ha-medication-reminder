@@ -31,15 +31,33 @@
       "init": {
         "title": "Manage medications",
         "menu_options": {
+          "doses": "Doses",
+          "supplies": "Supplies",
+          "med_details": "Medication details",
+          "settings": "Reminder settings"
+        }
+      },
+      "doses": {
+        "title": "Doses",
+        "menu_options": {
           "add_dose": "Add a dose",
           "edit_dose": "Edit a dose",
-          "remove_dose": "Remove a dose",
+          "remove_dose": "Remove a dose"
+        }
+      },
+      "supplies": {
+        "title": "Supplies",
+        "menu_options": {
           "add_supply": "Track a supply",
-          "remove_supply": "Remove a supply",
+          "remove_supply": "Remove a supply"
+        }
+      },
+      "med_details": {
+        "title": "Medication details",
+        "menu_options": {
           "medication_detail": "Add medication detail",
           "edit_medication": "Edit medication detail",
-          "remove_medication": "Remove medication detail",
-          "settings": "Reminder settings"
+          "remove_medication": "Remove medication detail"
         }
       },
       "add_dose": {
