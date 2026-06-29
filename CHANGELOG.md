@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.3] - 2026-06-23
+### Changed
+- The every-N-days interval now accepts up to 365 days (was capped at 60), so quarterly meds (every ~90 days), semi-annual, and yearly doses fit the interval schedule. (Requested in a GitHub issue.)
+
 ## [0.23.2] - 2026-06-23
 ### Fixed
 - Reminder notifications now follow the patient's 12-hour / 24-hour time-format setting. The reminder, missed-dose, early-dose, and un-mark alerts previously always showed 12-hour time (e.g. "6:00 PM") even when the patient was set to 24-hour, so the text now matches the dose entities and dashboard. Re-import the blueprints to pick this up.

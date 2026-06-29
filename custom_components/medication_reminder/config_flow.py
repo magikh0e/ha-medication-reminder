@@ -171,7 +171,7 @@ def _interval_selector() -> selector.NumberSelector:
     return selector.NumberSelector(
         selector.NumberSelectorConfig(
             min=1,
-            max=60,
+            max=365,
             step=1,
             mode=selector.NumberSelectorMode.BOX,
             unit_of_measurement="days",
