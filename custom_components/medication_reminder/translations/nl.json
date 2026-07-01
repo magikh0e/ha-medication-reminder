@@ -128,7 +128,11 @@
           "supply_units": "Huidige voorraad",
           "supply_per_dose": "Eenheden per dosis",
           "supply_threshold": "Lage drempelwaarde",
-          "supply_refill_to": "Bijvulhoeveelheid (een volledige verpakking)"
+          "supply_refill_to": "Bijvulhoeveelheid (Maximale hoeveelheid om de telling naar terug te zetten)",
+          "supply_refill_add": "Bijvulhoeveelheid (Verpakkingsgrote)"
+        },
+        "data_description": {
+          "supply_refill_add": "Tel bij een bijvulling een individuele verpakking op bij de totale hoeveelheid (bijv. 17 + 30 = 47), in plaats van terug te vallen op de maximale hoeveelheid."
         }
       },
       "edit_supply": {
@@ -144,7 +148,12 @@
           "supply_units": "Huidige voorraad",
           "supply_per_dose": "Eenheden per dosis",
           "supply_threshold": "Lage drempelwaarde",
-          "supply_refill_to": "Bijvulhoeveelheid (een volledige verpakking)"
+          "supply_refill_to": "Bijvulhoeveelheid (Maximale hoeveelheid om de telling naar terug te zetten)",
+          "supply_refill_add": "Bijvulhoeveelheid (Verpakkingsgrote)"
+        },
+        "data_description": {
+          "supply_refill_add": "Tel bij een bijvulling een individuele verpakking op bij de totale hoeveelheid (bijv. 17 + 30 = 47), in plaats van terug te vallen op de maximale hoeveelheid."
+        }
         }
       },
       "remove_supply": {
