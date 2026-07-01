@@ -92,6 +92,13 @@ class MedicationRefillButton(ButtonEntity):
             "manufacturer": "Medication Reminder",
         }
 
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {
+            "patient": self._patient,
+            "medication": self._med,
+        }
+
     async def async_press(self) -> None:
         """Tell the matching supply to restock to full."""
         self.hass.bus.async_fire(

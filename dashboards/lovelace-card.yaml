@@ -166,12 +166,22 @@ cards:
           }
     filter:
       template: >
-        {% for s in states.number if s.attributes.medication is defined %}
-        {{ s.entity_id }}
-        {% endfor %}
+        [{% for s in states.number if s.attributes.medication is defined %}
+          {{
+            {
+              'entity': s.entity_id
+            }
+          }},
+        {% endfor %} {% for s in states.button if s.attributes.medication is defined %}
+          {{
+            {
+              'entity': s.entity_id
+            }
+          }},
+        {% endfor %}]
     sort:
       method: name
-
+      reverse: true
   # 5. Per-patient schedule overview (read-only), auto-discovers
   - type: markdown
     content: |-
