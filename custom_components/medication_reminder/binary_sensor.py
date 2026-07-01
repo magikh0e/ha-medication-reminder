@@ -238,9 +238,7 @@ class NeedsAttentionBinarySensor(_DoseLookupMixin, BinarySensorEntity):
         await super().async_added_to_hass()
         self._track_dose_changes()
         self.async_on_remove(
-            async_track_time_interval(
-                self.hass, self._handle_interval, _CHECK_INTERVAL
-            )
+            async_track_time_interval(self.hass, self._handle_interval, _CHECK_INTERVAL)
         )
 
     @callback
@@ -259,9 +257,7 @@ class SuppliesLowBinarySensor(BinarySensorEntity):
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
     _attr_has_entity_name = True
 
-    def __init__(
-        self, entry: ConfigEntry, patient: str, notify_target: str
-    ) -> None:
+    def __init__(self, entry: ConfigEntry, patient: str, notify_target: str) -> None:
         self._patient = patient
         self._notify = notify_target
         self._attr_name = "Supplies low"
@@ -313,9 +309,7 @@ class SuppliesLowBinarySensor(BinarySensorEntity):
             "patient": self._patient,
             "notify_service": self._notify,
             "low_count": len(low),
-            "low": [
-                f"{s.attributes.get('medication')}: {_left(s)} left" for s in low
-            ],
+            "low": [f"{s.attributes.get('medication')}: {_left(s)} left" for s in low],
         }
 
     async def async_added_to_hass(self) -> None:

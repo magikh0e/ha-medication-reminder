@@ -146,7 +146,10 @@ def _schedule_type_selector() -> selector.SelectSelector:
                 {"value": "interval", "label": "Every N days"},
                 {"value": "cycle", "label": "On/off cycle (X days on, Y days off)"},
                 {"value": "monthly", "label": "Monthly (on chosen days of the month)"},
-                {"value": "prn", "label": "As needed (PRN) - no schedule, no reminders"},
+                {
+                    "value": "prn",
+                    "label": "As needed (PRN) - no schedule, no reminders",
+                },
             ],
             mode=selector.SelectSelectorMode.DROPDOWN,
         )
@@ -281,9 +284,7 @@ class MedicationReminderConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_NOTIFY): _notify_selector(self.hass),
             }
         )
-        return self.async_show_form(
-            step_id="user", data_schema=schema, errors=errors
-        )
+        return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
 
     @staticmethod
     @callback
@@ -371,7 +372,9 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
         being edited."""
 
         def key(d: dict[str, Any]) -> str:
-            return slugify(str(d.get(CONF_TIME, ""))[:5] + "_" + str(d.get(CONF_MEDS, "")))
+            return slugify(
+                str(d.get(CONF_TIME, ""))[:5] + "_" + str(d.get(CONF_MEDS, ""))
+            )
 
         target = key(dose)
         for i, d in enumerate(self._entry.options.get(CONF_DOSES, [])):

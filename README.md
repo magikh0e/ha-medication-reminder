@@ -7,6 +7,8 @@
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 ![HACS: Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)
 ![Release](https://img.shields.io/github/v/release/magikh0e/ha-medication-reminder)
+[![Tests](https://img.shields.io/github/actions/workflow/status/magikh0e/ha-medication-reminder/test.yml?branch=main&label=tests)](https://github.com/magikh0e/ha-medication-reminder/actions/workflows/test.yml)
+[![Validate](https://img.shields.io/github/actions/workflow/status/magikh0e/ha-medication-reminder/validate.yml?branch=main&label=validate)](https://github.com/magikh0e/ha-medication-reminder/actions/workflows/validate.yml)
 
 [![Open your Home Assistant instance and add this repository to HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=magikh0e&repository=ha-medication-reminder&category=integration)
 

@@ -80,9 +80,7 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
     ) -> None:
         self._patient = patient
         self._med = str(supply[CONF_SUPPLY_MED]).strip()
-        self._per_dose = int(
-            supply.get(CONF_SUPPLY_PER_DOSE, DEFAULT_SUPPLY_PER_DOSE)
-        )
+        self._per_dose = int(supply.get(CONF_SUPPLY_PER_DOSE, DEFAULT_SUPPLY_PER_DOSE))
         self._threshold = int(
             supply.get(CONF_SUPPLY_THRESHOLD, DEFAULT_SUPPLY_THRESHOLD)
         )
@@ -224,9 +222,7 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
         date_str = dt_util.now().date().isoformat()
         if self._consumed.get(entity_id) == date_str:
             del self._consumed[entity_id]
-            self._value = min(
-                self._attr_native_max_value, self._value + self._per_dose
-            )
+            self._value = min(self._attr_native_max_value, self._value + self._per_dose)
             self.async_write_ha_state()
 
     @callback

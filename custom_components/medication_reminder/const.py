@@ -151,7 +151,9 @@ def _cycle_days(data):
             v = default
         return max(v, low)
 
-    return _n(CONF_CYCLE_ON, DEFAULT_CYCLE_ON, 1), _n(CONF_CYCLE_OFF, DEFAULT_CYCLE_OFF, 0)
+    return _n(CONF_CYCLE_ON, DEFAULT_CYCLE_ON, 1), _n(
+        CONF_CYCLE_OFF, DEFAULT_CYCLE_OFF, 0
+    )
 
 
 def _month_days(data):
