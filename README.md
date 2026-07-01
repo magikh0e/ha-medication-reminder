@@ -42,7 +42,7 @@ setup with no custom integration? Use that one; otherwise use this.
 - **Per-medication detail.** Optional strength, brand, full name, "prescribed for", and a dosage summary per medication, plus a `medications` sensor that lists everything the patient takes for a ready-to-share "current medications" view to hand a vet or doctor.
 - **Next-dose sensor and calendar.** A `next_dose` timestamp and a read-only medication calendar per patient, handy for "remind me before" automations and seeing long cycles laid out.
 - **Zero-edit dashboard.** Auto-discovers every patient and dose, no names to maintain.
-- **Localized UI.** The configuration screens follow your Home Assistant language, with German and Dutch included alongside English (community-contributed) and any untranslated text falling back to English. See [Languages](#languages).
+- **Localized UI.** The configuration screens follow your Home Assistant language, with community-contributed German and Dutch alongside the English base, and any untranslated text falling back to English. See [Languages](#languages).
 - **Fail-safe by design.** Overdue detection trips on elapsed time alone and errs toward "problem", marking is reversible, dose state survives restarts, and every guard warns rather than blocks. See [Safety & fail-safes](#safety--fail-safes).
 
 ## Installation
@@ -553,6 +553,11 @@ option (also requested by GitHub user **DarkVeter**). Thanks for sharing it.
 
 The day-of-month / monthly schedule type grew from a request by Home Assistant
 Community user **ggaltqq** for more schedule options.
+
+The **German and Dutch translations** were contributed by GitHub users
+**RookieIVG** (`de`) and **VGrol** (`nl`), after **interkom** asked for
+multi-language support. Thanks for making the integration usable in more
+languages, and for the clean, complete locale files.
 
 ## License
 
