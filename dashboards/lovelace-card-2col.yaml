@@ -225,12 +225,14 @@ cards:
               {%- endfor %}
               {% endfor %}
 
-          # Per-patient "current medications" (read-only): the "what" to hand a
-          # provider, with any full name / strength / brand / condition / dosage
-          # detail you have added under Configure. Auto-discovers every patient.
+          # Per-patient "current medications" (read-only): the "what" and "when"
+          # to hand a provider, with each medication's dose times plus any full
+          # name / strength / brand / condition / dosage detail you have added
+          # under Configure. Auto-discovers every patient.
           - type: markdown
             content: |-
               ## 💊 Current medications
+              {% set week = ['mon','tue','wed','thu','fri','sat','sun'] %}
               {% set sensors = states.sensor | selectattr('entity_id','search','_medications$') | selectattr('attributes.medications','defined') | selectattr('attributes.patient','defined') | list %}
               {% set medsw = states.switch | selectattr('attributes.medications','defined') | list %}
               {% for s in sensors | sort(attribute='attributes.patient') %}
@@ -239,5 +241,30 @@ cards:
               ### {{ {'dog':'🐕','cat':'🐈','person':'🧑','bird':'🐦','rabbit':'🐇','other':'🐾'}.get(ptype,'💊') }} {{ s.attributes.patient }}
               {% for m in s.attributes.medications %}
               - **{{ m.full_name or m.name }}**{% if m.brand %} ({{ m.brand }}){% endif %}{% if m.strength %} {{ m.strength }}{% endif %}{% if m.prescribed_for %}, for {{ m.prescribed_for }}{% endif %}{% if m.dosage %}, {{ m.dosage }}{% endif %}
+              {%- set ns = namespace(md=[]) %}
+              {%- for d in medsw if d.attributes.patient == s.attributes.patient and (m.name | lower) in ((d.attributes.medications | regex_replace('[&+]|\s+/\s+', ',')).split(',') | map('trim') | map('lower') | list) %}
+              {%- set ns.md = ns.md + [d] %}
+              {%- endfor %}
+              {%- set ordered = (ns.md | rejectattr('attributes.schedule_type','eq','prn') | sort(attribute='attributes.dose_time') | list) + (ns.md | selectattr('attributes.schedule_type','eq','prn') | list) %}
+              {%- for d in ordered %}
+              {%- set fmt = '%H:%M' if d.attributes.time_format == '24h' else '%I:%M %p' %}
+              {%- set stype = d.attributes.schedule_type %}
+              {%- set days = d.attributes.days or week %}
+              {%- set n = d.attributes.interval_days | int(2) %}
+              {%- if stype == 'interval' %}
+              {%- set cad = 'daily' if n == 1 else 'every ' ~ n ~ ' days' %}
+              {%- elif stype == 'cycle' %}
+              {%- set cad = (d.attributes.cycle_on | int(21)) ~ ' on / ' ~ (d.attributes.cycle_off | int(7)) ~ ' off' %}
+              {%- elif stype == 'monthly' %}
+              {%- set cad = 'monthly on ' ~ (d.attributes.month_days | join(', ')) %}
+              {%- else %}
+              {%- set cad = 'daily' if days|length == 7 else (week | select('in', days) | map('capitalize') | join(', ')) %}
+              {%- endif %}
+              {%- if stype == 'prn' %}
+                  - 🕐 As needed
+              {%- else %}
+                  - 🕐 {{ as_timestamp(today_at(d.attributes.dose_time)) | timestamp_custom(fmt) }} ({{ cad }})
+              {%- endif %}
+              {%- endfor %}
               {%- endfor %}
               {% endfor %}
