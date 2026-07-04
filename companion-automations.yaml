@@ -23,6 +23,11 @@
     # (iPhone needs Critical Alerts allowed for the HA app; Android uses a
     # high-importance channel).
     critical_missed: false
+    # Set to a Lovelace path (e.g. /lovelace-meds/0) to open that dashboard when
+    # the notification body is tapped. Leave "" to open the app default.
+    dashboard_path: ""
+    nav: >-
+      {{ {"clickAction": dashboard_path, "url": dashboard_path} if dashboard_path else {} }}
     today: "{{ ['mon','tue','wed','thu','fri','sat','sun'][now().weekday()] }}"
   action:
     - repeat:
@@ -54,11 +59,10 @@
                     data:
                       title: "💊 {{ patient }} ({{ clock }})"
                       message: "Give {{ patient }}'s medication: {{ meds }}. Has it been given?"
-                      data:
-                        tag: "med_{{ oid }}"
-                        actions:
-                          - action: "MED_GIVEN_{{ oid }}"
-                            title: "✅ Mark given"
+                      data: >-
+                        {{ {"tag": "med_" ~ oid,
+                            "actions": [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"}]}
+                           | combine(nav) }}
               # Missed: scheduled today, past the window-end, fires once
               - conditions:
                   - "{{ scheduled and not given and mins_since >= nag_minutes and mins_since < nag_minutes + 5 }}"
@@ -68,7 +72,7 @@
                   # interruption-level/sound, Android reads channel/importance.
                   - variables:
                       missed_data: >-
-                        {{ {"tag": "med_missed_" ~ oid, "priority": "high", "ttl": 0,
+                        {{ ({"tag": "med_missed_" ~ oid, "priority": "high", "ttl": 0,
                             "channel": "Medication critical", "importance": "high",
                             "push": {"interruption-level": "critical",
                                      "sound": {"name": "default", "critical": 1, "volume": 1.0}},
@@ -76,7 +80,7 @@
                            if critical_missed else
                            {"tag": "med_missed_" ~ oid, "priority": "high", "ttl": 0,
                             "push": {"interruption-level": "time-sensitive"},
-                            "actions": [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"}]} }}
+                            "actions": [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"}]}) | combine(nav) }}
                   - action: "notify.{{ notify_service }}"
                     data:
                       title: "⚠️ MISSED: {{ patient }} ({{ clock }})"

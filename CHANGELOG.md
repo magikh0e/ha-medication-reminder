@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- Tapping a reminder notification's body (not the Mark given button) can open a dashboard. Set the reminders blueprint's new **Open dashboard when the notification is tapped** input (or the `dashboard_path` variable in the companion automation) to a Lovelace path like `/lovelace-meds/0`, and it wires `clickAction` (Android) and `url` (iOS) into the notification. Re-import the blueprint to get it.
+
 ## [0.25.2] - 2026-07-04
 ### Added
 - Responsive dashboard `dashboards/lovelace-sections.yaml`: a Sections-view layout that shows one clean column on a phone and up to three columns on a tablet or desktop, from the same auto-discovering cards. Paste it into a dashboard's Raw configuration editor.

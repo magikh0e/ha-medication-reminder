@@ -150,7 +150,11 @@ They send a reminder when a dose is due and not given, nag every 15 minutes for
 **Mark given** turns the dose's switch on and clears the notification. On
 Android the **Mark given** button shows on the notification directly; on iPhone,
 **long-press (or pull down) the notification** to reveal it. It works the same on
-both, just tucked behind a long-press on iOS.
+both, just tucked behind a long-press on iOS. Tapping the notification **body**
+(not the button) can jump straight to a dashboard: set the reminders blueprint's
+**Open dashboard when the notification is tapped** input (or the `dashboard_path`
+variable in the companion automation) to a Lovelace path such as `/lovelace-meds/0`,
+then re-import the blueprint.
 
 The reminders blueprint has an optional **Critical missed-dose alert** toggle
 (the companion automation, a `critical_missed` variable) that makes the missed
