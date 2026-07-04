@@ -587,6 +587,8 @@ territory. A future version may move reminders into the integration itself.
 **Planned:**
 
 - Optional in-integration notifications/nagging (so the YAML companion automations become optional).
+- Cost tracking: an optional per-medication cost so supplies and refills can total spend over time, building on the existing supply counts and refill history.
+- Persistent dose attribution: "given by" and "refilled by" surfaced as attributes on the dose and refill entities, so who did what shows without opening the Logbook (the 0.26.0 admin dashboard reads this from History and the Logbook today).
 
 **Shipped from the roadmap:**
 
@@ -598,6 +600,7 @@ territory. A future version may move reminders into the integration itself.
 - Per-medication detail: optional strength/mg, brand, the condition it was prescribed for, a dosage summary, and a full name separate from the short reminder name, plus a `<patient>_medications` "current medications" view for handing a provider the "what" rather than the "when" (0.20.0). (Suggested by GitHub user VGrol.)
 - Edit a dose in place: a new Edit a dose step pre-fills the form with a dose's current values and replaces it on save, instead of removing and re-adding (0.21.0). Editing only the schedule keeps the same entity; changing the time or medications starts a fresh one. (Requested by GitHub user weswark.)
 - Localized configuration UI: German (0.24.1, contributed by GitHub user RookieIVG) and Dutch (0.24.1, contributed by GitHub user VGrol) alongside English, plus a translation coverage check for contributors (0.25.0). (Requested by GitHub user interkom.)
+- Roles split with caregiver and admin dashboards (0.26.0): a safe-to-share caregiver view (mark given, log a PRN dose, refill a low supply) with no config or editable counts, and an admin view with a per-patient setup audit, editable supply counts, and a who-marked-or-refilled audit trail; plus tapping a notification body to open your meds dashboard.
 
 ## Acknowledgements
 
