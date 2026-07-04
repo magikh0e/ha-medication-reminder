@@ -147,7 +147,10 @@ notify:
 
 They send a reminder when a dose is due and not given, nag every 15 minutes for
 45 minutes, then escalate once as a time-sensitive "missed" alert. Tapping
-**Mark given** turns the dose's switch on and clears the notification.
+**Mark given** turns the dose's switch on and clears the notification. On
+Android the **Mark given** button shows on the notification directly; on iPhone,
+**long-press (or pull down) the notification** to reveal it. It works the same on
+both, just tucked behind a long-press on iOS.
 
 The reminders blueprint has an optional **Critical missed-dose alert** toggle
 (the companion automation, a `critical_missed` variable) that makes the missed
@@ -191,6 +194,14 @@ For a wide area, [`lovelace-card-2col.yaml`](dashboards/lovelace-card-2col.yaml)
 same cards out as a full-width status banner above two columns, sized to fill a
 2-column-wide [Sections](https://www.home-assistant.io/dashboards/sections/)
 view section: add a section, set its width to 2, and paste it as a manual card.
+
+For the best fit on both phones and larger screens, [`lovelace-sections.yaml`](dashboards/lovelace-sections.yaml)
+is a responsive [Sections](https://www.home-assistant.io/dashboards/sections/) dashboard:
+it collapses to one clean column on a phone and spreads the same cards across up to
+three columns on a tablet or desktop, with no manual layout choice. It is a dashboard
+view rather than a paste-in card, so create a new dashboard, open its Raw configuration
+editor, and paste the whole file. It uses the same two HACS cards and needs Home
+Assistant 2024.3+ (Sections view).
 
 ![Single-column dashboard layout](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/dashboard-1col.png?v=2)
 
