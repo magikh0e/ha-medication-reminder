@@ -1,3 +1,6 @@
+# ⚠️ ADD VIA: new dashboard → ⋮ menu → Raw configuration editor → paste this (a whole dashboard).
+# ⚠️ Do NOT use "Add Card → Manual" (that is for the lovelace-card*.yaml single-card files).
+#
 # ============================================================
 # Medication Reminder: responsive dashboard (Sections view)
 #

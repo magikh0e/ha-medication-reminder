@@ -1,3 +1,6 @@
+# ⚠️ ADD VIA: Edit dashboard → "+ Add Card" → Manual → paste this (a single card).
+# ⚠️ Do NOT paste into the Raw configuration editor (that expects a whole dashboard).
+#
 # Medication Reminder - dashboard (auto-discovering, wide / 2-column layout).
 #
 # Same auto-discovering dashboard as lovelace-card.yaml, reorganised for a

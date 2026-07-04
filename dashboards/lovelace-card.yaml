@@ -1,3 +1,6 @@
+# ⚠️ ADD VIA: Edit dashboard → "+ Add Card" → Manual → paste this (a single card).
+# ⚠️ Do NOT paste into the Raw configuration editor (that expects a whole dashboard).
+#
 # Medication Reminder - dashboard (auto-discovering).
 #
 # Drop-in: this needs no editing. It discovers every patient and dose
