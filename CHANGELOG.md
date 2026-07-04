@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.2] - 2026-07-04
+### Added
+- Responsive dashboard `dashboards/lovelace-sections.yaml`: a Sections-view layout that shows one clean column on a phone and up to three columns on a tablet or desktop, from the same auto-discovering cards. Paste it into a dashboard's Raw configuration editor.
+
+### Changed
+- The dashboards' Current medications card now lists each medication's dose times and cadence (daily, chosen weekdays, every N days, on/off cycle, monthly, or as-needed), so the provider-facing card shows the "when" as well as the "what".
+- Each dashboard file now opens with a banner naming exactly where to paste it (Add Card, Manual for the single-card files; Raw configuration editor for the Sections dashboard), to avoid pasting the wrong one.
+- Documented that the reminder's Mark given button shows on the notification on Android and is revealed by long-pressing (or pulling down) the notification on iPhone.
+
 ## [0.25.1] - 2026-07-01
 ### Changed
 - The refill button now shows which refill mode it uses, making the per-supply **Add on refill (package refill)** setting easier to discover. It exposes `refill_mode` (`set` or `add`) and `refill_amount` attributes and uses a distinct icon per mode (a plus-package in add mode). It also now carries `patient` / `medication` attributes so it can be placed on a dashboard alongside the supply (proposed by @RookieIVG in #15). The entity id stays `<med> refill` in both modes, so existing automations keep working.
