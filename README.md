@@ -169,11 +169,9 @@ and run the `script.simulate_med_reminder` action.
 
 ## Dashboard
 
-A dashboard is optional, but the bundled [`lovelace-card.yaml`](dashboards/lovelace-card.yaml)
-is an auto-discovering, day-of-week-aware one that needs **no editing**: it finds
-every patient and dose automatically, so adding, renaming, or removing a patient
-just updates it.
-Seven parts:
+A dashboard is optional, but the bundled ones are **auto-discovering**: they find
+every patient and dose automatically and need **no editing**, so adding, renaming,
+or removing a patient just updates them. Each has seven parts:
 
 1. a red/green status panel (from the `needs_attention` sensors),
 2. a summary of **today's** scheduled doses (given / still to give, with times),
@@ -181,31 +179,32 @@ Seven parts:
 4. an "As needed (PRN)" card with a Log dose button per as-needed med and its "last taken" time,
 5. one combined supplies card (units on hand, shown only if you track supplies),
 6. a per-patient schedule overview (every dose, time, medications, and days),
-7. a per-patient "current medications" list (full name, strength, brand, what it is for, dosage) for handing to a vet or doctor.
+7. a per-patient "current medications" list (full name, strength, brand, what it is for, dosage, and each med's dose times) for handing to a vet or doctor.
 
-It needs two HACS cards: [auto-entities](https://github.com/thomasloven/lovelace-auto-entities)
+Pick a layout (each file opens with a banner telling you exactly where to paste it):
+
+- **Recommended: [`lovelace-sections.yaml`](dashboards/lovelace-sections.yaml)** is a
+  responsive [Sections](https://www.home-assistant.io/dashboards/sections/) dashboard
+  that adapts to screen width on its own: one clean column on a phone, up to three
+  columns on a tablet or desktop, no manual layout choice. It is a whole dashboard, so
+  create a new dashboard, open its **Raw configuration editor**, and paste the file.
+  Needs Home Assistant 2024.3+ (Sections view).
+- **[`lovelace-card.yaml`](dashboards/lovelace-card.yaml)** is the same content as one
+  card you drop into an existing dashboard (**Add Card**, then **Manual**, then paste).
+  A single tall column.
+- **[`lovelace-card-2col.yaml`](dashboards/lovelace-card-2col.yaml)** is a wide paste-in
+  card: a full-width status banner above two columns, best on a roomy screen.
+
+All three use the same two HACS cards: [auto-entities](https://github.com/thomasloven/lovelace-auto-entities)
 (the auto-discovering lists) and [card-mod](https://github.com/thomasloven/lovelace-card-mod)
-(the pill icons are pinned blue so they stay out of the red/yellow/green status
-colours; without card-mod the pills fall back to amber). Paste it as a manual
-card, no names or entity_ids to change. The standalone status panel is below if
-you only want that piece, and it needs no HACS cards at all.
+(pins the pill icons blue so they stay out of the red/yellow/green status colours;
+without it the pills fall back to amber). No names or entity_ids to change in any of
+them. The standalone status panel is below if you want only that piece, and it needs
+no HACS cards at all.
 
-For a wide area, [`lovelace-card-2col.yaml`](dashboards/lovelace-card-2col.yaml) lays the
-same cards out as a full-width status banner above two columns, sized to fill a
-2-column-wide [Sections](https://www.home-assistant.io/dashboards/sections/)
-view section: add a section, set its width to 2, and paste it as a manual card.
+![Dashboard layout](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/dashboard-1col.png?v=2)
 
-For the best fit on both phones and larger screens, [`lovelace-sections.yaml`](dashboards/lovelace-sections.yaml)
-is a responsive [Sections](https://www.home-assistant.io/dashboards/sections/) dashboard:
-it collapses to one clean column on a phone and spreads the same cards across up to
-three columns on a tablet or desktop, with no manual layout choice. It is a dashboard
-view rather than a paste-in card, so create a new dashboard, open its Raw configuration
-editor, and paste the whole file. It uses the same two HACS cards and needs Home
-Assistant 2024.3+ (Sections view).
-
-![Single-column dashboard layout](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/dashboard-1col.png?v=2)
-
-*The auto-discovering single-column layout ([`lovelace-card.yaml`](dashboards/lovelace-card.yaml)); the wide two-column variant is described just above.*
+*The auto-discovering cards, shown here in the single-column layout; the responsive `lovelace-sections.yaml` reflows these same cards by screen width.*
 
 ![Today summary card](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/DosingStatus.png)
 
