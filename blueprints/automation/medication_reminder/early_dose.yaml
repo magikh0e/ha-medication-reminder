@@ -29,6 +29,14 @@ blueprint:
           step: 5
           unit_of_measurement: min
           mode: box
+    dashboard_path:
+      name: Open dashboard when the notification is tapped
+      description: >
+        Optional. Lovelace path to open when the notification body is tapped,
+        e.g. /lovelace-meds/0. Leave blank to open the app default.
+      default: ""
+      selector:
+        text:
 
 trigger:
   - platform: event
@@ -40,6 +48,9 @@ trigger:
 variables:
   default_notify: !input fallback_notify
   early_grace_minutes: !input grace_minutes
+  dashboard_path: !input dashboard_path
+  nav: >-
+    {{ {"clickAction": dashboard_path, "url": dashboard_path} if dashboard_path else {} }}
 action:
   - choose:
       # 1. A dose was marked given early -> actionable warning.
@@ -59,13 +70,11 @@ action:
             data:
               title: "⚠️ Given early: {{ patient }}"
               message: "{{ patient }}'s {{ clock }} dose ({{ meds }}) was marked given {{ mins_early }} min early. Was that on purpose?"
-              data:
-                tag: "med_early_{{ oid }}"
-                actions:
-                  - action: "MED_UNDO_{{ oid }}"
-                    title: "↩️ No, undo it"
-                  - action: "MED_KEEP_{{ oid }}"
-                    title: "✅ Yes, intended"
+              data: >-
+                {{ {"tag": "med_early_" ~ oid,
+                    "actions": [{"action": "MED_UNDO_" ~ oid, "title": "↩️ No, undo it"},
+                                {"action": "MED_KEEP_" ~ oid, "title": "✅ Yes, intended"}]}
+                   | combine(nav) }}
       # 2. "Undo" tapped -> un-mark the dose and clear the warning.
       - conditions:
           - "{{ trigger.id == 'button' }}"

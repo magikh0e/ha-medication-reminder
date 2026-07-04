@@ -127,6 +127,10 @@
       at: "09:00:00"
   variables:
     default_notify: caretakers
+    # Lovelace path to open when the notification is tapped; "" = app default.
+    dashboard_path: ""
+    nav: >-
+      {{ {"clickAction": dashboard_path, "url": dashboard_path} if dashboard_path else {} }}
   action:
     - repeat:
         for_each: >
@@ -145,8 +149,8 @@
             data:
               title: "💊 Refill soon: {{ patient }}"
               message: "Low medication supply for {{ patient }}: {{ low }}."
-              data:
-                tag: "med_supply_{{ oid }}"
+              data: >-
+                {{ {"tag": "med_supply_" ~ oid} | combine(nav) }}
   mode: single
 
 # Early-dose warning. Listens for the integration's `medication_reminder_dose_given`
@@ -167,6 +171,10 @@
   variables:
     default_notify: caretakers
     early_grace_minutes: 30
+    # Lovelace path to open when the notification is tapped; "" = app default.
+    dashboard_path: ""
+    nav: >-
+      {{ {"clickAction": dashboard_path, "url": dashboard_path} if dashboard_path else {} }}
   action:
     - choose:
         # A dose was marked given early -> actionable warning.
@@ -186,13 +194,11 @@
               data:
                 title: "⚠️ Given early: {{ patient }}"
                 message: "{{ patient }}'s {{ clock }} dose ({{ meds }}) was marked given {{ mins_early }} min early. Was that on purpose?"
-                data:
-                  tag: "med_early_{{ oid }}"
-                  actions:
-                    - action: "MED_UNDO_{{ oid }}"
-                      title: "↩️ No, undo it"
-                    - action: "MED_KEEP_{{ oid }}"
-                      title: "✅ Yes, intended"
+                data: >-
+                  {{ {"tag": "med_early_" ~ oid,
+                      "actions": [{"action": "MED_UNDO_" ~ oid, "title": "↩️ No, undo it"},
+                                  {"action": "MED_KEEP_" ~ oid, "title": "✅ Yes, intended"}]}
+                     | combine(nav) }}
         # "Undo" tapped -> un-mark the dose and clear the warning.
         - conditions:
             - "{{ trigger.id == 'button' }}"
@@ -239,6 +245,10 @@
       event_type: medication_reminder_dose_undone
   variables:
     default_notify: caretakers
+    # Lovelace path to open when the notification is tapped; "" = app default.
+    dashboard_path: ""
+    nav: >-
+      {{ {"clickAction": dashboard_path, "url": dashboard_path} if dashboard_path else {} }}
     ent: "{{ trigger.event.data.entity_id }}"
     oid: "{{ ent.split('.')[1] }}"
     patient: "{{ trigger.event.data.patient }}"
@@ -255,6 +265,6 @@
           {{ patient }}'s {{ (clock ~ ' ') if clock else '' }}dose ({{ meds }})
           was un-marked (flipped back to not given). Mark it given again if that
           was not intended.
-        data:
-          tag: "med_unmark_{{ oid }}"
+        data: >-
+          {{ {"tag": "med_unmark_" ~ oid} | combine(nav) }}
   mode: parallel

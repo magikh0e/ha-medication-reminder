@@ -20,12 +20,23 @@ blueprint:
       default: "09:00:00"
       selector:
         time:
+    dashboard_path:
+      name: Open dashboard when the notification is tapped
+      description: >
+        Optional. Lovelace path to open when the notification body is tapped,
+        e.g. /lovelace-meds/0. Leave blank to open the app default.
+      default: ""
+      selector:
+        text:
 
 trigger:
   - platform: time
     at: !input check_time
 variables:
   default_notify: !input fallback_notify
+  dashboard_path: !input dashboard_path
+  nav: >-
+    {{ {"clickAction": dashboard_path, "url": dashboard_path} if dashboard_path else {} }}
 action:
   - repeat:
       for_each: >
@@ -44,6 +55,6 @@ action:
           data:
             title: "💊 Refill soon: {{ patient }}"
             message: "Low medication supply for {{ patient }}: {{ low }}."
-            data:
-              tag: "med_supply_{{ oid }}"
+            data: >-
+              {{ {"tag": "med_supply_" ~ oid} | combine(nav) }}
 mode: single

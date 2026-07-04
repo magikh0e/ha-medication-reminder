@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- Tapping a reminder notification's body (not the Mark given button) can open a dashboard. Set the reminders blueprint's new **Open dashboard when the notification is tapped** input (or the `dashboard_path` variable in the companion automation) to a Lovelace path like `/lovelace-meds/0`, and it wires `clickAction` (Android) and `url` (iOS) into the notification. Re-import the blueprint to get it.
+- Tapping a notification's body (not an action button) can open a dashboard. Every notification blueprint (dose reminders, early-dose warning, low-supply reminder, un-mark alert) gained an **Open dashboard when the notification is tapped** input (or a `dashboard_path` variable in the companion automations); set it to a Lovelace path like `/lovelace-meds/0` and it wires `clickAction` (Android) and `url` (iOS) into the notification. Re-import the blueprints to get it.
 
 ## [0.25.2] - 2026-07-04
 ### Added

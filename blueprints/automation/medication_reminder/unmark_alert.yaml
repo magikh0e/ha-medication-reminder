@@ -17,12 +17,23 @@ blueprint:
       default: caretakers
       selector:
         text:
+    dashboard_path:
+      name: Open dashboard when the notification is tapped
+      description: >
+        Optional. Lovelace path to open when the notification body is tapped,
+        e.g. /lovelace-meds/0. Leave blank to open the app default.
+      default: ""
+      selector:
+        text:
 
 trigger:
   - platform: event
     event_type: medication_reminder_dose_undone
 variables:
   default_notify: !input fallback_notify
+  dashboard_path: !input dashboard_path
+  nav: >-
+    {{ {"clickAction": dashboard_path, "url": dashboard_path} if dashboard_path else {} }}
   ent: "{{ trigger.event.data.entity_id }}"
   oid: "{{ ent.split('.')[1] }}"
   patient: "{{ trigger.event.data.patient }}"
@@ -39,6 +50,6 @@ action:
         {{ patient }}'s {{ (clock ~ ' ') if clock else '' }}dose ({{ meds }}) was
         un-marked (flipped back to not given). Mark it given again if that was
         not intended.
-      data:
-        tag: "med_unmark_{{ oid }}"
+      data: >-
+        {{ {"tag": "med_unmark_" ~ oid} | combine(nav) }}
 mode: parallel
