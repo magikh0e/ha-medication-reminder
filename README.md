@@ -393,6 +393,12 @@ To set it up:
 and a current-medications reference. No config and no editable counts, so it is
 safe to share.*
 
+![Admin dashboard](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/admin-dashboard.png)
+
+*The admin dashboard: a full per-patient setup audit, editable supply counts,
+attention and guard sensors, pointers to History and Logbook for adherence and
+who marked or refilled, and a test-reminder button.*
+
 ## Settings (per patient)
 
 Each patient has its own **Configure, Reminder settings** with:
