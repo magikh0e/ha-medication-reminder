@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.26.0] - 2026-07-03
 ### Fixed
 - The `simulate_med_reminder` example script now applies its field defaults when called without them (e.g. from a dashboard button), so it no longer renders an invalid `notify.` service; a bare call sends a sample reminder to `persistent_notification`.
 
@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Caregiver and admin dashboards for a roles split. `dashboards/lovelace-caregiver.yaml` is a simplified, safe-to-share view (status, mark given, as-needed logging, low-supply refill buttons, current medications) with no config and no editable supply counts. `dashboards/lovelace-admin.yaml` is the manage-and-audit view (per-patient setup audit, editable supply counts, attention/guard sensors, History/Logbook pointers for adherence and who marked or refilled, and a test-reminder button). Give caregivers a non-admin Home Assistant user and the caregiver dashboard, and mark the admin dashboard "Admin only". See "Roles & sharing" in the README.
 - Tapping a notification's body (not an action button) can open a dashboard. Every notification blueprint (dose reminders, early-dose warning, low-supply reminder, un-mark alert) gained an **Open dashboard when the notification is tapped** input (or a `dashboard_path` variable in the companion automations); set it to a Lovelace path like `/lovelace-meds/0` and it wires `clickAction` (Android) and `url` (iOS) into the notification. Re-import the blueprints to get it.
 
-## [0.25.2] - 2026-07-04
+## [0.25.2] - 2026-07-03
 ### Added
 - Responsive dashboard `dashboards/lovelace-sections.yaml`: a Sections-view layout that shows one clean column on a phone and up to three columns on a tablet or desktop, from the same auto-discovering cards. Paste it into a dashboard's Raw configuration editor.
 
