@@ -352,7 +352,9 @@ content: |-
   {% endfor %}
 ```
 
-![Current medications card](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/current-medications.png)
+![Current medications card](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/current-medications.png?v=2)
+
+*The current-medications card: each patient's medications with strength and dosage, plus each med's dose times, for handing to a vet or doctor.*
 
 ## Settings (per patient)
 
@@ -371,9 +373,9 @@ as switch attributes that the companion automations read.
 
 ## Supply & refill tracking
 
-![Supplies on hand](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/Supplies.png)
+![Supplies on hand](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/Supplies.png?v=2)
 
-*The supplies-on-hand card; a medication at or below its threshold turns red.*
+*The supplies-on-hand card: each medication's units left plus a one-tap refill button; a medication at or below its threshold turns red.*
 
 Optionally track how much of each medication you have on hand. In **Configure,
 Track a medication supply**, pick the medication from your doses, then set units
