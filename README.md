@@ -25,7 +25,7 @@ without the newer features here (UI-managed schedules, supply tracking, the
 as-needed/PRN tools, and the extra sensors and calendar). Prefer a YAML-only
 setup with no custom integration? Use that one; otherwise use this.
 
-![Medication Reminder dashboard](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/dashboard.png?v=3)
+![Medication Reminder dashboard](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/dashboard.png?v=4)
 
 > ⚠️ **Important.** This is a reminder aid, **not** a medical device. Validate it
 > on your own Home Assistant and keep a backup reminder method until you trust it,
