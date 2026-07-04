@@ -1,0 +1,227 @@
+# ⚠️ ADD VIA: new dashboard → ⋮ menu → Raw configuration editor → paste this (a whole dashboard).
+# ⚠️ Do NOT use "Add Card → Manual" (that is for the lovelace-card*.yaml single-card files).
+#
+# ============================================================
+# Medication Reminder: caregiver dashboard (Sections view)
+#
+# A simplified, do-focused view for day-to-day caregivers: status,
+# today's doses (tap to mark given), as-needed logging, low supplies to
+# refill, and a current-medications reference. No schedule setup or
+# config, so it is safe to share with a non-admin Home Assistant user
+# (see "Roles & sharing" in the README).
+#
+# SETUP: create a new dashboard, open its three-dot menu, Edit
+# dashboard, then three-dot menu, Raw configuration editor, and paste
+# this whole file. Assign it to your caregivers.
+#
+# Needs two HACS cards (same as the other layouts):
+#   - auto-entities  https://github.com/thomasloven/lovelace-auto-entities
+#   - card-mod       https://github.com/thomasloven/lovelace-card-mod
+# Requires Home Assistant 2024.3+ (Sections view).
+#
+# No patient names or entity ids to edit; it auto-discovers everyone.
+# ============================================================
+
+views:
+  - title: Medications
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        cards:
+          # 1. Status panel (red/green)
+          - type: markdown
+            card_mod:
+              style: |
+                ha-card { background: {% if (states.binary_sensor | selectattr('entity_id','search','_needs_attention') | selectattr('attributes.patient','defined') | selectattr('state','eq','on') | list | length) > 0 %}rgba(244, 67, 54, 0.15){% else %}rgba(76, 175, 80, 0.12){% endif %} !important; }
+            content: |-
+              {% set s = states.binary_sensor | selectattr('entity_id','search','_needs_attention') | selectattr('attributes.patient','defined') | list %}
+              {% set red = s | selectattr('state','eq','on') | list %}
+              {% if red | length == 0 %}
+              # 🟢 All caught up
+              {% else %}
+              # 🔴 Attention needed
+              {% for p in red %}
+              - **{{ p.attributes.patient }}**: {{ p.attributes.overdue | map('replace', p.attributes.patient ~ ' ', '', 1) | join(', ') }}
+              {% endfor %}
+              {% endif %}
+
+          # 2. Today summary (read-only)
+          - type: markdown
+            content: |-
+              {% set today = ['mon','tue','wed','thu','fri','sat','sun'][now().weekday()] %}
+              {% set week = ['mon','tue','wed','thu','fri','sat','sun'] %}
+              {% set show_patient = (states.switch | selectattr('attributes.medications','defined') | map(attribute='attributes.patient') | unique | list | length) > 1 %}
+              {% set ns = namespace(meds=[]) %}
+              {% for s in states.switch if s.attributes.medications is defined and s.attributes.get('scheduled_today', today in (s.attributes.days or week)) %}
+              {% set ns.meds = ns.meds + [s] %}
+              {% endfor %}
+              {% set given = ns.meds | selectattr('state','eq','on') | list %}
+              {% set pending = ns.meds | selectattr('state','eq','off') | list %}
+              {% set ns2 = namespace(overdue=[], upcoming=[]) %}
+              {% for x in pending %}
+              {% set mins = (as_timestamp(now()) - as_timestamp(today_at(x.attributes.dose_time))) / 60 %}
+              {% if mins >= (x.attributes.nag_minutes | int(45)) %}
+              {% set ns2.overdue = ns2.overdue + [x] %}
+              {% else %}
+              {% set ns2.upcoming = ns2.upcoming + [x] %}
+              {% endif %}
+              {% endfor %}
+              ### 💊 Doses today: {{ given|length }}/{{ ns.meds|length }} given
+              {% if ns.meds|length == 0 -%}
+              No doses scheduled today.
+              {%- elif not pending -%}
+              ✅ All doses given for today.
+              {%- else -%}
+              {% if ns2.overdue %}**⚠️ Overdue:**
+              {% for x in ns2.overdue | sort(attribute='attributes.dose_time') %}
+              {%- set f = '%H:%M' if x.attributes.time_format == '24h' else '%I:%M %p' %}
+              - {% if show_patient %}{{ x.attributes.patient }} {% endif %}{{ as_timestamp(today_at(x.attributes.dose_time)) | timestamp_custom(f) }} ({{ x.attributes.medications }})
+              {%- endfor %}
+              {% endif %}
+              {% if ns2.upcoming %}**⏳ Upcoming:**
+              {% for x in ns2.upcoming | sort(attribute='attributes.dose_time') %}
+              {%- set f = '%H:%M' if x.attributes.time_format == '24h' else '%I:%M %p' %}
+              - {% if show_patient %}{{ x.attributes.patient }} {% endif %}{{ as_timestamp(today_at(x.attributes.dose_time)) | timestamp_custom(f) }} ({{ x.attributes.medications }})
+              {%- endfor %}
+              {% endif %}
+              {%- endif %}
+              {% set low = states.binary_sensor | selectattr('attributes.low_count','defined') | selectattr('state','eq','on') | list %}
+              {% if low %}
+
+              **📦 Refill soon:** {% for b in low %}{{ b.attributes.patient }} ({{ (b.attributes.low or []) | join(', ') }}){% if not loop.last %}; {% endif %}{% endfor %}
+              {% endif %}
+              {% if given|length > 0 %}
+
+              **Already given:**
+              {% for x in given | sort(attribute='last_changed') %}
+              {%- set gat = x.attributes.given_at or x.last_changed %}
+              {%- set f = '%H:%M' if x.attributes.time_format == '24h' else '%I:%M %p' %}
+              - ✅ {% if show_patient %}{{ x.attributes.patient }} {% endif %}{{ x.attributes.medications }} at {{ as_timestamp(gat) | timestamp_custom(f) }}
+              {%- endfor %}
+              {% endif %}
+
+          # 3. Every dose due today (tap to mark given), auto-discovers all patients
+          - type: custom:auto-entities
+            card:
+              type: entities
+              title: Mark given
+              show_header_toggle: false
+              card_mod:
+                style: |
+                  ha-card {
+                    --state-switch-on-color: #2196f3;
+                    --state-active-color: #2196f3;
+                    --state-icon-active-color: #2196f3;
+                    --paper-item-icon-active-color: #2196f3;
+                    --state-icon-color: #90caf9;
+                    --paper-item-icon-color: #90caf9;
+                  }
+            filter:
+              template: >
+                {% set today = ['mon','tue','wed','thu','fri','sat','sun'][now().weekday()] %}
+                {% for s in states.switch if s.attributes.medications is defined
+                   and s.attributes.get('scheduled_today', today in (s.attributes.days or ['mon','tue','wed','thu','fri','sat','sun'])) %}
+                {{ s.entity_id }}
+                {% endfor %}
+            sort:
+              method: name
+      - type: grid
+        cards:
+          # 3b. As-needed (PRN) meds: tap "Log dose" to record one (decrements supply),
+          # with each med's "last taken" time shown beside it. Hidden if you have no PRN
+          # doses.
+          - type: custom:auto-entities
+            show_empty: false
+            card:
+              type: entities
+              title: As needed (PRN)
+              show_header_toggle: false
+              card_mod:
+                style: |
+                  ha-card {
+                    --state-icon-color: #2196f3;
+                    --paper-item-icon-color: #2196f3;
+                  }
+            filter:
+              template: >
+                {% for s in states.button if s.name and 'Log ' in s.name and s.name.endswith('dose') %}
+                {{ s.entity_id }}
+                {% endfor %}
+                {% for s in states.sensor if s.name and s.name.endswith('last taken') %}
+                {{ s.entity_id }}
+                {% endfor %}
+                {% for s in states.sensor if s.name and s.name.endswith('doses today') %}
+                {{ s.entity_id }}
+                {% endfor %}
+            sort:
+              method: name
+
+          # 4. Low supplies to refill (auto-discovers; hidden when nothing is low)
+          - type: custom:auto-entities
+            show_empty: false
+            card:
+              type: entities
+              title: Refill soon
+              show_header_toggle: false
+              card_mod:
+                style: |
+                  ha-card {
+                    --state-icon-color: #2196f3;
+                    --paper-item-icon-color: #2196f3;
+                  }
+            filter:
+              template: >
+                [{% for n in states.number if n.attributes.medication is defined and n.attributes.low %}
+                  {{ {'entity': n.entity_id} }},
+                  {% for b in states.button if b.attributes.medication is defined and b.attributes.patient == n.attributes.patient and b.attributes.medication == n.attributes.medication %}
+                  {{ {'entity': b.entity_id} }},
+                  {% endfor %}
+                {% endfor %}]
+            sort:
+              method: name
+      - type: grid
+        cards:
+          # 7. Per-patient "current medications" (read-only): the "what" and "when" to
+          # hand a provider, with each medication's dose times plus any full name /
+          # strength / brand / condition / dosage detail you have added under Configure.
+          # Auto-discovers every patient.
+          - type: markdown
+            content: |-
+              ## 💊 Current medications
+              {% set week = ['mon','tue','wed','thu','fri','sat','sun'] %}
+              {% set sensors = states.sensor | selectattr('entity_id','search','_medications$') | selectattr('attributes.medications','defined') | selectattr('attributes.patient','defined') | list %}
+              {% set medsw = states.switch | selectattr('attributes.medications','defined') | list %}
+              {% for s in sensors | sort(attribute='attributes.patient') %}
+              {%- set sw = medsw | selectattr('attributes.patient','eq',s.attributes.patient) | list | first %}
+              {%- set ptype = (sw.attributes.patient_type if sw else 'person') | default('person') %}
+              ### {{ {'dog':'🐕','cat':'🐈','person':'🧑','bird':'🐦','rabbit':'🐇','other':'🐾'}.get(ptype,'💊') }} {{ s.attributes.patient }}
+              {% for m in s.attributes.medications %}
+              - **{{ m.full_name or m.name }}**{% if m.brand %} ({{ m.brand }}){% endif %}{% if m.strength %} {{ m.strength }}{% endif %}{% if m.prescribed_for %}, for {{ m.prescribed_for }}{% endif %}{% if m.dosage %}, {{ m.dosage }}{% endif %}
+              {%- set ns = namespace(md=[]) %}
+              {%- for d in medsw if d.attributes.patient == s.attributes.patient and (m.name | lower) in ((d.attributes.medications | regex_replace('[&+]|\s+/\s+', ',')).split(',') | map('trim') | map('lower') | list) %}
+              {%- set ns.md = ns.md + [d] %}
+              {%- endfor %}
+              {%- set ordered = (ns.md | rejectattr('attributes.schedule_type','eq','prn') | sort(attribute='attributes.dose_time') | list) + (ns.md | selectattr('attributes.schedule_type','eq','prn') | list) %}
+              {%- for d in ordered %}
+              {%- set fmt = '%H:%M' if d.attributes.time_format == '24h' else '%I:%M %p' %}
+              {%- set stype = d.attributes.schedule_type %}
+              {%- set days = d.attributes.days or week %}
+              {%- set n = d.attributes.interval_days | int(2) %}
+              {%- if stype == 'interval' %}
+              {%- set cad = 'daily' if n == 1 else 'every ' ~ n ~ ' days' %}
+              {%- elif stype == 'cycle' %}
+              {%- set cad = (d.attributes.cycle_on | int(21)) ~ ' on / ' ~ (d.attributes.cycle_off | int(7)) ~ ' off' %}
+              {%- elif stype == 'monthly' %}
+              {%- set cad = 'monthly on ' ~ (d.attributes.month_days | join(', ')) %}
+              {%- else %}
+              {%- set cad = 'daily' if days|length == 7 else (week | select('in', days) | map('capitalize') | join(', ')) %}
+              {%- endif %}
+              {%- if stype == 'prn' %}
+                  - 🕐 As needed
+              {%- else %}
+                  - 🕐 {{ as_timestamp(today_at(d.attributes.dose_time)) | timestamp_custom(fmt) }} ({{ cad }})
+              {%- endif %}
+              {%- endfor %}
+              {%- endfor %}
+              {% endfor %}
