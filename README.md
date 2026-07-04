@@ -387,13 +387,13 @@ To set it up:
    dashboard → Settings) so non-admin users cannot see it. Caregivers can still
    tap Mark given, log a PRN dose, and refill on the caregiver dashboard.
 
-![Caregiver dashboard](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/meds-caregiver.png)
+![Caregiver dashboard](images/meds-caregiver.png)
 
 *The caregiver dashboard: what to do now, mark a dose given, refill a low supply,
 and a current-medications reference. No config and no editable counts, so it is
 safe to share.*
 
-![Admin dashboard](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/admin-dashboard.png)
+![Admin dashboard](images/admin-dashboard.png)
 
 *The admin dashboard: a full per-patient setup audit, editable supply counts,
 attention and guard sensors, pointers to History and Logbook for adherence and
