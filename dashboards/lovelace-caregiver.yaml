@@ -157,7 +157,8 @@ views:
             sort:
               method: name
 
-          # 4. Low supplies to refill (auto-discovers; hidden when nothing is low)
+          # 4. Refill buttons for low supplies (read-only count lives in the Today card;
+          #    caregivers refill, they do not edit raw counts, that stays on the admin view)
           - type: custom:auto-entities
             show_empty: false
             card:
@@ -173,7 +174,6 @@ views:
             filter:
               template: >
                 [{% for n in states.number if n.attributes.medication is defined and n.attributes.low %}
-                  {{ {'entity': n.entity_id} }},
                   {% for b in states.button if b.attributes.medication is defined and b.attributes.patient == n.attributes.patient and b.attributes.medication == n.attributes.medication %}
                   {{ {'entity': b.entity_id} }},
                   {% endfor %}
