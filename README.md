@@ -360,6 +360,39 @@ content: |-
 
 *The current-medications card: each patient's medications with strength and dosage, plus each med's dose times, for handing to a vet or doctor.*
 
+## Roles & sharing
+
+Split day-to-day care from setup and oversight using Home Assistant's own user
+roles. There are no accounts to build here; it is all HA.
+
+- **Caregivers** get [`lovelace-caregiver.yaml`](dashboards/lovelace-caregiver.yaml):
+  a simplified view with the status banner, today's doses (tap to mark given),
+  as-needed logging, low supplies to refill, and a current-medications reference.
+  It has no config and no editable supply counts, so it is safe to hand to anyone
+  helping out.
+- **Admins** get [`lovelace-admin.yaml`](dashboards/lovelace-admin.yaml): the
+  manage-and-audit view with a full per-patient setup audit, editable supply
+  counts, attention/guard sensors, pointers to History and Logbook (adherence,
+  and who marked or refilled), and a test-reminder button. Configuring doses,
+  supplies, and reminders stays in the integration's Configure flow, which is
+  already admin-only.
+
+To set it up:
+
+1. Create each caregiver as a **non-admin** user: Settings → People → Users → Add
+   user, with Administrator left off.
+2. Create two dashboards (Settings → Dashboards → Add dashboard) and paste each
+   file into its Raw configuration editor.
+3. On the admin dashboard turn on **Admin only** (Settings → Dashboards → the
+   dashboard → Settings) so non-admin users cannot see it. Caregivers can still
+   tap Mark given, log a PRN dose, and refill on the caregiver dashboard.
+
+![Caregiver dashboard](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/meds-caregiver.png)
+
+*The caregiver dashboard: what to do now, mark a dose given, refill a low supply,
+and a current-medications reference. No config and no editable counts, so it is
+safe to share.*
+
 ## Settings (per patient)
 
 Each patient has its own **Configure, Reminder settings** with:

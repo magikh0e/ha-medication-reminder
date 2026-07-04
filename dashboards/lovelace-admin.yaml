@@ -1,0 +1,114 @@
+# >>> ADD VIA: new dashboard, three-dot menu, Raw configuration editor, paste this (a whole dashboard).
+# >>> Do NOT use "Add Card, Manual".
+#
+# ============================================================
+# Medication Reminder: admin / oversight dashboard (Sections view)
+#
+# The manage-and-audit companion to lovelace-caregiver.yaml. It shows a
+# full setup audit, editable supply counts, attention/guard sensors,
+# pointers to History/Logbook for adherence and who-did-what, and a
+# test-reminder button.
+#
+# ROLES: give caregivers only lovelace-caregiver.yaml, and keep this
+# admin view for yourself. After you create this dashboard, open
+# Settings, Dashboards, select it, and turn on "Admin only" so
+# non-admin users cannot see it. See "Roles & sharing" in the README.
+#
+# SETUP: create a new dashboard, three-dot menu, Edit dashboard,
+# three-dot menu, Raw configuration editor, and paste this whole file.
+#
+# Needs auto-entities + card-mod (same as the other layouts), Home
+# Assistant 2024.3+ (Sections view), and the simulate_med_reminder
+# script (examples/simulate-reminder.yaml) for the test button.
+# ============================================================
+
+views:
+- title: Admin
+  type: sections
+  max_columns: 3
+  sections:
+  - type: grid
+    cards:
+    - type: markdown
+      content: |-
+        ## 🛠️ Setup audit
+        {% set sw = states.switch | selectattr('attributes.medications','defined') | list %}
+        {% set sup = states.number | selectattr('attributes.medication','defined') | list %}
+        {% set week = ['mon','tue','wed','thu','fri','sat','sun'] %}
+        {% for p in (sw | map(attribute='attributes.patient') | unique | list | sort) %}
+        {%- set pd = sw | selectattr('attributes.patient','eq',p) | sort(attribute='attributes.dose_time') | list %}
+        {%- set ps = sup | selectattr('attributes.patient','eq',p) | list %}
+        {%- set r = pd[0] if pd else none %}
+        ### {{ p }}
+        {%- if r %}
+        _Notify_ `{{ r.attributes.notify_service or '(fallback)' }}` · _nag_ {{ r.attributes.nag_minutes | int(45) }}m/{{ r.attributes.nag_interval | int(15) }}m · {{ '24h' if r.attributes.time_format == '24h' else '12h' }}
+        {%- endif %}
+        **Doses ({{ pd|length }}):**
+        {% for d in pd %}
+        {%- set days = d.attributes.days or week %}
+        {%- set st = d.attributes.schedule_type %}
+        {%- set n = d.attributes.interval_days | int(2) %}
+        {%- if st == 'interval' %}{% set cad = 'daily' if n==1 else 'every ' ~ n ~ 'd' %}
+        {%- elif st == 'cycle' %}{% set cad = (d.attributes.cycle_on|int(21)) ~ ' on/' ~ (d.attributes.cycle_off|int(7)) ~ ' off' %}
+        {%- elif st == 'monthly' %}{% set cad = 'monthly ' ~ (d.attributes.month_days|join(',')) %}
+        {%- elif st == 'prn' %}{% set cad = 'as needed' %}
+        {%- else %}{% set cad = 'daily' if days|length==7 else (week|select('in',days)|map('capitalize')|join(',')) %}
+        {%- endif %}
+        {%- set t = '' if st=='prn' else (as_timestamp(today_at(d.attributes.dose_time)) | timestamp_custom('%H:%M')) %}
+        - {{ (t ~ ' ') if t else '' }}{{ d.attributes.medications }} ({{ cad }})
+        {%- endfor %}
+        {%- if ps %}
+        **Supplies:**
+        {% for s in ps %}
+        - {{ s.attributes.medication }}: {{ s.state | int }} left, reorder at {{ s.attributes.threshold }}, refill {{ 'adds' if s.attributes.refill_add else 'sets' }} {{ s.attributes.refill_to }}
+        {%- endfor %}
+        {%- endif %}
+        {% endfor %}
+  - type: grid
+    cards:
+    - type: markdown
+      content: |-
+        ## 📦 Supplies
+        Adjust counts directly here. Thresholds and refill amounts live in **Settings, Devices & Services, Medication Reminder, Configure**.
+    - type: custom:auto-entities
+      card:
+        type: entities
+        title: Supply counts (adjust)
+        show_header_toggle: false
+      filter:
+        template: '[{% for n in states.number if n.attributes.medication is defined %}{{ {''entity'': n.entity_id} }},{% endfor %}]'
+      sort:
+        method: name
+    - type: custom:auto-entities
+      card:
+        type: entities
+        title: Attention & guards
+      filter:
+        template: '[{% for s in states.binary_sensor if s.attributes.patient is defined and (s.entity_id.endswith(''_needs_attention'') or s.entity_id.endswith(''_supplies_low'')) %}{{ {''entity'': s.entity_id} }},{% endfor %}{% for s in states.sensor if s.entity_id.endswith(''_dose_guard'') or s.entity_id.endswith(''_problem'') %}{{ {''entity'': s.entity_id} }},{% endfor %}]'
+      show_empty: false
+  - type: grid
+    cards:
+    - type: markdown
+      content: |-
+        ## 📈 Adherence & audit trail
+        Home Assistant's built-in tools handle the (dynamic) dose entities best:
+        - **7-day dose history / adherence:** Settings, History, filter to the dose switches.
+        - **Who marked or refilled, with time:** Settings, Logbook, filter to a dose switch or a refill button. Dashboard taps show the user; a dose marked from a notification shows the automation.
+        - Un-marks are also alerted live by the un-mark blueprint.
+  - type: grid
+    cards:
+    - type: markdown
+      content: |-
+        ## 🔧 Tools
+        - **Configure** doses/supplies/reminders: Settings, Devices & Services, Medication Reminder, Configure.
+        - **Diagnostics**: the integration's menu, Download diagnostics.
+        - Fire a test reminder with the button below (needs the simulate_med_reminder script).
+    - type: button
+      name: Send test reminder
+      icon: mdi:bell-ring
+      tap_action:
+        action: perform-action
+        perform_action: script.simulate_med_reminder
+        data:
+          notify_service: persistent_notification
+          kind: reminder
