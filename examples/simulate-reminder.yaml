@@ -49,6 +49,15 @@ simulate_med_reminder:
       default: 23
   sequence:
     - variables:
+        # Apply field defaults when the script is called without them (e.g. from
+        # a dashboard button); field defaults only prefill the UI form, they are
+        # not applied on a direct service call.
+        notify_service: "{{ notify_service | default('persistent_notification', true) }}"
+        kind: "{{ kind | default('reminder', true) }}"
+        patient: "{{ patient | default('Kali', true) }}"
+        meds: "{{ meds | default('Trazodone & Gabapentin', true) }}"
+        clock: "{{ clock | default('2:00 PM', true) }}"
+        mins_early: "{{ mins_early | default(23, true) }}"
         oid: "sim_{{ now().timestamp() | int }}"
     - choose:
         - conditions: "{{ kind == 'missed' }}"

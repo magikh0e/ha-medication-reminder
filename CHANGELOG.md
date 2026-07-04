@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed
+- The `simulate_med_reminder` example script now applies its field defaults when called without them (e.g. from a dashboard button), so it no longer renders an invalid `notify.` service; a bare call sends a sample reminder to `persistent_notification`.
+
 ### Added
 - Tapping a notification's body (not an action button) can open a dashboard. Every notification blueprint (dose reminders, early-dose warning, low-supply reminder, un-mark alert) gained an **Open dashboard when the notification is tapped** input (or a `dashboard_path` variable in the companion automations); set it to a Lovelace path like `/lovelace-meds/0` and it wires `clickAction` (Android) and `url` (iOS) into the notification. Re-import the blueprints to get it.
 
