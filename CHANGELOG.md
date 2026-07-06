@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- French translation (`fr.json`) of the configuration UI. Home Assistant loads it automatically for French users; any untranslated key falls back to English.
+
 ## [0.26.0] - 2026-07-03
 ### Fixed
 - The `simulate_med_reminder` example script now applies its field defaults when called without them (e.g. from a dashboard button), so it no longer renders an invalid `notify.` service; a bare call sends a sample reminder to `persistent_notification`.
