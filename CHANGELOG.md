@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- Optional per-medication cost tracking. **Configure, Supplies** (Track a supply or Edit a supply) now has a **Cost per unit** field. Set it and the supply's `number` entity exposes `cost_per_unit`, `value_on_hand`, `cost_per_dose`, and `est_monthly_cost` attributes; the monthly estimate uses the same schedule cadence as the run-out date, so it is 0 for as-needed doses. Leave the cost at 0 to skip it, and existing supplies are unaffected until you set one.
 - French translation (`fr.json`) of the configuration UI. Home Assistant loads it automatically for French users; any untranslated key falls back to English.
 
 ## [0.26.0] - 2026-07-03

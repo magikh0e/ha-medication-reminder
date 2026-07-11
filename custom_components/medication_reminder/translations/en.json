@@ -129,10 +129,12 @@
           "supply_per_dose": "Units consumed per dose",
           "supply_threshold": "Low-stock threshold",
           "supply_refill_to": "Refill amount (a full supply)",
-          "supply_refill_add": "Add on refill (package refill)"
+          "supply_refill_add": "Add on refill (package refill)",
+          "supply_cost": "Cost per unit (0 = do not track)"
         },
         "data_description": {
-          "supply_refill_add": "On refill, add the refill amount to what is left (e.g. 17 + 30 = 47) instead of setting the count to the refill amount."
+          "supply_refill_add": "On refill, add the refill amount to what is left (e.g. 17 + 30 = 47) instead of setting the count to the refill amount.",
+          "supply_cost": "Cost of one unit (a pill, ml, etc.) in your currency, used for the value-on-hand and cost-per-dose attributes. Leave at 0 to skip cost tracking."
         }
       },
       "edit_supply": {
@@ -149,10 +151,12 @@
           "supply_per_dose": "Units consumed per dose",
           "supply_threshold": "Low-stock threshold",
           "supply_refill_to": "Refill amount (a full supply)",
-          "supply_refill_add": "Add on refill (package refill)"
+          "supply_refill_add": "Add on refill (package refill)",
+          "supply_cost": "Cost per unit (0 = do not track)"
         },
         "data_description": {
-          "supply_refill_add": "On refill, add the refill amount to what is left (e.g. 17 + 30 = 47) instead of setting the count to the refill amount."
+          "supply_refill_add": "On refill, add the refill amount to what is left (e.g. 17 + 30 = 47) instead of setting the count to the refill amount.",
+          "supply_cost": "Cost of one unit (a pill, ml, etc.) in your currency, used for the value-on-hand and cost-per-dose attributes. Leave at 0 to skip cost tracking."
         }
       },
       "remove_supply": {

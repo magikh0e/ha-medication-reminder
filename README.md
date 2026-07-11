@@ -423,16 +423,18 @@ as switch attributes that the companion automations read.
 
 Optionally track how much of each medication you have on hand. In **Configure,
 Track a medication supply**, pick the medication from your doses, then set units
-on hand, units consumed per dose, a low-stock threshold, and a refill amount.
-Change those later with **Edit a supply** in the same menu. Each tracked
+on hand, units consumed per dose, a low-stock threshold, a refill amount, and
+(optionally) a **cost per unit**. Change those later with **Edit a supply** in the
+same menu. Each tracked
 medication then gets:
 
 - `number.<patient>_<med>_supply` - units on hand, settable. It **decrements when
   a dose containing that medication is marked given** (once per dose per day,
   restart-safe, and never on the daily reset). Attributes include `doses_left` and
-  `est_runout_date`, computed from the schedule. Un-marking a dose (the early-dose
-  "undo" or a manual toggle-off) adds the units back. Adjust it any time to
-  correct a miscount or to refill.
+  `est_runout_date`, computed from the schedule. Setting a **cost per unit** on the
+  supply adds `value_on_hand`, `cost_per_dose`, and `est_monthly_cost` attributes.
+  Un-marking a dose (the early-dose "undo" or a manual toggle-off) adds the units
+  back. Adjust it any time to correct a miscount or to refill.
 - `button.<patient>_<med>_refill` - a one-tap restock, instead of editing the
   number by hand. By default it sets the supply to its configured refill amount;
   turn on **Add on refill (package refill)** for that supply to instead add the
@@ -587,7 +589,6 @@ territory. A future version may move reminders into the integration itself.
 **Planned:**
 
 - Optional in-integration notifications/nagging (so the YAML companion automations become optional).
-- Cost tracking: an optional per-medication cost so supplies and refills can total spend over time, building on the existing supply counts and refill history.
 - Persistent dose attribution: "given by" and "refilled by" surfaced as attributes on the dose and refill entities, so who did what shows without opening the Logbook (the 0.26.0 admin dashboard reads this from History and the Logbook today).
 
 **Shipped from the roadmap:**

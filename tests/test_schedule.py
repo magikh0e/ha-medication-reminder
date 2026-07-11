@@ -30,6 +30,7 @@ dose_too_soon = const.dose_too_soon
 dose_over_cap = const.dose_over_cap
 current_medications = const.current_medications
 medication_summary_line = const.medication_summary_line
+supply_cost_breakdown = const.supply_cost_breakdown
 
 # A known Monday, for weekday tests that don't hardcode the mapping.
 MON = date(2026, 6, 1)
@@ -354,3 +355,32 @@ def test_medication_summary_line():
         medication_summary_line({"name": "APAP", "full_name": "Paracetamol"})
         == "Paracetamol"
     )
+
+
+# --- Supply cost breakdown -------------------------------------------------
+
+def test_cost_breakdown_empty_when_no_cost():
+    assert supply_cost_breakdown(30, 1, 0, 7) == {}
+    assert supply_cost_breakdown(30, 1, None, 7) == {}
+    assert supply_cost_breakdown(30, 1, -1, 7) == {}
+
+
+def test_cost_breakdown_values():
+    # 20 units on hand, 2 units per dose, 0.50 per unit, 7 doses/week.
+    out = supply_cost_breakdown(20, 2, 0.5, 7)
+    assert out["cost_per_unit"] == 0.5
+    assert out["value_on_hand"] == 10.0  # 20 * 0.5
+    assert out["cost_per_dose"] == 1.0  # 2 * 0.5
+    # 7 doses/week * 52/12 weeks/month * 2 units * 0.5 = 30.33
+    assert out["est_monthly_cost"] == 30.33
+
+
+def test_cost_breakdown_monthly_zero_without_cadence():
+    # As-needed (per_week 0) has no predictable monthly cost.
+    out = supply_cost_breakdown(10, 1, 2.0, 0)
+    assert out["est_monthly_cost"] == 0
+    assert out["value_on_hand"] == 20.0
+
+
+def test_cost_breakdown_handles_bad_input():
+    assert supply_cost_breakdown("x", 1, 1, 1) == {}

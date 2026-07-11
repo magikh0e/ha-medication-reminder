@@ -30,12 +30,14 @@ from homeassistant.util import slugify
 from .const import (
     CONF_PATIENT,
     CONF_SUPPLIES,
+    CONF_SUPPLY_COST,
     CONF_SUPPLY_MED,
     CONF_SUPPLY_PER_DOSE,
     CONF_SUPPLY_REFILL_ADD,
     CONF_SUPPLY_REFILL_TO,
     CONF_SUPPLY_THRESHOLD,
     CONF_SUPPLY_UNITS,
+    DEFAULT_SUPPLY_COST,
     DEFAULT_SUPPLY_PER_DOSE,
     DEFAULT_SUPPLY_REFILL_ADD,
     DEFAULT_SUPPLY_REFILL_TO,
@@ -48,6 +50,7 @@ from .const import (
     doses_per_week,
     is_due,
     meds_contains,
+    supply_cost_breakdown,
 )
 
 
@@ -93,6 +96,8 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
             supply.get(CONF_SUPPLY_REFILL_ADD, DEFAULT_SUPPLY_REFILL_ADD)
         )
         self._value = float(supply.get(CONF_SUPPLY_UNITS, DEFAULT_SUPPLY_UNITS))
+        # Per-unit cost (0 = untracked); drives the optional cost attributes.
+        self._cost = float(supply.get(CONF_SUPPLY_COST, DEFAULT_SUPPLY_COST) or 0)
         # dose entity_id -> calendar date already counted, to avoid double-count.
         self._consumed: dict[str, str] = {}
         self._attr_name = f"{self._med} supply"
@@ -109,7 +114,7 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        return {
+        attrs: dict[str, Any] = {
             "patient": self._patient,
             "medication": self._med,
             "per_dose": self._per_dose,
@@ -120,6 +125,14 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
             "est_runout_date": self._est_runout_date(),
             "low": self._value <= self._threshold,
         }
+        if self._cost > 0:
+            # Same weekly cadence as the run-out estimate powers est_monthly_cost.
+            attrs.update(
+                supply_cost_breakdown(
+                    self._value, self._per_dose, self._cost, self._doses_per_week()
+                )
+            )
+        return attrs
 
     def _doses_left(self) -> int | None:
         if self._per_dose <= 0:

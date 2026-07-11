@@ -41,6 +41,7 @@ from .const import (
     CONF_RESET_TIME,
     CONF_SCHEDULE_TYPE,
     CONF_SUPPLIES,
+    CONF_SUPPLY_COST,
     CONF_SUPPLY_MED,
     CONF_SUPPLY_PER_DOSE,
     CONF_SUPPLY_REFILL_ADD,
@@ -61,6 +62,7 @@ from .const import (
     DEFAULT_PATIENT_TYPE,
     DEFAULT_RESET_TIME,
     DEFAULT_SCHEDULE_TYPE,
+    DEFAULT_SUPPLY_COST,
     DEFAULT_SUPPLY_PER_DOSE,
     DEFAULT_SUPPLY_REFILL_ADD,
     DEFAULT_SUPPLY_REFILL_TO,
@@ -243,6 +245,17 @@ def _count_selector() -> selector.NumberSelector:
             min=0,
             max=9999,
             step=1,
+            mode=selector.NumberSelectorMode.BOX,
+        )
+    )
+
+
+def _cost_selector() -> selector.NumberSelector:
+    """A money box for the per-unit cost (0 = do not track cost)."""
+    return selector.NumberSelector(
+        selector.NumberSelectorConfig(
+            min=0,
+            step=0.01,
             mode=selector.NumberSelectorMode.BOX,
         )
     )
@@ -683,6 +696,7 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
             CONF_SUPPLY_THRESHOLD: int(user_input[CONF_SUPPLY_THRESHOLD]),
             CONF_SUPPLY_REFILL_TO: int(user_input[CONF_SUPPLY_REFILL_TO]),
             CONF_SUPPLY_REFILL_ADD: bool(user_input.get(CONF_SUPPLY_REFILL_ADD, False)),
+            CONF_SUPPLY_COST: float(user_input.get(CONF_SUPPLY_COST, 0) or 0),
         }
 
     def _save_supply(
@@ -722,6 +736,10 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
                 CONF_SUPPLY_REFILL_ADD,
                 default=bool(s.get(CONF_SUPPLY_REFILL_ADD, DEFAULT_SUPPLY_REFILL_ADD)),
             ): selector.BooleanSelector(),
+            vol.Optional(
+                CONF_SUPPLY_COST,
+                default=float(s.get(CONF_SUPPLY_COST, DEFAULT_SUPPLY_COST) or 0),
+            ): _cost_selector(),
         }
 
     def _add_supply_schema(self, med_names: list[str], d: dict[str, Any]) -> vol.Schema:

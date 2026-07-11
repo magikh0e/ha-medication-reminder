@@ -129,10 +129,12 @@
           "supply_per_dose": "Unités consommées par prise",
           "supply_threshold": "Seuil de stock bas",
           "supply_refill_to": "Quantité de recharge (un stock complet)",
-          "supply_refill_add": "Ajouter lors de la recharge (recharge par paquet)"
+          "supply_refill_add": "Ajouter lors de la recharge (recharge par paquet)",
+          "supply_cost": "Coût par unité (0 = ne pas suivre)"
         },
         "data_description": {
-          "supply_refill_add": "Lors de la recharge, ajouter la quantité de recharge à ce qui reste (par exemple 17 + 30 = 47) au lieu de fixer le compte à la quantité de recharge."
+          "supply_refill_add": "Lors de la recharge, ajouter la quantité de recharge à ce qui reste (par exemple 17 + 30 = 47) au lieu de fixer le compte à la quantité de recharge.",
+          "supply_cost": "Coût d'une unité (un comprimé, ml, etc.) dans votre devise, utilisé pour les attributs valeur en stock et coût par prise. Laissez à 0 pour ne pas suivre le coût."
         }
       },
       "edit_supply": {
@@ -149,10 +151,12 @@
           "supply_per_dose": "Unités consommées par prise",
           "supply_threshold": "Seuil de stock bas",
           "supply_refill_to": "Quantité de recharge (un stock complet)",
-          "supply_refill_add": "Ajouter lors de la recharge (recharge par paquet)"
+          "supply_refill_add": "Ajouter lors de la recharge (recharge par paquet)",
+          "supply_cost": "Coût par unité (0 = ne pas suivre)"
         },
         "data_description": {
-          "supply_refill_add": "Lors de la recharge, ajouter la quantité de recharge à ce qui reste (par exemple 17 + 30 = 47) au lieu de fixer le compte à la quantité de recharge."
+          "supply_refill_add": "Lors de la recharge, ajouter la quantité de recharge à ce qui reste (par exemple 17 + 30 = 47) au lieu de fixer le compte à la quantité de recharge.",
+          "supply_cost": "Coût d'une unité (un comprimé, ml, etc.) dans votre devise, utilisé pour les attributs valeur en stock et coût par prise. Laissez à 0 pour ne pas suivre le coût."
         }
       },
       "remove_supply": {
