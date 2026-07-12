@@ -51,6 +51,7 @@ CONF_SUPPLY_PER_DOSE = "supply_per_dose"
 CONF_SUPPLY_THRESHOLD = "supply_threshold"
 CONF_SUPPLY_REFILL_TO = "supply_refill_to"
 CONF_SUPPLY_REFILL_ADD = "supply_refill_add"
+CONF_SUPPLY_COST = "supply_cost"  # cost per unit; 0 = untracked
 
 # Per-medication reference detail (optional), kept separate from the short dose
 # name. Keyed by the medication name as it appears in a dose's meds string.
@@ -88,6 +89,7 @@ DEFAULT_SUPPLY_PER_DOSE = 1
 DEFAULT_SUPPLY_THRESHOLD = 10
 DEFAULT_SUPPLY_REFILL_TO = 30
 DEFAULT_SUPPLY_REFILL_ADD = False
+DEFAULT_SUPPLY_COST = 0.0
 
 # Icon for the patient-level "all doses given" sensor, by patient type.
 PATIENT_ICONS = {
@@ -231,6 +233,31 @@ def doses_per_week(data):
         return len(_month_days(data)) * 12.0 / 52.0
     days = data.get(CONF_DAYS) or WEEKDAYS
     return float(len(days))
+
+
+def supply_cost_breakdown(units, per_dose, cost, per_week):
+    """Cost figures for a supply, or {} when no per-unit cost is set.
+
+    `units` is the amount on hand, `per_dose` the units per dose, `cost` the
+    price of one unit (in the user's currency), and `per_week` how many doses
+    are scheduled per week. `est_monthly_cost` is 0 when there is no weekly
+    cadence (e.g. as-needed / PRN doses).
+    """
+    try:
+        cost = float(cost)
+        units = float(units)
+        per_dose = float(per_dose)
+        per_week = float(per_week)
+    except (TypeError, ValueError):
+        return {}
+    if cost <= 0:
+        return {}
+    return {
+        "cost_per_unit": round(cost, 2),
+        "value_on_hand": round(units * cost, 2),
+        "cost_per_dose": round(per_dose * cost, 2),
+        "est_monthly_cost": round(per_week * (52.0 / 12.0) * per_dose * cost, 2),
+    }
 
 
 def dose_min_interval_hours(data):

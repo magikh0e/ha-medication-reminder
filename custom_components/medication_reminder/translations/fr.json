@@ -1,0 +1,220 @@
+{
+  "issues": {
+    "supply_no_matching_dose": {
+      "title": "Le stock suivi ne correspond à aucune prise",
+      "description": "Le stock « {medication} » de {patient} ne correspond aux médicaments d'aucune prise, il ne sera donc jamais décrémenté. Vérifiez l'orthographe dans Configurer (elle doit correspondre exactement au médicament d'une prise), ou supprimez le stock."
+    }
+  },
+  "config": {
+    "step": {
+      "user": {
+        "title": "Ajouter un patient",
+        "description": "Créez un programme de médication pour un animal ou une personne. Choisissez le type de patient (pour l'icône) et qui doit être averti ; vous pourrez ajouter ses prises ensuite.",
+        "data": {
+          "patient": "Nom du patient",
+          "patient_type": "Type de patient",
+          "notify": "Cible de notification (personne ou groupe)"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Un patient portant ce nom est déjà configuré."
+    }
+  },
+  "options": {
+    "abort": {
+      "no_doses": "Ajoutez d'abord une prise. Il n'y a pas encore de prise à modifier.",
+      "no_medications": "Ajoutez d'abord une prise. Les détails d'un médicament s'attachent à un médicament déjà utilisé dans l'une des prises de ce patient.",
+      "no_medication_detail": "Ajoutez d'abord des détails de médicament. Il n'y a rien à modifier pour l'instant.",
+      "no_supplies": "Suivez d'abord un stock. Il n'y a rien à modifier pour l'instant."
+    },
+    "error": {
+      "duplicate_dose": "Une prise avec cette heure et ces médicaments existe déjà. Utilisez une autre heure, ou regroupez-les en une seule prise.",
+      "supply_exists": "Ce médicament a déjà un stock suivi. Utilisez Modifier un stock pour le changer."
+    },
+    "step": {
+      "init": {
+        "title": "Gérer les médicaments",
+        "menu_options": {
+          "doses": "Prises",
+          "supplies": "Stocks",
+          "med_details": "Détails des médicaments",
+          "settings": "Paramètres de rappel"
+        }
+      },
+      "doses": {
+        "title": "Prises",
+        "menu_options": {
+          "add_dose": "Ajouter une prise",
+          "edit_dose": "Modifier une prise",
+          "remove_dose": "Supprimer une prise"
+        }
+      },
+      "supplies": {
+        "title": "Stocks",
+        "menu_options": {
+          "add_supply": "Suivre un stock",
+          "edit_supply": "Modifier un stock",
+          "remove_supply": "Supprimer un stock"
+        }
+      },
+      "med_details": {
+        "title": "Détails des médicaments",
+        "menu_options": {
+          "medication_detail": "Ajouter des détails de médicament",
+          "edit_medication": "Modifier des détails de médicament",
+          "remove_medication": "Supprimer des détails de médicament"
+        }
+      },
+      "add_dose": {
+        "title": "Ajouter une prise",
+        "description": "Choisissez l'heure et indiquez les médicaments, puis choisissez la répétition : certains jours de la semaine (tous les jours = quotidien), tous les N jours, ou un cycle activé/désactivé, à partir d'une date de début.",
+        "data": {
+          "time": "Heure",
+          "meds": "Médicaments",
+          "schedule_type": "Répétition",
+          "days": "Jours de la semaine (pour l'option hebdomadaire)",
+          "interval_days": "Tous les N jours (pour l'option d'intervalle)",
+          "cycle_on": "Jours activés (pour le cycle activé/désactivé)",
+          "cycle_off": "Jours désactivés (pour le cycle activé/désactivé)",
+          "anchor_date": "Date de début (pour l'option d'intervalle ou de cycle)",
+          "min_interval_hours": "Heures minimum entre les prises (au besoin uniquement ; 0 = aucune limite)",
+          "max_per_day": "Nombre maximal de prises par jour (au besoin uniquement ; 0 = aucune limite)"
+        },
+        "data_description": {
+          "meds": "Séparez plusieurs médicaments par &, + ou une virgule. Une barre oblique ne sépare que si elle est entourée d'espaces, ainsi un nom comme « Carbimazol 5mg (1/2) » reste intact.",
+          "min_interval_hours": "Pour un médicament au besoin, avertir (sans jamais bloquer) lorsqu'il est de nouveau enregistré avant ce nombre d'heures, par exemple un antidouleur pas plus souvent que toutes les 4 heures.",
+          "max_per_day": "Pour un médicament au besoin, avertir une fois que ce nombre de prises a été enregistré aujourd'hui."
+        }
+      },
+      "edit_dose": {
+        "title": "Modifier une prise",
+        "data": {
+          "dose": "Prise à modifier"
+        }
+      },
+      "edit_dose_details": {
+        "title": "Modifier la prise",
+        "description": "Modifiez cette prise et enregistrez pour la remplacer. Modifier uniquement le programme conserve la même entité ; changer l'heure ou les médicaments crée une nouvelle entité (son historique est réinitialisé).",
+        "data": {
+          "time": "Heure",
+          "meds": "Médicaments",
+          "schedule_type": "Répétition",
+          "days": "Jours de la semaine (pour l'option hebdomadaire)",
+          "interval_days": "Tous les N jours (pour l'option d'intervalle)",
+          "cycle_on": "Jours activés (pour le cycle activé/désactivé)",
+          "cycle_off": "Jours désactivés (pour le cycle activé/désactivé)",
+          "anchor_date": "Date de début (pour l'option d'intervalle ou de cycle)",
+          "min_interval_hours": "Heures minimum entre les prises (au besoin uniquement ; 0 = aucune limite)",
+          "max_per_day": "Nombre maximal de prises par jour (au besoin uniquement ; 0 = aucune limite)"
+        },
+        "data_description": {
+          "meds": "Séparez plusieurs médicaments par &, + ou une virgule. Une barre oblique ne sépare que si elle est entourée d'espaces, ainsi un nom comme « Carbimazol 5mg (1/2) » reste intact.",
+          "min_interval_hours": "Pour un médicament au besoin, avertir (sans jamais bloquer) lorsqu'il est de nouveau enregistré avant ce nombre d'heures, par exemple un antidouleur pas plus souvent que toutes les 4 heures.",
+          "max_per_day": "Pour un médicament au besoin, avertir une fois que ce nombre de prises a été enregistré aujourd'hui."
+        }
+      },
+      "remove_dose": {
+        "title": "Supprimer des prises",
+        "data": {
+          "remove": "Prises à supprimer"
+        }
+      },
+      "add_supply": {
+        "title": "Suivre un stock de médicament",
+        "description": "Comptez la quantité d'un médicament disponible. Elle diminue chaque fois qu'une prise contenant ce médicament est marquée comme donnée, signale un niveau bas à votre seuil, et estime une date de rupture à partir du programme. Choisissez le médicament parmi vos prises.",
+        "data": {
+          "supply_med": "Nom du médicament",
+          "supply_units": "Unités disponibles actuellement",
+          "supply_per_dose": "Unités consommées par prise",
+          "supply_threshold": "Seuil de stock bas",
+          "supply_refill_to": "Quantité de recharge (un stock complet)",
+          "supply_refill_add": "Ajouter lors de la recharge (recharge par paquet)",
+          "supply_cost": "Coût par unité (0 = ne pas suivre)"
+        },
+        "data_description": {
+          "supply_refill_add": "Lors de la recharge, ajouter la quantité de recharge à ce qui reste (par exemple 17 + 30 = 47) au lieu de fixer le compte à la quantité de recharge.",
+          "supply_cost": "Coût d'une unité (un comprimé, ml, etc.) dans votre devise, utilisé pour les attributs valeur en stock et coût par prise. Laissez à 0 pour ne pas suivre le coût."
+        }
+      },
+      "edit_supply": {
+        "title": "Modifier un stock",
+        "data": {
+          "supply_med": "Médicament"
+        }
+      },
+      "edit_supply_details": {
+        "title": "Modifier le stock de {medication}",
+        "description": "Mettez à jour le stock suivi pour {medication}.",
+        "data": {
+          "supply_units": "Unités disponibles actuellement",
+          "supply_per_dose": "Unités consommées par prise",
+          "supply_threshold": "Seuil de stock bas",
+          "supply_refill_to": "Quantité de recharge (un stock complet)",
+          "supply_refill_add": "Ajouter lors de la recharge (recharge par paquet)",
+          "supply_cost": "Coût par unité (0 = ne pas suivre)"
+        },
+        "data_description": {
+          "supply_refill_add": "Lors de la recharge, ajouter la quantité de recharge à ce qui reste (par exemple 17 + 30 = 47) au lieu de fixer le compte à la quantité de recharge.",
+          "supply_cost": "Coût d'une unité (un comprimé, ml, etc.) dans votre devise, utilisé pour les attributs valeur en stock et coût par prise. Laissez à 0 pour ne pas suivre le coût."
+        }
+      },
+      "remove_supply": {
+        "title": "Supprimer des stocks suivis",
+        "data": {
+          "remove": "Stocks à ne plus suivre"
+        }
+      },
+      "medication_detail": {
+        "title": "Détails du médicament",
+        "description": "Informations de référence facultatives pour un médicament, distinctes du nom court de la prise. Choisissez un médicament parmi les prises de ce patient ; enregistrer les détails d'un médicament qui en a déjà les met à jour.",
+        "data": {
+          "med_name": "Nom du médicament",
+          "full_name": "Nom complet (facultatif)",
+          "strength": "Dosage (par exemple 5mg)",
+          "brand": "Marque (facultatif)",
+          "prescribed_for": "Prescrit pour (affection)",
+          "dosage": "Posologie (par exemple 2 comprimés deux fois par jour)"
+        }
+      },
+      "edit_medication": {
+        "title": "Modifier des détails de médicament",
+        "data": {
+          "med_name": "Médicament"
+        }
+      },
+      "edit_medication_details": {
+        "title": "Modifier les détails de {medication}",
+        "description": "Mettez à jour les informations de référence pour {medication}.",
+        "data": {
+          "full_name": "Nom complet (facultatif)",
+          "strength": "Dosage (par exemple 5mg)",
+          "brand": "Marque (facultatif)",
+          "prescribed_for": "Prescrit pour (affection)",
+          "dosage": "Posologie (par exemple 2 comprimés deux fois par jour)"
+        }
+      },
+      "remove_medication": {
+        "title": "Supprimer des détails de médicament",
+        "data": {
+          "remove": "Médicaments dont effacer les détails"
+        }
+      },
+      "settings": {
+        "title": "Paramètres de rappel",
+        "description": "Type de patient, qui notifier, affichage de l'heure, quand les prises se réinitialisent pour la journée, et la fréquence de relance des rappels.",
+        "data": {
+          "patient_type": "Type de patient",
+          "notify": "Cible de notification (personne ou groupe)",
+          "time_format": "Format de l'heure",
+          "reset_time": "Heure de réinitialisation quotidienne",
+          "nag_minutes": "Fenêtre de relance (minutes après la prise)",
+          "nag_interval": "Relancer toutes les (minutes)"
+        },
+        "data_description": {
+          "nag_interval": "Utilisez un multiple de 5 ; les rappels sont évalués toutes les 5 minutes, donc d'autres valeurs relancent de façon moins régulière."
+        }
+      }
+    }
+  }
+}

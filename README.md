@@ -423,16 +423,18 @@ as switch attributes that the companion automations read.
 
 Optionally track how much of each medication you have on hand. In **Configure,
 Track a medication supply**, pick the medication from your doses, then set units
-on hand, units consumed per dose, a low-stock threshold, and a refill amount.
-Change those later with **Edit a supply** in the same menu. Each tracked
+on hand, units consumed per dose, a low-stock threshold, a refill amount, and
+(optionally) a **cost per unit**. Change those later with **Edit a supply** in the
+same menu. Each tracked
 medication then gets:
 
 - `number.<patient>_<med>_supply` - units on hand, settable. It **decrements when
   a dose containing that medication is marked given** (once per dose per day,
   restart-safe, and never on the daily reset). Attributes include `doses_left` and
-  `est_runout_date`, computed from the schedule. Un-marking a dose (the early-dose
-  "undo" or a manual toggle-off) adds the units back. Adjust it any time to
-  correct a miscount or to refill.
+  `est_runout_date`, computed from the schedule. Setting a **cost per unit** on the
+  supply adds `value_on_hand`, `cost_per_dose`, and `est_monthly_cost` attributes.
+  Un-marking a dose (the early-dose "undo" or a manual toggle-off) adds the units
+  back. Adjust it any time to correct a miscount or to refill.
 - `button.<patient>_<med>_refill` - a one-tap restock, instead of editing the
   number by hand. By default it sets the supply to its configured refill amount;
   turn on **Add on refill (package refill)** for that supply to instead add the
@@ -587,7 +589,6 @@ territory. A future version may move reminders into the integration itself.
 **Planned:**
 
 - Optional in-integration notifications/nagging (so the YAML companion automations become optional).
-- Cost tracking: an optional per-medication cost so supplies and refills can total spend over time, building on the existing supply counts and refill history.
 - Persistent dose attribution: "given by" and "refilled by" surfaced as attributes on the dose and refill entities, so who did what shows without opening the Logbook (the 0.26.0 admin dashboard reads this from History and the Logbook today).
 
 **Shipped from the roadmap:**
@@ -599,8 +600,9 @@ territory. A future version may move reminders into the integration itself.
 - Over-dose guard for as-needed (PRN) meds: a minimum interval between doses and a max-per-day cap, surfaced as a `<med>_dose_guard` problem sensor that warns when another dose now would be too soon or over the cap (0.19.0). Builds on the early-dose warning (0.10.0) and PRN taken-time recording (0.17.0). (Idea from community member IOT7712.)
 - Per-medication detail: optional strength/mg, brand, the condition it was prescribed for, a dosage summary, and a full name separate from the short reminder name, plus a `<patient>_medications` "current medications" view for handing a provider the "what" rather than the "when" (0.20.0). (Suggested by GitHub user VGrol.)
 - Edit a dose in place: a new Edit a dose step pre-fills the form with a dose's current values and replaces it on save, instead of removing and re-adding (0.21.0). Editing only the schedule keeps the same entity; changing the time or medications starts a fresh one. (Requested by GitHub user weswark.)
-- Localized configuration UI: German (0.24.1, contributed by GitHub user RookieIVG) and Dutch (0.24.1, contributed by GitHub user VGrol) alongside English, plus a translation coverage check for contributors (0.25.0). (Requested by GitHub user interkom.)
+- Localized configuration UI: German (0.24.1, contributed by GitHub user RookieIVG), Dutch (0.24.1, contributed by GitHub user VGrol), and French (0.27.0) alongside English, plus a translation coverage check for contributors (0.25.0). (Requested by GitHub user interkom.)
 - Roles split with caregiver and admin dashboards (0.26.0): a safe-to-share caregiver view (mark given, log a PRN dose, refill a low supply) with no config or editable counts, and an admin view with a per-patient setup audit, editable supply counts, and a who-marked-or-refilled audit trail; plus tapping a notification body to open your meds dashboard.
+- Per-medication cost tracking (0.27.0): an optional cost per unit on each supply, exposing `value_on_hand`, `cost_per_dose`, and a schedule-based `est_monthly_cost` on the supply entity.
 
 ## Acknowledgements
 
