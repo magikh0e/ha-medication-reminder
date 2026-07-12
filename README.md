@@ -600,8 +600,9 @@ territory. A future version may move reminders into the integration itself.
 - Over-dose guard for as-needed (PRN) meds: a minimum interval between doses and a max-per-day cap, surfaced as a `<med>_dose_guard` problem sensor that warns when another dose now would be too soon or over the cap (0.19.0). Builds on the early-dose warning (0.10.0) and PRN taken-time recording (0.17.0). (Idea from community member IOT7712.)
 - Per-medication detail: optional strength/mg, brand, the condition it was prescribed for, a dosage summary, and a full name separate from the short reminder name, plus a `<patient>_medications` "current medications" view for handing a provider the "what" rather than the "when" (0.20.0). (Suggested by GitHub user VGrol.)
 - Edit a dose in place: a new Edit a dose step pre-fills the form with a dose's current values and replaces it on save, instead of removing and re-adding (0.21.0). Editing only the schedule keeps the same entity; changing the time or medications starts a fresh one. (Requested by GitHub user weswark.)
-- Localized configuration UI: German (0.24.1, contributed by GitHub user RookieIVG) and Dutch (0.24.1, contributed by GitHub user VGrol) alongside English, plus a translation coverage check for contributors (0.25.0). (Requested by GitHub user interkom.)
+- Localized configuration UI: German (0.24.1, contributed by GitHub user RookieIVG), Dutch (0.24.1, contributed by GitHub user VGrol), and French (0.27.0) alongside English, plus a translation coverage check for contributors (0.25.0). (Requested by GitHub user interkom.)
 - Roles split with caregiver and admin dashboards (0.26.0): a safe-to-share caregiver view (mark given, log a PRN dose, refill a low supply) with no config or editable counts, and an admin view with a per-patient setup audit, editable supply counts, and a who-marked-or-refilled audit trail; plus tapping a notification body to open your meds dashboard.
+- Per-medication cost tracking (0.27.0): an optional cost per unit on each supply, exposing `value_on_hand`, `cost_per_dose`, and a schedule-based `est_monthly_cost` on the supply entity.
 
 ## Acknowledgements
 
