@@ -31,6 +31,7 @@ dose_over_cap = const.dose_over_cap
 current_medications = const.current_medications
 medication_summary_line = const.medication_summary_line
 supply_cost_breakdown = const.supply_cost_breakdown
+dose_consumption = const.dose_consumption
 
 # A known Monday, for weekday tests that don't hardcode the mapping.
 MON = date(2026, 6, 1)
@@ -384,3 +385,21 @@ def test_cost_breakdown_monthly_zero_without_cadence():
 
 def test_cost_breakdown_handles_bad_input():
     assert supply_cost_breakdown("x", 1, 1, 1) == {}
+
+
+# --- Per-dose consumption override --------------------------------------------
+
+def test_dose_consumption_override_wins():
+    assert dose_consumption(0.5, 1) == 0.5
+    assert dose_consumption(1, 0.5) == 1.0
+
+
+def test_dose_consumption_falls_back_to_supply():
+    assert dose_consumption(0, 2) == 2.0
+    assert dose_consumption(None, 3) == 3.0
+
+
+def test_dose_consumption_handles_bad_input():
+    assert dose_consumption("x", 2) == 2.0
+    assert dose_consumption(0, "y") == 0.0
+    assert dose_consumption(0, 0) == 0.0

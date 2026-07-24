@@ -27,6 +27,7 @@ from homeassistant.util import slugify
 
 from .const import (
     CONF_DOSES,
+    CONF_DOSE_UNITS,
     CONF_MEDS,
     CONF_PATIENT,
     CONF_SCHEDULE_TYPE,
@@ -69,7 +70,11 @@ async def async_setup_entry(
     ]
     entities.extend(
         MedicationLogDoseButton(
-            entry, patient, str(dose[CONF_TIME])[:5], str(dose[CONF_MEDS])
+            entry,
+            patient,
+            str(dose[CONF_TIME])[:5],
+            str(dose[CONF_MEDS]),
+            dose.get(CONF_DOSE_UNITS),
         )
         for dose in doses
         if (dose.get(CONF_SCHEDULE_TYPE) or "") == SCHEDULE_PRN
@@ -145,9 +150,17 @@ class MedicationLogDoseButton(ButtonEntity):
     _attr_has_entity_name = True
     _attr_icon = "mdi:pill"
 
-    def __init__(self, entry: ConfigEntry, patient: str, time: str, meds: str) -> None:
+    def __init__(
+        self,
+        entry: ConfigEntry,
+        patient: str,
+        time: str,
+        meds: str,
+        dose_units: float = 0,
+    ) -> None:
         self._patient = patient
         self._meds = meds
+        self._dose_units = float(dose_units or 0)
         self._attr_name = f"Log {meds} dose"
         self._attr_unique_id = f"{entry.entry_id}_logdose_{slugify(time + '_' + meds)}"
         self._attr_device_info = {
@@ -175,6 +188,7 @@ class MedicationLogDoseButton(ButtonEntity):
             {
                 "patient": self._patient,
                 "medications": self._meds,
+                "dose_units": self._dose_units,
                 "logged_at": when.isoformat(),
             },
         )

@@ -79,12 +79,14 @@
           "cycle_off": "Jours désactivés (pour le cycle activé/désactivé)",
           "anchor_date": "Date de début (pour l'option d'intervalle ou de cycle)",
           "min_interval_hours": "Heures minimum entre les prises (au besoin uniquement ; 0 = aucune limite)",
-          "max_per_day": "Nombre maximal de prises par jour (au besoin uniquement ; 0 = aucune limite)"
+          "max_per_day": "Nombre maximal de prises par jour (au besoin uniquement ; 0 = aucune limite)",
+          "dose_units": "Unités consommées (cette prise)"
         },
         "data_description": {
           "meds": "Séparez plusieurs médicaments par &, + ou une virgule. Une barre oblique ne sépare que si elle est entourée d'espaces, ainsi un nom comme « Carbimazol 5mg (1/2) » reste intact.",
           "min_interval_hours": "Pour un médicament au besoin, avertir (sans jamais bloquer) lorsqu'il est de nouveau enregistré avant ce nombre d'heures, par exemple un antidouleur pas plus souvent que toutes les 4 heures.",
-          "max_per_day": "Pour un médicament au besoin, avertir une fois que ce nombre de prises a été enregistré aujourd'hui."
+          "max_per_day": "Pour un médicament au besoin, avertir une fois que ce nombre de prises a été enregistré aujourd'hui.",
+          "dose_units": "Remplace les unités par défaut du médicament, pour cette prise uniquement. Laissez à 0 pour la valeur par défaut ; utilisez des décimales comme 0.5 pour un demi-comprimé."
         }
       },
       "edit_dose": {
@@ -106,12 +108,14 @@
           "cycle_off": "Jours désactivés (pour le cycle activé/désactivé)",
           "anchor_date": "Date de début (pour l'option d'intervalle ou de cycle)",
           "min_interval_hours": "Heures minimum entre les prises (au besoin uniquement ; 0 = aucune limite)",
-          "max_per_day": "Nombre maximal de prises par jour (au besoin uniquement ; 0 = aucune limite)"
+          "max_per_day": "Nombre maximal de prises par jour (au besoin uniquement ; 0 = aucune limite)",
+          "dose_units": "Unités consommées (cette prise)"
         },
         "data_description": {
           "meds": "Séparez plusieurs médicaments par &, + ou une virgule. Une barre oblique ne sépare que si elle est entourée d'espaces, ainsi un nom comme « Carbimazol 5mg (1/2) » reste intact.",
           "min_interval_hours": "Pour un médicament au besoin, avertir (sans jamais bloquer) lorsqu'il est de nouveau enregistré avant ce nombre d'heures, par exemple un antidouleur pas plus souvent que toutes les 4 heures.",
-          "max_per_day": "Pour un médicament au besoin, avertir une fois que ce nombre de prises a été enregistré aujourd'hui."
+          "max_per_day": "Pour un médicament au besoin, avertir une fois que ce nombre de prises a été enregistré aujourd'hui.",
+          "dose_units": "Remplace les unités par défaut du médicament, pour cette prise uniquement. Laissez à 0 pour la valeur par défaut ; utilisez des décimales comme 0.5 pour un demi-comprimé."
         }
       },
       "remove_dose": {

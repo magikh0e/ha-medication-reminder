@@ -425,7 +425,11 @@ Optionally track how much of each medication you have on hand. In **Configure,
 Track a medication supply**, pick the medication from your doses, then set units
 on hand, units consumed per dose, a low-stock threshold, a refill amount, and
 (optionally) a **cost per unit**. Change those later with **Edit a supply** in the
-same menu. Each tracked
+same menu. Units consumed per dose accepts fractions (e.g. `0.5` for half a pill),
+and any single dose can override it with its own **Units consumed (this dose)**
+field, so a medication taken as half a pill on some days and a whole pill on others
+tracks stock correctly from **one** supply and one medication name (add two doses
+with the same medication, one per schedule). Each tracked
 medication then gets:
 
 - `number.<patient>_<med>_supply` - units on hand, settable. It **decrements when

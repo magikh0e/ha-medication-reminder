@@ -47,6 +47,7 @@ from .const import (
     EVENT_DOSE_LOGGED,
     EVENT_DOSE_UNDONE,
     EVENT_SUPPLY_REFILL,
+    dose_consumption,
     doses_per_week,
     is_due,
     meds_contains,
@@ -75,7 +76,7 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
     _attr_icon = "mdi:pill-multiple"
     _attr_native_min_value = 0
     _attr_native_max_value = 9999
-    _attr_native_step = 1
+    _attr_native_step = 0.25
     _attr_mode = NumberMode.BOX
 
     def __init__(
@@ -83,7 +84,9 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
     ) -> None:
         self._patient = patient
         self._med = str(supply[CONF_SUPPLY_MED]).strip()
-        self._per_dose = int(supply.get(CONF_SUPPLY_PER_DOSE, DEFAULT_SUPPLY_PER_DOSE))
+        self._per_dose = float(
+            supply.get(CONF_SUPPLY_PER_DOSE, DEFAULT_SUPPLY_PER_DOSE)
+        )
         self._threshold = int(
             supply.get(CONF_SUPPLY_THRESHOLD, DEFAULT_SUPPLY_THRESHOLD)
         )
@@ -100,6 +103,8 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
         self._cost = float(supply.get(CONF_SUPPLY_COST, DEFAULT_SUPPLY_COST) or 0)
         # dose entity_id -> calendar date already counted, to avoid double-count.
         self._consumed: dict[str, str] = {}
+        # dose entity_id -> amount decremented today, so an un-mark restores exactly.
+        self._consumed_amount: dict[str, float] = {}
         self._attr_name = f"{self._med} supply"
         self._attr_unique_id = f"{entry.entry_id}_supply_{slugify(self._med)}"
         self._attr_device_info = {
@@ -206,7 +211,8 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
         meds = event.data.get("medications")
         if meds is None or not meds_contains(meds, self._med):
             return
-        self._value = max(0.0, self._value - self._per_dose)
+        amount = dose_consumption(event.data.get("dose_units"), self._per_dose)
+        self._value = max(0.0, self._value - amount)
         self.async_write_ha_state()
 
     @callback
@@ -235,7 +241,8 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
         date_str = dt_util.now().date().isoformat()
         if self._consumed.get(entity_id) == date_str:
             del self._consumed[entity_id]
-            self._value = min(self._attr_native_max_value, self._value + self._per_dose)
+            amount = self._consumed_amount.pop(entity_id, self._per_dose)
+            self._value = min(self._attr_native_max_value, self._value + amount)
             self.async_write_ha_state()
 
     @callback
@@ -259,8 +266,10 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
         date_str = dt_util.now().date().isoformat()
         if self._consumed.get(entity_id) == date_str:
             return  # already counted this dose today
+        amount = dose_consumption(new.attributes.get("dose_units"), self._per_dose)
         self._consumed[entity_id] = date_str
-        self._value = max(0.0, self._value - self._per_dose)
+        self._consumed_amount[entity_id] = amount
+        self._value = max(0.0, self._value - amount)
         self.async_write_ha_state()
 
     async def async_set_native_value(self, value: float) -> None:

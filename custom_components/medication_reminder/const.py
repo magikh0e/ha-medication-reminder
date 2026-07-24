@@ -43,6 +43,11 @@ CONF_MAX_PER_DAY = "max_per_day"
 DEFAULT_MIN_INTERVAL_HOURS = 0
 DEFAULT_MAX_PER_DAY = 0
 
+# Optional per-dose consumption override: units this specific dose takes from the
+# medication's supply. 0 = use the supply's default "units consumed per dose".
+CONF_DOSE_UNITS = "dose_units"
+DEFAULT_DOSE_UNITS = 0.0
+
 # Supply / refill tracking (per medication).
 CONF_SUPPLIES = "supplies"
 CONF_SUPPLY_MED = "supply_med"
@@ -258,6 +263,24 @@ def supply_cost_breakdown(units, per_dose, cost, per_week):
         "cost_per_dose": round(per_dose * cost, 2),
         "est_monthly_cost": round(per_week * (52.0 / 12.0) * per_dose * cost, 2),
     }
+
+
+def dose_consumption(dose_units, supply_per_dose):
+    """Units one dose consumes from its supply.
+
+    Uses the dose's own amount when set (> 0), else the supply's default
+    "units consumed per dose". Both may be fractional (e.g. 0.5 for half a pill).
+    """
+    try:
+        du = float(dose_units or 0)
+    except (TypeError, ValueError):
+        du = 0.0
+    if du > 0:
+        return du
+    try:
+        return max(float(supply_per_dose or 0), 0.0)
+    except (TypeError, ValueError):
+        return 0.0
 
 
 def dose_min_interval_hours(data):

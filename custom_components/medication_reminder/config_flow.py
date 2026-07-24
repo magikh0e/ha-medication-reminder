@@ -21,6 +21,7 @@ from .const import (
     CONF_CYCLE_ON,
     CONF_DAYS,
     CONF_DOSES,
+    CONF_DOSE_UNITS,
     CONF_INTERVAL_DAYS,
     CONF_MAX_PER_DAY,
     CONF_MED_BRAND,
@@ -53,6 +54,7 @@ from .const import (
     DEFAULT_CYCLE_OFF,
     DEFAULT_CYCLE_ON,
     DEFAULT_DAYS,
+    DEFAULT_DOSE_UNITS,
     DEFAULT_INTERVAL_DAYS,
     DEFAULT_MAX_PER_DAY,
     DEFAULT_MIN_INTERVAL_HOURS,
@@ -261,6 +263,18 @@ def _cost_selector() -> selector.NumberSelector:
     )
 
 
+def _amount_selector() -> selector.NumberSelector:
+    """A box for a units-consumed amount, allowing halves/quarters (e.g. 0.5)."""
+    return selector.NumberSelector(
+        selector.NumberSelectorConfig(
+            min=0,
+            max=99,
+            step=0.25,
+            mode=selector.NumberSelectorMode.BOX,
+        )
+    )
+
+
 class MedicationReminderConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Initial flow: one config entry per patient (pet or person)."""
 
@@ -404,6 +418,7 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
             CONF_TIME: str(user_input[CONF_TIME])[:5],
             CONF_MEDS: user_input[CONF_MEDS],
             CONF_SCHEDULE_TYPE: stype,
+            CONF_DOSE_UNITS: float(user_input.get(CONF_DOSE_UNITS, 0) or 0),
         }
         if stype == SCHEDULE_INTERVAL:
             dose[CONF_INTERVAL_DAYS] = int(
@@ -498,6 +513,10 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
                     CONF_MAX_PER_DAY,
                     default=int(_val(CONF_MAX_PER_DAY, DEFAULT_MAX_PER_DAY)),
                 ): _max_per_day_selector(),
+                vol.Optional(
+                    CONF_DOSE_UNITS,
+                    default=float(_val(CONF_DOSE_UNITS, DEFAULT_DOSE_UNITS)),
+                ): _amount_selector(),
             }
         )
 
@@ -692,7 +711,7 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
         return {
             CONF_SUPPLY_MED: med,
             CONF_SUPPLY_UNITS: int(user_input[CONF_SUPPLY_UNITS]),
-            CONF_SUPPLY_PER_DOSE: int(user_input[CONF_SUPPLY_PER_DOSE]),
+            CONF_SUPPLY_PER_DOSE: float(user_input[CONF_SUPPLY_PER_DOSE]),
             CONF_SUPPLY_THRESHOLD: int(user_input[CONF_SUPPLY_THRESHOLD]),
             CONF_SUPPLY_REFILL_TO: int(user_input[CONF_SUPPLY_REFILL_TO]),
             CONF_SUPPLY_REFILL_ADD: bool(user_input.get(CONF_SUPPLY_REFILL_ADD, False)),
@@ -722,8 +741,8 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
             ): _count_selector(),
             vol.Required(
                 CONF_SUPPLY_PER_DOSE,
-                default=int(s.get(CONF_SUPPLY_PER_DOSE, DEFAULT_SUPPLY_PER_DOSE)),
-            ): _count_selector(),
+                default=float(s.get(CONF_SUPPLY_PER_DOSE, DEFAULT_SUPPLY_PER_DOSE)),
+            ): _amount_selector(),
             vol.Required(
                 CONF_SUPPLY_THRESHOLD,
                 default=int(s.get(CONF_SUPPLY_THRESHOLD, DEFAULT_SUPPLY_THRESHOLD)),

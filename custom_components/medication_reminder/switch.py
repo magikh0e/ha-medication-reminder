@@ -25,6 +25,7 @@ from .const import (
     CONF_CYCLE_ON,
     CONF_DAYS,
     CONF_DOSES,
+    CONF_DOSE_UNITS,
     CONF_INTERVAL_DAYS,
     CONF_MEDS,
     CONF_MONTH_DAYS,
@@ -184,6 +185,8 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         self._time_format = time_format
         self._time = str(dose[CONF_TIME])[:5]  # 24h "HH:MM" (used by automations)
         self._meds = dose[CONF_MEDS]
+        # Optional per-dose consumption override (0 = use the supply default).
+        self._dose_units = float(dose.get(CONF_DOSE_UNITS) or 0)
         # Days of the week this dose applies to (default: every day).
         self._days = dose.get(CONF_DAYS) or list(DEFAULT_DAYS)
         # Schedule type: weekdays (default) or every-N-days from an anchor date.
@@ -249,6 +252,7 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
             "patient_type": self._patient_type,
             "dose_time": self._time,
             "medications": self._meds,
+            "dose_units": self._dose_units,
             "days": self._days,
             "schedule_type": self._schedule_type,
             "interval_days": self._interval_days,
