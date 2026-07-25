@@ -607,6 +607,7 @@ territory. A future version may move reminders into the integration itself.
 - Localized configuration UI: German (0.24.1, contributed by GitHub user RookieIVG), Dutch (0.24.1, contributed by GitHub user VGrol), and French (0.27.0) alongside English, plus a translation coverage check for contributors (0.25.0). (Requested by GitHub user interkom.)
 - Roles split with caregiver and admin dashboards (0.26.0): a safe-to-share caregiver view (mark given, log a PRN dose, refill a low supply) with no config or editable counts, and an admin view with a per-patient setup audit, editable supply counts, and a who-marked-or-refilled audit trail; plus tapping a notification body to open your meds dashboard.
 - Per-medication cost tracking (0.27.0): an optional cost per unit on each supply, exposing `value_on_hand`, `cost_per_dose`, and a schedule-based `est_monthly_cost` on the supply entity.
+- Per-dose consumption amounts (0.28.0): "units consumed per dose" is now fractional (e.g. 0.5), and each dose can override the medication's default with its own amount, so one supply tracks a medication taken at different amounts on different days.
 
 ## Acknowledgements
 
