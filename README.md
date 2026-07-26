@@ -631,6 +631,12 @@ The **German and Dutch translations** were contributed by GitHub users
 multi-language support. Thanks for making the integration usable in more
 languages, and for the clean, complete locale files.
 
+## Support
+
+Free and open-source, built and maintained in my own time, with no accounts, tracking, or ads. If it has saved you a missed dose or some hassle, a coffee is always appreciated and helps keep it going.
+
+<a href="https://buymeacoffee.com/magikh0e"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy me a coffee" height="42"></a>
+
 ## License
 
 [MIT](LICENSE) © magikh0e
