@@ -31,7 +31,7 @@ setup with no custom integration? Use that one; otherwise use this.
 > on your own Home Assistant and keep a backup reminder method until you trust it,
 > and confirm dosing schedules with your doctor or vet.
 
-**Jump to:** [Highlights](#highlights) · [Installation](#installation) · [Dashboard](#dashboard) · [Roles](#roles--sharing) · [Settings](#settings-per-patient) · [Supply & refill](#supply--refill-tracking) · [Safety](#safety--fail-safes) · [Roadmap](#roadmap)
+**Jump to:** [Highlights](#highlights) · [Installation](#installation) · [Dashboard](#dashboard) · [Roles](#roles--sharing) · [Settings](#settings-per-patient) · [Supply & refill](#supply--refill-tracking) · [Safety](#safety--fail-safes) · [Languages](#languages) · [Roadmap](#roadmap)
 
 ## Highlights
 
@@ -40,12 +40,12 @@ setup with no custom integration? Use that one; otherwise use this.
 - **As-needed (PRN) meds.** A "Log dose" button (and `log_dose` service) records each dose taken, with a last-taken timestamp, a doses-today count, and a supply decrement, so meds taken several times a day stay tracked. Optional **over-dose guard**: set a minimum interval and/or a daily cap, and a `problem` sensor warns (never blocks) when another dose now would be too soon or over the cap.
 - **Glanceable, fail-safe status.** A per-patient red/green "needs attention" sensor that trips on elapsed time alone and errs toward "problem"; wire it to a panel, light, or siren.
 - **Actionable reminders.** Nagging, missed-dose escalation, and a "Mark given" button from the notification, routed to each patient's own notify target. Tapping the notification body (not the button) can open your meds dashboard.
-- **Supply & refill tracking.** Per-medication counts that decrement as doses are given, with doses-left, a run-out estimate, a low-stock red flag at your reorder threshold, and a refill reminder.
+- **Supply & refill tracking.** Per-medication counts that decrement as doses are given, with doses-left, a run-out estimate, a low-stock red flag at your reorder threshold, and a refill reminder. Per-dose amounts can be fractional (half a pill) and overridden per dose, and an optional per-unit cost surfaces value on hand, cost per dose, and a monthly estimate.
 - **Per-medication detail.** Optional strength, brand, full name, "prescribed for", and a dosage summary per medication, plus a `medications` sensor that lists everything the patient takes for a ready-to-share "current medications" view to hand a vet or doctor.
 - **Next-dose sensor and calendar.** A `next_dose` timestamp and a read-only medication calendar per patient, handy for "remind me before" automations and seeing long cycles laid out.
 - **Zero-edit dashboard.** Auto-discovers every patient and dose, no names to maintain.
 - **Caregiver and admin dashboards.** Split day-to-day care from setup using Home Assistant's own user roles: hand a caregiver a non-admin user and a simplified, safe-to-share dashboard (mark doses given, log a PRN dose, refill a low supply, with no config and no editable counts), and keep an admin dashboard with the full per-patient setup audit, editable supply counts, and an audit trail of who marked or refilled. See [Roles & sharing](#roles--sharing).
-- **Localized UI.** The configuration screens follow your Home Assistant language, with community-contributed German and Dutch alongside the English base, and any untranslated text falling back to English. See [Languages](#languages).
+- **Localized UI.** The configuration screens follow your Home Assistant language, with German, Dutch, and French alongside the English base (German and Dutch community-contributed), and any untranslated text falling back to English. See [Languages](#languages).
 - **Fail-safe by design.** Overdue detection trips on elapsed time alone and errs toward "problem", marking is reversible, dose state survives restarts, and every guard warns rather than blocks. See [Safety & fail-safes](#safety--fail-safes).
 
 ## Installation
@@ -566,9 +566,9 @@ now would be too soon or over the cap (the "no less than 4 hours apart" case).
 ## Languages
 
 The configuration UI follows your Home Assistant language. English is the source,
-with **German** (`de`) and **Dutch** (`nl`) included, both community-contributed.
-Any string a locale has not translated yet falls back to English, so a partial
-translation is always safe.
+with **German** (`de`), **Dutch** (`nl`), and **French** (`fr`) included; German
+and Dutch are community-contributed. Any string a locale has not translated yet
+falls back to English, so a partial translation is always safe.
 
 Want your language added? It is a single-file pull request: copy
 [`en.json`](custom_components/medication_reminder/translations/en.json) to
