@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="images/med-reminder.png" alt="Medication Reminder logo" width="180">
+  <img src="https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/med-reminder.png" alt="Medication Reminder logo" width="180">
 </p>
 
 # Medication Reminder (Home Assistant integration)
@@ -25,7 +25,7 @@ without the newer features here (UI-managed schedules, supply tracking, the
 as-needed/PRN tools, and the extra sensors and calendar). Prefer a YAML-only
 setup with no custom integration? Use that one; otherwise use this.
 
-![Medication Reminder dashboard](images/dashboard.png)
+![Medication Reminder dashboard](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/dashboard.png)
 
 > ⚠️ **Important.** This is a reminder aid, **not** a medical device. Validate it
 > on your own Home Assistant and keep a backup reminder method until you trust it,
@@ -93,17 +93,17 @@ one automation.
 2. Enter the patient name (e.g. a pet or person), pick the **patient type** (Person / Dog / Cat / ..., which sets the icon), and the **notify target** (the person or group to remind). One patient per entry; add the integration again for more patients.
 3. On the entry, click **Configure** to **Add a dose** (pick a time, type the medications, and choose the **schedule**: days of the week - all days = daily - or every N days, an on/off cycle, specific days of the month, or as-needed/PRN). Repeat for each dose. **Edit a dose**, **Remove a dose**, **Add medication detail**, or open **Reminder settings** (type, notify target, time format, reset time, nag window/interval) there too.
 
-![Manage medications menu](images/managed-doses.png)
+![Manage medications menu](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/managed-doses.png)
 
 Each group opens its actions:
 
 <p>
-  <img src="images/doses-menu.png" alt="Doses submenu" width="32%">
-  <img src="images/supplies-menu.png" alt="Supplies submenu" width="32%">
-  <img src="images/med-details-menu.png" alt="Medication details submenu" width="32%">
+  <img src="https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/doses-menu.png" alt="Doses submenu" width="32%">
+  <img src="https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/supplies-menu.png" alt="Supplies submenu" width="32%">
+  <img src="https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/med-details-menu.png" alt="Medication details submenu" width="32%">
 </p>
 
-![Add a dose form](images/add-a-dose.png)
+![Add a dose form](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/add-a-dose.png)
 
 Each dose appears as `switch.<patient>_<time>` with attributes `patient`,
 `dose_time`, `medications`, and `notify_service`.
@@ -169,7 +169,7 @@ for the Home Assistant app, and you re-import the blueprint to get the toggle.
 
 The automations send four kinds of notification:
 
-![Notification types](images/notification-types.png)
+![Notification types](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/notification-types.png)
 
 To preview any of these on demand (no waiting for a dose time, handy for a
 screenshot), add [`examples/simulate-reminder.yaml`](examples/simulate-reminder.yaml)
@@ -210,15 +210,15 @@ without it the pills fall back to amber). No names or entity_ids to change in an
 them. The standalone status panel is below if you want only that piece, and it needs
 no HACS cards at all.
 
-![Dashboard layout](images/dashboard-1col.png)
+![Dashboard layout](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/dashboard-1col.png)
 
 *The auto-discovering cards, shown here in the single-column layout; the responsive `lovelace-sections.yaml` reflows these same cards by screen width.*
 
-![Today summary card](images/DosingStatus.png)
+![Today summary card](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/DosingStatus.png)
 
 *The today summary: doses given vs. still due, what is overdue or upcoming, and the times already-given doses were taken.*
 
-![As needed (PRN) card](images/PRN-card.png)
+![As needed (PRN) card](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/PRN-card.png)
 
 *The As needed (PRN) card: a Log dose button per as-needed med, with its last-taken time and doses-today count.*
 
@@ -228,7 +228,7 @@ A simple "all OK / attention needed" panel for the top of a dashboard, driven by
 the `needs_attention` sensors. Green when nothing is overdue, red (with who and
 what) when something needs investigating. Native card, no HACS needed:
 
-![Attention needed state](images/dashboard-attention-needed.png)
+![Attention needed state](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/dashboard-attention-needed.png)
 
 ```yaml
 type: markdown
@@ -276,7 +276,7 @@ and which days it applies), not just today. Auto-discovers all patients, respect
 each one's 12h/24h setting, and shows "Daily" or the specific days. Native
 markdown card, no HACS needed:
 
-![Schedule overview](images/ScheduleOverview.png)
+![Schedule overview](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/ScheduleOverview.png)
 
 ```yaml
 type: markdown
@@ -344,7 +344,7 @@ A read-only list of every medication a patient takes, with the optional detail
 
 Add the detail per medication in **Configure, Add medication detail**:
 
-![Medication detail form](images/medication-detail.png)
+![Medication detail form](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/medication-detail.png)
 
 It reads the `medications` sensor; native markdown card, no HACS needed:
 
@@ -360,7 +360,7 @@ content: |-
   {% endfor %}
 ```
 
-![Current medications card](images/current-medications.png)
+![Current medications card](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/current-medications.png)
 
 *The current-medications card: each patient's medications with strength and dosage, plus each med's dose times, for handing to a vet or doctor.*
 
@@ -391,13 +391,13 @@ To set it up:
    dashboard → Settings) so non-admin users cannot see it. Caregivers can still
    tap Mark given, log a PRN dose, and refill on the caregiver dashboard.
 
-![Caregiver dashboard](images/meds-caregiver.png)
+![Caregiver dashboard](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/meds-caregiver.png)
 
 *The caregiver dashboard: what to do now, mark a dose given, refill a low supply,
 and a current-medications reference. No config and no editable counts, so it is
 safe to share.*
 
-![Admin dashboard](images/admin-dashboard.png)
+![Admin dashboard](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/admin-dashboard.png)
 
 *The admin dashboard: a full per-patient setup audit, editable supply counts,
 attention and guard sensors, pointers to History and Logbook for adherence and
@@ -416,11 +416,11 @@ Each patient has its own **Configure, Reminder settings** with:
 The reset time is applied by the integration; the nag window/interval are exposed
 as switch attributes that the companion automations read.
 
-![Reminder settings](images/reminder-settings.png)
+![Reminder settings](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/reminder-settings.png)
 
 ## Supply & refill tracking
 
-![Supplies on hand](images/Supplies.png)
+![Supplies on hand](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/Supplies.png)
 
 *The supplies-on-hand card: each medication's units left plus a one-tap refill button; a medication at or below its threshold turns red.*
 
@@ -499,7 +499,7 @@ notify target for anything low.
 The `calendar.<patient>_medication` entity lays the whole schedule out by day,
 which makes every-N-days and on/off-cycle doses easy to see at a glance:
 
-![Medication calendar](images/calendar.png)
+![Medication calendar](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/calendar.png)
 
 ### Marking a dose from a sensor, NFC tag, or button
 
@@ -639,7 +639,7 @@ languages, and for the clean, complete locale files.
 
 Free and open-source, built and maintained in my own time, with no accounts, tracking, or ads. If it has saved you a missed dose or some hassle, a coffee is always appreciated and helps keep it going.
 
-<a href="https://buymeacoffee.com/magikh0e"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy me a coffee" height="42"></a>
+[![Buy me a coffee](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png)](https://buymeacoffee.com/magikh0e)
 
 ## License
 
