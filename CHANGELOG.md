@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.28.1] - 2026-07-31
+### Changed
+- Set `integration_type` to `service` in the manifest, so the integration presents correctly in the Home Assistant integrations UI instead of falling back to the generic default. Suggested by @frenck during the HACS default-store review. No functional change.
+
+### Notes
+- The integration was merged into the [default HACS store](https://github.com/hacs/default/pull/8536), so it now installs by searching HACS directly, with no custom repository needed.
+
 ## [0.28.0] - 2026-07-24
 ### Added
 - Per-dose consumption amounts, with fractions. "Units consumed per dose" now accepts fractional amounts (e.g. `0.5` for half a pill), and each dose has an optional **Units consumed (this dose)** field that overrides the medication's default. This lets a single supply track a medication taken at different amounts on different days (e.g. half a pill most days, a whole pill on a couple) without a second supply or a helper automation: add two doses with the same medication name, set the amount on each. Un-marking a dose restores exactly what it decremented. Existing whole-number setups are unchanged.
