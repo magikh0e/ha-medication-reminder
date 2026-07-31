@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/med-reminder.png" alt="Medication Reminder logo" width="180">
-</p>
+![Medication Reminder logo](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/med-reminder-sm.png)
 
 # Medication Reminder (Home Assistant integration)
 
@@ -97,11 +95,11 @@ one automation.
 
 Each group opens its actions:
 
-<p>
-  <img src="https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/doses-menu.png" alt="Doses submenu" width="32%">
-  <img src="https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/supplies-menu.png" alt="Supplies submenu" width="32%">
-  <img src="https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/med-details-menu.png" alt="Medication details submenu" width="32%">
-</p>
+![Doses submenu](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/doses-menu.png)
+
+![Supplies submenu](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/supplies-menu.png)
+
+![Medication details submenu](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/med-details-menu.png)
 
 ![Add a dose form](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/add-a-dose.png)
 
