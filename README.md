@@ -5,7 +5,7 @@
 # Medication Reminder (Home Assistant integration)
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
-![HACS: Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)
+![HACS: Default](https://img.shields.io/badge/HACS-Default-blue.svg)
 ![Release](https://img.shields.io/github/v/release/magikh0e/ha-medication-reminder)
 [![Tests](https://img.shields.io/github/actions/workflow/status/magikh0e/ha-medication-reminder/test.yml?branch=main&label=tests)](https://github.com/magikh0e/ha-medication-reminder/actions/workflows/test.yml)
 [![Validate](https://img.shields.io/github/actions/workflow/status/magikh0e/ha-medication-reminder/validate.yml?branch=main&label=validate)](https://github.com/magikh0e/ha-medication-reminder/actions/workflows/validate.yml)
@@ -50,15 +50,18 @@ setup with no custom integration? Use that one; otherwise use this.
 
 ## Installation
 
-### 1. Install the integration (HACS custom repository)
+### 1. Install the integration (HACS)
 
-Use the **Open your Home Assistant instance** button at the top of this page to add the repo to HACS in one step, then install and restart, or do it manually:
+Medication Reminder is in the **default HACS store**. Open HACS, search for
+**Medication Reminder**, install it, and restart Home Assistant. That is the
+whole install.
 
-1. HACS, top-right menu, **Custom repositories**.
-2. Add `https://github.com/magikh0e/ha-medication-reminder` as an **Integration**.
-3. Install **Medication Reminder**, then restart Home Assistant.
-
-(Or copy `custom_components/medication_reminder/` into your HA `config/custom_components/` and restart.)
+Just merged into HACS and not showing yet? It can take a few hours to appear.
+Until then, or to install by hand, add
+`https://github.com/magikh0e/ha-medication-reminder` as an **Integration** under
+HACS, top-right menu, **Custom repositories**, install, and restart. (Or copy
+`custom_components/medication_reminder/` into your HA `config/custom_components/`
+and restart.)
 
 ### Updating from an earlier version
 
@@ -600,7 +603,7 @@ territory. A future version may move reminders into the integration itself.
 - More schedule types beyond day-of-week: every-N-days (0.11.0), on/off cycles e.g. 21 on / 7 off (0.12.0), as-needed PRN (0.14.0, suggested by community member IOT7712), and day-of-month / monthly (0.15.0, suggested by community member ggaltqq).
 - As-needed (PRN) display polish: PRN doses named by their medication (e.g. "Ibuprofen (as needed)"), with the placeholder 00:00 time dropped from the schedule view (0.15.1). (Suggested by a community member.)
 - Specify the time a dose was taken: the `medication_reminder.mark_given` service with `given_at` for scheduled (switch) doses (0.16.0), and `medication_reminder.log_dose` with `taken_at` for as-needed (PRN) doses (0.17.0), each updating a `<med>_last_taken` sensor.
-- HACS default-store submission: validated and submitted; the PR sits in the maintainer review queue, and the integration appears in the default HACS store once it merges.
+- HACS default store: merged into the HACS default repository list ([hacs/default#8536](https://github.com/hacs/default/pull/8536)), so the integration installs straight from HACS by search, with no custom repository needed.
 - Over-dose guard for as-needed (PRN) meds: a minimum interval between doses and a max-per-day cap, surfaced as a `<med>_dose_guard` problem sensor that warns when another dose now would be too soon or over the cap (0.19.0). Builds on the early-dose warning (0.10.0) and PRN taken-time recording (0.17.0). (Idea from community member IOT7712.)
 - Per-medication detail: optional strength/mg, brand, the condition it was prescribed for, a dosage summary, and a full name separate from the short reminder name, plus a `<patient>_medications` "current medications" view for handing a provider the "what" rather than the "when" (0.20.0). (Suggested by GitHub user VGrol.)
 - Edit a dose in place: a new Edit a dose step pre-fills the form with a dose's current values and replaces it on save, instead of removing and re-adding (0.21.0). Editing only the schedule keeps the same entity; changing the time or medications starts a fresh one. (Requested by GitHub user weswark.)
