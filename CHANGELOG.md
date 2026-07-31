@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.28.2] - 2026-07-31
+### Fixed
+- README images now render in the HACS info panel. They were using relative paths and raw HTML `<img>` tags, which HACS strips or cannot resolve, so it blanks the image source. All images are now markdown with absolute raw URLs, and the logo has a smaller copy so it displays at a sensible size. No functional change to the integration.
+
 ## [0.28.1] - 2026-07-31
 ### Changed
 - Set `integration_type` to `service` in the manifest, so the integration presents correctly in the Home Assistant integrations UI instead of falling back to the generic default. Suggested by @frenck during the HACS default-store review. No functional change.
