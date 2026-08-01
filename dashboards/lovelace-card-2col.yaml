@@ -80,13 +80,13 @@ cards:
               {% if ns2.overdue %}**⚠️ Overdue:**
               {% for x in ns2.overdue | sort(attribute='attributes.dose_time') %}
               {%- set f = '%H:%M' if x.attributes.time_format == '24h' else '%I:%M %p' %}
-              - {% if show_patient %}{{ x.attributes.patient }} {% endif %}{{ as_timestamp(today_at(x.attributes.dose_time)) | timestamp_custom(f) }} ({{ x.attributes.medications }})
+              - {% if show_patient %}{{ x.attributes.patient }} {% endif %}{{ as_timestamp(today_at(x.attributes.dose_time)) | timestamp_custom(f) }} ({{ x.attributes.medications }}{%- set du = x.attributes.dose_units | float(0) %}{%- if du > 0 %} {{ {0.25:'¼',0.5:'½',0.75:'¾'}.get(du) or ((du | int) if du == (du | int) else du) }}{%- endif %})
               {%- endfor %}
               {% endif %}
               {% if ns2.upcoming %}**⏳ Upcoming:**
               {% for x in ns2.upcoming | sort(attribute='attributes.dose_time') %}
               {%- set f = '%H:%M' if x.attributes.time_format == '24h' else '%I:%M %p' %}
-              - {% if show_patient %}{{ x.attributes.patient }} {% endif %}{{ as_timestamp(today_at(x.attributes.dose_time)) | timestamp_custom(f) }} ({{ x.attributes.medications }})
+              - {% if show_patient %}{{ x.attributes.patient }} {% endif %}{{ as_timestamp(today_at(x.attributes.dose_time)) | timestamp_custom(f) }} ({{ x.attributes.medications }}{%- set du = x.attributes.dose_units | float(0) %}{%- if du > 0 %} {{ {0.25:'¼',0.5:'½',0.75:'¾'}.get(du) or ((du | int) if du == (du | int) else du) }}{%- endif %})
               {%- endfor %}
               {% endif %}
               {%- endif %}
@@ -101,7 +101,7 @@ cards:
               {% for x in given | sort(attribute='last_changed') %}
               {%- set gat = x.attributes.given_at or x.last_changed %}
               {%- set f = '%H:%M' if x.attributes.time_format == '24h' else '%I:%M %p' %}
-              - ✅ {% if show_patient %}{{ x.attributes.patient }} {% endif %}{{ x.attributes.medications }} at {{ as_timestamp(gat) | timestamp_custom(f) }}
+              - ✅ {% if show_patient %}{{ x.attributes.patient }} {% endif %}{{ x.attributes.medications }}{%- set du = x.attributes.dose_units | float(0) %}{%- if du > 0 %} {{ {0.25:'¼',0.5:'½',0.75:'¾'}.get(du) or ((du | int) if du == (du | int) else du) }}{%- endif %} at {{ as_timestamp(gat) | timestamp_custom(f) }}
               {%- endfor %}
               {% endif %}
 
@@ -221,9 +221,9 @@ cards:
               {%- set cadence = 'Daily' if days|length == 7 else (week | select('in', days) | map('capitalize') | join(', ')) %}
               {%- endif %}
               {%- if stype == 'prn' %}
-              - {{ d.attributes.medications }} ({{ cadence }})
+              - {{ d.attributes.medications }}{%- set du = d.attributes.dose_units | float(0) %}{%- if du > 0 %} {{ {0.25:'¼',0.5:'½',0.75:'¾'}.get(du) or ((du | int) if du == (du | int) else du) }}{%- endif %} ({{ cadence }})
               {%- else %}
-              - **{{ as_timestamp(today_at(d.attributes.dose_time)) | timestamp_custom(fmt) }}** {{ d.attributes.medications }} ({{ cadence }})
+              - **{{ as_timestamp(today_at(d.attributes.dose_time)) | timestamp_custom(fmt) }}** {{ d.attributes.medications }}{%- set du = d.attributes.dose_units | float(0) %}{%- if du > 0 %} {{ {0.25:'¼',0.5:'½',0.75:'¾'}.get(du) or ((du | int) if du == (du | int) else du) }}{%- endif %} ({{ cadence }})
               {%- endif %}
               {%- endfor %}
               {% endfor %}

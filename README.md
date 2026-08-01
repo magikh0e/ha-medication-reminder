@@ -187,6 +187,10 @@ or removing a patient just updates them. Each has seven parts:
 6. a per-patient schedule overview (every dose, time, medications, and days),
 7. a per-patient "current medications" list (full name, strength, brand, what it is for, dosage, and each med's dose times) for handing to a vet or doctor.
 
+Where a dose has a **Units consumed (this dose)** amount set, the today summary and
+schedule show it next to the medication (e.g. "Marcoumar ½"), so a half-pill day
+reads differently from a full one at a glance.
+
 Pick a layout (each file opens with a banner telling you exactly where to paste it):
 
 - **Recommended: [`lovelace-sections.yaml`](dashboards/lovelace-sections.yaml)** is a

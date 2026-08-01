@@ -55,7 +55,7 @@ views:
         {%- else %}{% set cad = 'daily' if days|length==7 else (week|select('in',days)|map('capitalize')|join(',')) %}
         {%- endif %}
         {%- set t = '' if st=='prn' else (as_timestamp(today_at(d.attributes.dose_time)) | timestamp_custom('%H:%M')) %}
-        - {{ (t ~ ' ') if t else '' }}{{ d.attributes.medications }} ({{ cad }})
+        - {{ (t ~ ' ') if t else '' }}{{ d.attributes.medications }}{%- set du = d.attributes.dose_units | float(0) %}{%- if du > 0 %} {{ {0.25:'¼',0.5:'½',0.75:'¾'}.get(du) or ((du | int) if du == (du | int) else du) }}{%- endif %} ({{ cad }})
         {%- endfor %}
         {%- if ps %}
         **Supplies:**
