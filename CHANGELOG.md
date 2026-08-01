@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.28.3] - 2026-07-31
+### Fixed
+- The Buy me a coffee button rendered at full resolution in the HACS info panel. It is now a repo-hosted image sized to 42px, since markdown (unlike the old HTML tag) cannot set image dimensions and HACS strips HTML.
+
 ## [0.28.2] - 2026-07-31
 ### Fixed
 - README images now render in the HACS info panel. They were using relative paths and raw HTML `<img>` tags, which HACS strips or cannot resolve, so it blanks the image source. All images are now markdown with absolute raw URLs, and the logo has a smaller copy so it displays at a sensible size. No functional change to the integration.

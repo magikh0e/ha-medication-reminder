@@ -637,7 +637,7 @@ languages, and for the clean, complete locale files.
 
 Free and open-source, built and maintained in my own time, with no accounts, tracking, or ads. If it has saved you a missed dose or some hassle, a coffee is always appreciated and helps keep it going.
 
-[![Buy me a coffee](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png)](https://buymeacoffee.com/magikh0e)
+[![Buy me a coffee](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/buy-me-a-coffee.png)](https://buymeacoffee.com/magikh0e)
 
 ## License
 
