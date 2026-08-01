@@ -614,6 +614,7 @@ territory. A future version may move reminders into the integration itself.
 - Per-medication cost tracking (0.27.0): an optional cost per unit on each supply, exposing `value_on_hand`, `cost_per_dose`, and a schedule-based `est_monthly_cost` on the supply entity.
 - Per-dose consumption amounts (0.28.0): "units consumed per dose" is now fractional (e.g. 0.5), and each dose can override the medication's default with its own amount, so one supply tracks a medication taken at different amounts on different days.
 - Manifest `integration_type` set to `service` (0.28.1), so the integration presents correctly in the Home Assistant integrations UI. (Suggested by @frenck during the HACS default-store review.)
+- Per-dose amount on the dashboard (0.29.0): the bundled dashboards show a dose's "Units consumed (this dose)" amount next to the medication (e.g. "Marcoumar ½"), so half-pill days read differently from full ones. (Requested by GitHub user ph-dekeyser in #18.)
 
 ## Acknowledgements
 
