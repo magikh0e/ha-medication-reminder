@@ -1,0 +1,224 @@
+{
+  "issues": {
+    "supply_no_matching_dose": {
+      "title": "Tracked supply has no matching dose",
+      "description": "The supply \"{medication}\" for {patient} does not match the medications in any dose, so it will never decrement. Check the spelling in Configure (it must match a dose's medication exactly), or remove the supply."
+    }
+  },
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add a patient",
+        "description": "Create a medication schedule for a pet or person. Pick the patient type (for the icon) and who should be reminded; you can add their doses next.",
+        "data": {
+          "patient": "Patient name",
+          "patient_type": "Patient type",
+          "notify": "Notify target (person or group)"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "A patient with this name is already configured."
+    }
+  },
+  "options": {
+    "abort": {
+      "no_doses": "Add a dose first. There are no doses to edit yet.",
+      "no_medications": "Add a dose first. Medication detail attaches to a medication already used in one of this patient's doses.",
+      "no_medication_detail": "Add medication detail first. There is nothing to edit yet.",
+      "no_supplies": "Track a supply first. There is nothing to edit yet."
+    },
+    "error": {
+      "duplicate_dose": "A dose with this time and these medications already exists. Use a different time, or combine them into one dose.",
+      "supply_exists": "This medication already has a tracked supply. Use Edit a supply to change it."
+    },
+    "step": {
+      "init": {
+        "title": "Manage medications",
+        "menu_options": {
+          "doses": "Doses",
+          "supplies": "Supplies",
+          "med_details": "Medication details",
+          "settings": "Reminder settings"
+        }
+      },
+      "doses": {
+        "title": "Doses",
+        "menu_options": {
+          "add_dose": "Add a dose",
+          "edit_dose": "Edit a dose",
+          "remove_dose": "Remove a dose"
+        }
+      },
+      "supplies": {
+        "title": "Supplies",
+        "menu_options": {
+          "add_supply": "Track a supply",
+          "edit_supply": "Edit a supply",
+          "remove_supply": "Remove a supply"
+        }
+      },
+      "med_details": {
+        "title": "Medication details",
+        "menu_options": {
+          "medication_detail": "Add medication detail",
+          "edit_medication": "Edit medication detail",
+          "remove_medication": "Remove medication detail"
+        }
+      },
+      "add_dose": {
+        "title": "Add a dose",
+        "description": "Pick the time and list the medications, then choose how it repeats: on chosen days of the week (all days = daily), every N days, or an on/off cycle, from a start date.",
+        "data": {
+          "time": "Time",
+          "meds": "Medications",
+          "schedule_type": "Repeat",
+          "days": "Days of the week (for the weekly option)",
+          "interval_days": "Every N days (for the interval option)",
+          "cycle_on": "Days on (for the on/off cycle)",
+          "cycle_off": "Days off (for the on/off cycle)",
+          "anchor_date": "Start date (for the interval or cycle option)",
+          "min_interval_hours": "Minimum hours between doses (as-needed only; 0 = no limit)",
+          "max_per_day": "Max doses per day (as-needed only; 0 = no limit)",
+          "dose_units": "Units consumed (this dose)"
+        },
+        "data_description": {
+          "meds": "Separate multiple medications with &, +, or a comma. A slash only splits with spaces around it, so a name like 'Carbimazol 5mg (1/2)' stays whole.",
+          "min_interval_hours": "For an as-needed medication, warn (never block) when it is logged again sooner than this many hours, e.g. a pain med no less than 4 hours apart.",
+          "max_per_day": "For an as-needed medication, warn once this many doses have been logged today.",
+          "dose_units": "Overrides the medication's default units per dose, for this dose only. Leave 0 to use the default; use decimals like 0.5 for half a pill."
+        }
+      },
+      "edit_dose": {
+        "title": "Edit a dose",
+        "data": {
+          "dose": "Dose to edit"
+        }
+      },
+      "edit_dose_details": {
+        "title": "Edit dose",
+        "description": "Change this dose and save to replace it. Editing only the schedule keeps the same entity; changing the time or medications starts a fresh entity (its history resets).",
+        "data": {
+          "time": "Time",
+          "meds": "Medications",
+          "schedule_type": "Repeat",
+          "days": "Days of the week (for the weekly option)",
+          "interval_days": "Every N days (for the interval option)",
+          "cycle_on": "Days on (for the on/off cycle)",
+          "cycle_off": "Days off (for the on/off cycle)",
+          "anchor_date": "Start date (for the interval or cycle option)",
+          "min_interval_hours": "Minimum hours between doses (as-needed only; 0 = no limit)",
+          "max_per_day": "Max doses per day (as-needed only; 0 = no limit)",
+          "dose_units": "Units consumed (this dose)"
+        },
+        "data_description": {
+          "meds": "Separate multiple medications with &, +, or a comma. A slash only splits with spaces around it, so a name like 'Carbimazol 5mg (1/2)' stays whole.",
+          "min_interval_hours": "For an as-needed medication, warn (never block) when it is logged again sooner than this many hours, e.g. a pain med no less than 4 hours apart.",
+          "max_per_day": "For an as-needed medication, warn once this many doses have been logged today.",
+          "dose_units": "Overrides the medication's default units per dose, for this dose only. Leave 0 to use the default; use decimals like 0.5 for half a pill."
+        }
+      },
+      "remove_dose": {
+        "title": "Remove doses",
+        "data": {
+          "remove": "Doses to remove"
+        }
+      },
+      "add_supply": {
+        "title": "Track a medication supply",
+        "description": "Count how much of a medication is on hand. It decrements each time a dose containing this medication is marked given, flags low at your threshold, and estimates a run-out date from the schedule. Pick the medication from your doses.",
+        "data": {
+          "supply_med": "Medication name",
+          "supply_units": "Units on hand now",
+          "supply_per_dose": "Units consumed per dose",
+          "supply_threshold": "Low-stock threshold",
+          "supply_refill_to": "Refill amount (a full supply)",
+          "supply_refill_add": "Add on refill (package refill)",
+          "supply_cost": "Cost per unit (0 = do not track)"
+        },
+        "data_description": {
+          "supply_refill_add": "On refill, add the refill amount to what is left (e.g. 17 + 30 = 47) instead of setting the count to the refill amount.",
+          "supply_cost": "Cost of one unit (a pill, ml, etc.) in your currency, used for the value-on-hand and cost-per-dose attributes. Leave at 0 to skip cost tracking."
+        }
+      },
+      "edit_supply": {
+        "title": "Edit a supply",
+        "data": {
+          "supply_med": "Medication"
+        }
+      },
+      "edit_supply_details": {
+        "title": "Edit {medication} supply",
+        "description": "Update the tracked supply for {medication}.",
+        "data": {
+          "supply_units": "Units on hand now",
+          "supply_per_dose": "Units consumed per dose",
+          "supply_threshold": "Low-stock threshold",
+          "supply_refill_to": "Refill amount (a full supply)",
+          "supply_refill_add": "Add on refill (package refill)",
+          "supply_cost": "Cost per unit (0 = do not track)"
+        },
+        "data_description": {
+          "supply_refill_add": "On refill, add the refill amount to what is left (e.g. 17 + 30 = 47) instead of setting the count to the refill amount.",
+          "supply_cost": "Cost of one unit (a pill, ml, etc.) in your currency, used for the value-on-hand and cost-per-dose attributes. Leave at 0 to skip cost tracking."
+        }
+      },
+      "remove_supply": {
+        "title": "Remove tracked supplies",
+        "data": {
+          "remove": "Supplies to stop tracking"
+        }
+      },
+      "medication_detail": {
+        "title": "Medication detail",
+        "description": "Optional reference info for a medication, kept separate from the short dose name. Pick a medication from this patient's doses; saving detail for one that already has it updates it.",
+        "data": {
+          "med_name": "Medication name",
+          "full_name": "Full name (optional)",
+          "strength": "Strength (e.g. 5mg)",
+          "brand": "Brand (optional)",
+          "prescribed_for": "Prescribed for (condition)",
+          "dosage": "Dosage summary (e.g. 2 tablets twice a day)"
+        }
+      },
+      "edit_medication": {
+        "title": "Edit medication detail",
+        "data": {
+          "med_name": "Medication"
+        }
+      },
+      "edit_medication_details": {
+        "title": "Edit detail for {medication}",
+        "description": "Update the reference detail for {medication}.",
+        "data": {
+          "full_name": "Full name (optional)",
+          "strength": "Strength (e.g. 5mg)",
+          "brand": "Brand (optional)",
+          "prescribed_for": "Prescribed for (condition)",
+          "dosage": "Dosage summary (e.g. 2 tablets twice a day)"
+        }
+      },
+      "remove_medication": {
+        "title": "Remove medication detail",
+        "data": {
+          "remove": "Medications to clear detail for"
+        }
+      },
+      "settings": {
+        "title": "Reminder settings",
+        "description": "Patient type, who to notify, time display, when doses reset for the day, and how the reminders nag.",
+        "data": {
+          "patient_type": "Patient type",
+          "notify": "Notify target (person or group)",
+          "time_format": "Time format",
+          "reset_time": "Daily reset time",
+          "nag_minutes": "Nag window (minutes after dose)",
+          "nag_interval": "Re-nag every (minutes)"
+        },
+        "data_description": {
+          "nag_interval": "Use a multiple of 5; reminders are evaluated on a 5-minute tick, so other values re-nag less evenly."
+        }
+      }
+    }
+  }
+}
