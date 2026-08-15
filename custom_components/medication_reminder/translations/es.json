@@ -1,0 +1,224 @@
+{
+  "issues": {
+    "supply_no_matching_dose": {
+      "title": "El stock controlado no tiene una dosis que coincida",
+      "description": "El stock de \"{medication}\" para {patient} no coincide con los medicamentos de ninguna dosis, por lo que nunca se descontarán. Comprueba el nombre correcto en Configurar (debe coincidir exactamente con el medicamento de una dosis) o elimina el control de stock."
+    }
+  },
+  "config": {
+    "step": {
+      "user": {
+        "title": "Añadir un paciente",
+        "description": "Crea un horario de medicación para una persona o mascota. Selecciona el tipo de paciente (para el icono) y quién debe recibir los recordatorios; luego podrás añadir sus dosis.",
+        "data": {
+          "patient": "Nombre del paciente",
+          "patient_type": "Tipo de paciente",
+          "notify": "Destinatario de las notificaciones (persona o grupo)"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Ya existe un paciente configurado con este nombre."
+    }
+  },
+  "options": {
+    "abort": {
+      "no_doses": "Añade primero una dosis. Todavía no hay dosis para editar.",
+      "no_medications": "Añade primero una dosis. Los detalles del medicamento se asocian a un medicamento que ya se utilice en alguna de las dosis de este paciente.",
+      "no_medication_detail": "Añade primero los detalles de un medicamento. Todavía no hay nada que editar.",
+      "no_supplies": "Controla primero el stock de un medicamento. Todavía no hay nada que editar."
+    },
+    "error": {
+      "duplicate_dose": "Ya existe una dosis con esta hora y estos medicamentos. Utiliza una hora diferente o combínalos en una sola dosis.",
+      "supply_exists": "Este medicamento ya tiene un control de stock. Utiliza Editar stock para modificarlo."
+    },
+    "step": {
+      "init": {
+        "title": "Gestionar medicamentos",
+        "menu_options": {
+          "doses": "Dosis",
+          "supplies": "Stock",
+          "med_details": "Detalles de los medicamentos",
+          "settings": "Ajustes de los recordatorios"
+        }
+      },
+      "doses": {
+        "title": "Dosis",
+        "menu_options": {
+          "add_dose": "Añadir una dosis",
+          "edit_dose": "Editar una dosis",
+          "remove_dose": "Eliminar una dosis"
+        }
+      },
+      "supplies": {
+        "title": "Stock",
+        "menu_options": {
+          "add_supply": "Controlar stock",
+          "edit_supply": "Editar stock",
+          "remove_supply": "Dejar de controlar stock"
+        }
+      },
+      "med_details": {
+        "title": "Detalles de los medicamentos",
+        "menu_options": {
+          "medication_detail": "Añadir detalles de un medicamento",
+          "edit_medication": "Editar detalles de un medicamento",
+          "remove_medication": "Eliminar detalles de un medicamento"
+        }
+      },
+      "add_dose": {
+        "title": "Añadir una dosis",
+        "description": "Selecciona la hora y los medicamentos, y luego elige cómo se repite: en determinados días de la semana (todos los días = diariamente), cada N días o mediante un ciclo de días de toma y descanso, a partir de una fecha de inicio.",
+        "data": {
+          "time": "Hora",
+          "meds": "Medicamentos",
+          "schedule_type": "Repetición",
+          "days": "Días de la semana (para la opción semanal)",
+          "interval_days": "Cada N días (para la opción de intervalo)",
+          "cycle_on": "Días de toma (para el ciclo de toma/descanso)",
+          "cycle_off": "Días de descanso (para el ciclo de toma/descanso)",
+          "anchor_date": "Fecha de inicio (para la opción de intervalo o ciclo)",
+          "min_interval_hours": "Horas mínimas entre dosis (solo según necesidad; 0 = sin límite)",
+          "max_per_day": "Máximo de dosis por día (solo según necesidad; 0 = sin límite)",
+          "dose_units": "Unidades consumidas (esta dosis)"
+        },
+        "data_description": {
+          "meds": "Separa varios medicamentos con &, + o una coma. Una barra / solo los separa si tiene espacios a ambos lados, por lo que un nombre como 'Carbimazol 5mg (1/2)' se mantiene completo.",
+          "min_interval_hours": "Para un medicamento según necesidad, muestra una advertencia (sin bloquear nunca) si se registra de nuevo antes de que hayan transcurrido estas horas; por ejemplo, un analgésico con un intervalo mínimo de 4 horas.",
+          "max_per_day": "Para un medicamento según necesidad, muestra una advertencia cuando se haya registrado esta cantidad de dosis durante el día.",
+          "dose_units": "Sustituye las unidades predeterminadas por dosis del medicamento únicamente para esta dosis. Deja 0 para usar el valor predeterminado; utiliza decimales como 0.5 para media pastilla."
+        }
+      },
+      "edit_dose": {
+        "title": "Editar una dosis",
+        "data": {
+          "dose": "Dosis que se va a editar"
+        }
+      },
+      "edit_dose_details": {
+        "title": "Editar dosis",
+        "description": "Modifica esta dosis y guarda los cambios para sustituirla. Si solo editas la programación, se mantiene la misma entidad; si cambias la hora o los medicamentos, se crea una entidad nueva (su historial se reinicia).",
+        "data": {
+          "time": "Hora",
+          "meds": "Medicamentos",
+          "schedule_type": "Repetición",
+          "days": "Días de la semana (para la opción semanal)",
+          "interval_days": "Cada N días (para la opción de intervalo)",
+          "cycle_on": "Días de toma (para el ciclo de toma/descanso)",
+          "cycle_off": "Días de descanso (para el ciclo de toma/descanso)",
+          "anchor_date": "Fecha de inicio (para la opción de intervalo o ciclo)",
+          "min_interval_hours": "Horas mínimas entre dosis (solo según necesidad; 0 = sin límite)",
+          "max_per_day": "Máximo de dosis por día (solo según necesidad; 0 = sin límite)",
+          "dose_units": "Unidades consumidas (esta dosis)"
+        },
+        "data_description": {
+          "meds": "Separa varios medicamentos con &, + o una coma. Una barra / solo los separa si tiene espacios a ambos lados, por lo que un nombre como 'Carbimazol 5mg (1/2)' se mantiene completo.",
+          "min_interval_hours": "Para un medicamento según necesidad, muestra una advertencia (sin bloquear nunca) si se registra de nuevo antes de que hayan transcurrido estas horas; por ejemplo, un analgésico con un intervalo mínimo de 4 horas.",
+          "max_per_day": "Para un medicamento según necesidad, muestra una advertencia cuando se haya registrado esta cantidad de dosis durante el día.",
+          "dose_units": "Sustituye las unidades predeterminadas por dosis del medicamento únicamente para esta dosis. Deja 0 para usar el valor predeterminado; utiliza decimales como 0.5 para media pastilla."
+        }
+      },
+      "remove_dose": {
+        "title": "Eliminar dosis",
+        "data": {
+          "remove": "Dosis que se van a eliminar"
+        }
+      },
+      "add_supply": {
+        "title": "Controlar el stock de un medicamento",
+        "description": "Controla la cantidad disponible de un medicamento. El stock disminuye cada vez que una dosis que contiene este medicamento se marca como administrada, se indica como bajo al alcanzar el umbral definido y se estima la fecha en que se agotará según la programación. Selecciona el medicamento entre tus dosis.",
+        "data": {
+          "supply_med": "Nombre del medicamento",
+          "supply_units": "Unidades disponibles actualmente",
+          "supply_per_dose": "Unidades consumidas por dosis",
+          "supply_threshold": "Umbral de stock bajo",
+          "supply_refill_to": "Cantidad de reposición (stock completo)",
+          "supply_refill_add": "Añadir al reponer (reposición por paquete)",
+          "supply_cost": "Costo por unidad (0 = no controlar)"
+        },
+        "data_description": {
+          "supply_refill_add": "Al reponer, añade la cantidad de reposición a lo que queda (por ejemplo, 17 + 30 = 47) en lugar de establecer el stock directamente en la cantidad de reposición.",
+          "supply_cost": "Costo de una unidad (una pastilla, ml, etc.) en tu moneda, utilizado para los atributos de valor disponible y costo por dosis. Deja 0 para no realizar un seguimiento del costo."
+        }
+      },
+      "edit_supply": {
+        "title": "Editar stock",
+        "data": {
+          "supply_med": "Medicamento"
+        }
+      },
+      "edit_supply_details": {
+        "title": "Editar el stock de {medication}",
+        "description": "Actualiza el stock controlado de {medication}.",
+        "data": {
+          "supply_units": "Unidades disponibles actualmente",
+          "supply_per_dose": "Unidades consumidas por dosis",
+          "supply_threshold": "Umbral de stock bajo",
+          "supply_refill_to": "Cantidad de reposición (stock completo)",
+          "supply_refill_add": "Añadir al reponer (reposición por paquete)",
+          "supply_cost": "Costo por unidad (0 = no controlar)"
+        },
+        "data_description": {
+          "supply_refill_add": "Al reponer, añade la cantidad de reposición a lo que queda (por ejemplo, 17 + 30 = 47) en lugar de establecer el stock directamente en la cantidad de reposición.",
+          "supply_cost": "Costo de una unidad (una pastilla, ml, etc.) en tu moneda, utilizado para los atributos de valor disponible y costo por dosis. Deja 0 para no realizar un seguimiento del costo."
+        }
+      },
+      "remove_supply": {
+        "title": "Eliminar controles de stock",
+        "data": {
+          "remove": "Medicamentos cuyo stock se dejará de controlar"
+        }
+      },
+      "medication_detail": {
+        "title": "Detalles del medicamento",
+        "description": "Información de referencia opcional sobre un medicamento, que se mantiene separada del nombre corto utilizado en la dosis. Selecciona un medicamento de las dosis de este paciente; si guardas detalles de uno que ya los tiene, se actualizarán.",
+        "data": {
+          "med_name": "Nombre del medicamento",
+          "full_name": "Nombre completo (opcional)",
+          "strength": "Concentración (p. ej., 5 mg)",
+          "brand": "Marca (opcional)",
+          "prescribed_for": "Indicado para (afección)",
+          "dosage": "Resumen de la posología (p. ej., 2 comprimidos dos veces al día)"
+        }
+      },
+      "edit_medication": {
+        "title": "Editar detalles del medicamento",
+        "data": {
+          "med_name": "Medicamento"
+        }
+      },
+      "edit_medication_details": {
+        "title": "Editar detalles de {medication}",
+        "description": "Actualiza la información de referencia de {medication}.",
+        "data": {
+          "full_name": "Nombre completo (opcional)",
+          "strength": "Concentración (p. ej., 5 mg)",
+          "brand": "Marca (opcional)",
+          "prescribed_for": "Indicado para (afección)",
+          "dosage": "Resumen de la posología (p. ej., 2 comprimidos dos veces al día)"
+        }
+      },
+      "remove_medication": {
+        "title": "Eliminar detalles del medicamento",
+        "data": {
+          "remove": "Medicamentos cuyos detalles se eliminarán"
+        }
+      },
+      "settings": {
+        "title": "Ajustes de los recordatorios",
+        "description": "Tipo de paciente, quién recibirá las notificaciones, formato de hora, cuándo se reinician las dosis del día y cómo se repiten los recordatorios.",
+        "data": {
+          "patient_type": "Tipo de paciente",
+          "notify": "Destinatario de las notificaciones (persona o grupo)",
+          "time_format": "Formato de hora",
+          "reset_time": "Hora de reinicio diario",
+          "nag_minutes": "Ventana de recordatorios (minutos después de la dosis)",
+          "nag_interval": "Repetir recordatorio cada (minutos)"
+        },
+        "data_description": {
+          "nag_interval": "Utiliza un múltiplo de 5; los recordatorios se evalúan cada 5 minutos, por lo que otros valores hacen que la repetición sea menos uniforme."
+        }
+      }
+    }
+  }
+}
