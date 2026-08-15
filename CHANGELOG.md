@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.30.0] - 2026-08-14
+### Added
+- Spanish (Latin America) translation (`es.json`) of the configuration UI, contributed by @markjimenezpy (#19). Home Assistant loads it automatically for Spanish users; any untranslated key falls back to English.
+
 ## [0.29.0] - 2026-07-31
 ### Added
 - Dashboards now show a dose's amount next to the medication when "Units consumed (this dose)" is set (e.g. "Marcoumar ½"), so a half-pill day reads differently from a full one at a glance. Fractions render as ½/¼/¾, whole numbers as-is, and doses left on the supply default are unchanged. The dashboards are copy-in, so re-paste the one you use to pick it up. (Requested by ph-dekeyser in #18.)
