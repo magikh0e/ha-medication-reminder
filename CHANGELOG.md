@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.31.1] - 2026-08-20
+### Fixed
+- Supply counts could drift in both directions during normal use. The per-dose decrement tracking lived only in memory, so an entry reload (the options flow reloads on every Configure change) or a restart between marking a dose given and un-marking it dropped the restore or let a re-toggle double-count (both leave the count too low). Two other paths inflated a count: un-marking a dose on a nearly empty supply restored the full per-dose amount even though less had actually come off, and un-marking after a refill or a manual correction added the dose back on top of the new value. The tracking is now persisted across reloads and restarts, records the exact amount removed, and is cleared by a refill or a manual set. If a count has already drifted, set that supply number to the true count once and it will hold.
+
 ## [0.31.0] - 2026-08-19
 ### Added
 - Rolling 30-day usage sensor for as-needed (PRN) meds: `sensor.<patient>_<med>_days_this_month` counts the distinct days a PRN med was logged in the last 30 days, with a `dates` attribute listing which days (an archive you can keep). Aimed at meds with a days-per-month limit, e.g. acute pain or migraine medication kept under about 10 days a month to avoid overuse. Restart-safe, and the window rolls forward on its own. (Requested by alva-seal in #21.)

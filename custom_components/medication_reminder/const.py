@@ -283,6 +283,27 @@ def dose_consumption(dose_units, supply_per_dose):
         return 0.0
 
 
+def apply_consumption(value, amount):
+    """Remove ``amount`` from a supply ``value``, clamped at zero.
+
+    Returns ``(new_value, removed)``. ``removed`` is what actually came off,
+    which is less than ``amount`` when the supply would otherwise drop below
+    zero. Storing ``removed`` (not the requested amount) lets an un-mark add
+    back exactly what the mark took and never more, so a mark-then-unmark on a
+    nearly empty supply cannot inflate the count. Both may be fractional.
+    """
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        v = 0.0
+    try:
+        a = max(float(amount), 0.0)
+    except (TypeError, ValueError):
+        a = 0.0
+    new = max(0.0, v - a)
+    return new, v - new
+
+
 def dose_min_interval_hours(data):
     """The minimum hours between as-needed doses (0 means no limit)."""
     try:

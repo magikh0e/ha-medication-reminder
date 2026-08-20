@@ -10,8 +10,15 @@ Decrement rules (deliberately simple and safe):
 - Only for doses scheduled today that include this medication.
 - Once per dose per calendar day, so toggling a dose off and on again does not
   double-count. Un-marking a given dose (turning the switch off) restores the
-  per-dose amount via the dose-undone event, including the early-dose "undo"
-  button; the daily reset does not restore, since the dose was actually given.
+  exact amount that was removed via the dose-undone event, including the
+  early-dose "undo" button; the daily reset does not restore, since the dose
+  was actually given.
+- The per-dose tracking (which doses were counted today and by how much) is
+  persisted in the entity attributes and restored on startup, so a reload (the
+  options flow reloads the entry on every change) or a restart between a mark
+  and an un-mark does not lose it, which would otherwise drop the restore or
+  double-count a re-toggle. A manual set or a refill is a fresh baseline and
+  clears the tracking.
 """
 
 from __future__ import annotations
@@ -47,6 +54,7 @@ from .const import (
     EVENT_DOSE_LOGGED,
     EVENT_DOSE_UNDONE,
     EVENT_SUPPLY_REFILL,
+    apply_consumption,
     dose_consumption,
     doses_per_week,
     is_due,
@@ -129,6 +137,10 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
             "doses_left": self._doses_left(),
             "est_runout_date": self._est_runout_date(),
             "low": self._value <= self._threshold,
+            # Persisted so per-dose decrement tracking survives an entry reload
+            # or restart (see the class docstring).
+            "consumed": dict(self._consumed),
+            "consumed_amount": dict(self._consumed_amount),
         }
         if self._cost > 0:
             # Same weekly cadence as the run-out estimate powers est_monthly_cost.
@@ -185,6 +197,20 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
                 self._value = float(last.state)
             except (ValueError, TypeError):
                 pass
+            # Restore the per-dose decrement tracking so an un-mark or re-toggle
+            # after a reload/restart still balances. Without this it resets to
+            # empty on every entry reload (which the options flow triggers on any
+            # change), dropping the restore or double-counting a re-toggle.
+            consumed = last.attributes.get("consumed")
+            if isinstance(consumed, dict):
+                self._consumed = {str(k): str(v) for k, v in consumed.items()}
+            amounts = last.attributes.get("consumed_amount")
+            if isinstance(amounts, dict):
+                for key, val in amounts.items():
+                    try:
+                        self._consumed_amount[str(key)] = float(val)
+                    except (TypeError, ValueError):
+                        pass
         self.async_on_remove(
             self.hass.bus.async_listen("state_changed", self._on_state_changed)
         )
@@ -212,7 +238,7 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
         if meds is None or not meds_contains(meds, self._med):
             return
         amount = dose_consumption(event.data.get("dose_units"), self._per_dose)
-        self._value = max(0.0, self._value - amount)
+        self._value, _ = apply_consumption(self._value, amount)
         self.async_write_ha_state()
 
     @callback
@@ -230,6 +256,10 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
                 )
             else:
                 self._value = float(self._refill_to)
+            # A refill is a fresh baseline; drop today's decrement tracking so a
+            # later un-mark cannot add a dose back on top of the refilled count.
+            self._consumed.clear()
+            self._consumed_amount.clear()
             self.async_write_ha_state()
 
     @callback
@@ -241,7 +271,9 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
         date_str = dt_util.now().date().isoformat()
         if self._consumed.get(entity_id) == date_str:
             del self._consumed[entity_id]
-            amount = self._consumed_amount.pop(entity_id, self._per_dose)
+            # Restore exactly what was removed; default 0 (never guess an amount)
+            # so a lost/absent record can only under-restore, never inflate.
+            amount = self._consumed_amount.pop(entity_id, 0.0)
             self._value = min(self._attr_native_max_value, self._value + amount)
             self.async_write_ha_state()
 
@@ -267,12 +299,18 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
         if self._consumed.get(entity_id) == date_str:
             return  # already counted this dose today
         amount = dose_consumption(new.attributes.get("dose_units"), self._per_dose)
+        self._value, removed = apply_consumption(self._value, amount)
         self._consumed[entity_id] = date_str
-        self._consumed_amount[entity_id] = amount
-        self._value = max(0.0, self._value - amount)
+        # Record what actually came off (clamped at 0), so an un-mark gives back
+        # exactly that, never the full requested amount on a near-empty supply.
+        self._consumed_amount[entity_id] = removed
         self.async_write_ha_state()
 
     async def async_set_native_value(self, value: float) -> None:
         """Manual adjust / refill (e.g. set back to a full bottle)."""
         self._value = max(0.0, float(value))
+        # A manual correction is authoritative; drop today's decrement tracking
+        # so a later un-mark does not add a dose back on top of the new value.
+        self._consumed.clear()
+        self._consumed_amount.clear()
         self.async_write_ha_state()
