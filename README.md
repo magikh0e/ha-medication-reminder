@@ -471,6 +471,12 @@ medication then gets:
   doses. **How many doses were logged so far today**, incrementing on each Log
   dose press (or `log_dose` call) and resetting at the patient's daily reset
   time, restart-safe. Answers "how many have I taken today?".
+- `sensor.<patient>_<med>_days_this_month` - only created for **as-needed (PRN)**
+  doses. **How many distinct days in the rolling last 30 you logged this med**,
+  for meds with a days-per-month limit (e.g. acute pain or migraine medication
+  that should stay under about 10 days a month to avoid medication overuse). Its
+  `dates` attribute lists which days, an archive you can keep, and the 30-day
+  window rolls forward on its own so old days drop off. Restart-safe.
 - `binary_sensor.<patient>_<med>_dose_guard` (device class `problem`) - only
   created for an **as-needed (PRN)** dose that sets a minimum interval and/or a
   daily cap. **Red when another dose now would be too soon** (within the minimum

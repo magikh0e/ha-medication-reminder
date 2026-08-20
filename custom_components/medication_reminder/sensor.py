@@ -3,9 +3,11 @@
 * `sensor.<patient>_next_dose` is a timestamp of the soonest dose still in the
   future, computed from each dose's schedule (any schedule type) via is_due.
 * per as-needed (PRN) dose: a `sensor.<patient>_<med>_last_taken` timestamp of
-  when that med was last logged, and a `sensor.<patient>_<med>_doses_today`
-  count of how many times it was logged since the daily reset. Both survive
-  restarts.
+  when that med was last logged, a `sensor.<patient>_<med>_doses_today` count of
+  how many times it was logged since the daily reset, and a
+  `sensor.<patient>_<med>_days_this_month` count of the distinct days it was
+  logged in the rolling last 30 days (for meds with a days-per-month limit). All
+  survive restarts.
 """
 
 from __future__ import annotations
@@ -47,6 +49,8 @@ from .const import (
 
 # Re-evaluate this often so "next dose" rolls forward as time passes.
 _SCAN = timedelta(seconds=60)
+# Rolling window (days) for the PRN "days this month" usage sensor.
+_WINDOW_DAYS = 30
 # How far ahead to look for the next due day (covers monthly/long cycles).
 _HORIZON_DAYS = 366
 
@@ -73,6 +77,7 @@ async def async_setup_entry(
         entities.append(
             MedicationDosesTodaySensor(entry, patient, time, meds, reset_time)
         )
+        entities.append(MedicationDaysThisMonthSensor(entry, patient, time, meds))
     async_add_entities(entities)
 
 
@@ -305,6 +310,95 @@ class MedicationDosesTodaySensor(RestoreSensor):
     def _on_reset(self, _now: datetime) -> None:
         self._period = self._period_key()
         self._count = 0
+        self.async_write_ha_state()
+
+
+class MedicationDaysThisMonthSensor(RestoreSensor):
+    """Distinct days a PRN med was logged in the rolling last 30 days.
+
+    Answers "how many days this month did I take this?" for as-needed meds with
+    a days-per-month limit, e.g. acute pain or migraine medication that should
+    stay under about 10 days a month to avoid medication overuse. The state is
+    the count of distinct days; the `dates` attribute lists which days (an
+    archive to keep). The window rolls forward each day, so days older than 30
+    fall out on their own even without a new dose. Restart-safe.
+    """
+
+    _attr_should_poll = False
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:calendar-check"
+    _attr_native_unit_of_measurement = "days"
+
+    def __init__(self, entry: ConfigEntry, patient: str, time: str, meds: str) -> None:
+        self._patient = patient
+        self._meds = meds
+        self._days: set[str] = set()
+        self._attr_name = f"{meds} days this month"
+        self._attr_unique_id = (
+            f"{entry.entry_id}_daysmonth_{slugify(time + '_' + meds)}"
+        )
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, entry.entry_id)},
+            "name": patient,
+            "manufacturer": "Medication Reminder",
+        }
+
+    def _prune(self) -> None:
+        """Drop any recorded day that has aged out of the rolling window."""
+        cutoff = (
+            dt_util.now().date() - timedelta(days=_WINDOW_DAYS - 1)
+        ).isoformat()
+        self._days = {d for d in self._days if d >= cutoff}
+
+    @property
+    def native_value(self) -> int:
+        return len(self._days)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {
+            "patient": self._patient,
+            "medications": self._meds,
+            "window_days": _WINDOW_DAYS,
+            "dates": sorted(self._days),
+        }
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        # Restore the recorded days (the archive) across restarts, then prune
+        # anything that has since aged out of the window.
+        last_state = await self.async_get_last_state()
+        if last_state is not None:
+            stored = last_state.attributes.get("dates")
+            if isinstance(stored, (list, tuple)):
+                self._days = {str(d) for d in stored}
+        self._prune()
+        self.async_on_remove(
+            self.hass.bus.async_listen(EVENT_DOSE_LOGGED, self._on_dose_logged)
+        )
+        # Re-evaluate just after midnight so an aged-out day drops on its own.
+        self.async_on_remove(
+            async_track_time_change(
+                self.hass, self._on_new_day, hour=0, minute=0, second=30
+            )
+        )
+
+    @callback
+    def _on_dose_logged(self, event: Event) -> None:
+        data = event.data
+        if (
+            data.get("patient") != self._patient
+            or data.get("medications") != self._meds
+        ):
+            return
+        when = dt_util.parse_datetime(data.get("logged_at") or "") or dt_util.now()
+        self._prune()
+        self._days.add(dt_util.as_local(when).date().isoformat())
+        self.async_write_ha_state()
+
+    @callback
+    def _on_new_day(self, _now: datetime) -> None:
+        self._prune()
         self.async_write_ha_state()
 
 
