@@ -156,6 +156,9 @@ cards:
                 {% for s in states.sensor if s.name and s.name.endswith('doses today') %}
                 {{ s.entity_id }}
                 {% endfor %}
+                {% for s in states.sensor if s.name and s.name.endswith('days this month') %}
+                {{ s.entity_id }}
+                {% endfor %}
             sort:
               method: name
 

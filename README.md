@@ -35,7 +35,7 @@ setup with no custom integration? Use that one; otherwise use this.
 
 - **Pets and people, all in the UI.** Add patients and their dose schedule from Settings, no YAML; entities auto-create per patient and survive restarts.
 - **Flexible scheduling.** Each dose daily, on specific days of the week, every N days, an on/off cycle (e.g. 21 on / 7 off), specific days of the month, or as-needed (PRN, no reminders), in 12h or 24h.
-- **As-needed (PRN) meds.** A "Log dose" button (and `log_dose` service) records each dose taken, with a last-taken timestamp, a doses-today count, and a supply decrement, so meds taken several times a day stay tracked. Optional **over-dose guard**: set a minimum interval and/or a daily cap, and a `problem` sensor warns (never blocks) when another dose now would be too soon or over the cap.
+- **As-needed (PRN) meds.** A "Log dose" button (and `log_dose` service) records each dose taken, with a last-taken timestamp, a doses-today count, and a supply decrement, so meds taken several times a day stay tracked. Optional **over-dose guard**: set a minimum interval and/or a daily cap, and a `problem` sensor warns (never blocks) when another dose now would be too soon or over the cap. A rolling 30-day **days this month** count per med helps with days-per-month limits, like keeping acute pain or migraine meds under about 10 days.
 - **Glanceable, fail-safe status.** A per-patient red/green "needs attention" sensor that trips on elapsed time alone and errs toward "problem"; wire it to a panel, light, or siren.
 - **Actionable reminders.** Nagging, missed-dose escalation, and a "Mark given" button from the notification, routed to each patient's own notify target. Tapping the notification body (not the button) can open your meds dashboard.
 - **Supply & refill tracking.** Per-medication counts that decrement as doses are given, with doses-left, a run-out estimate, a low-stock red flag at your reorder threshold, and a refill reminder. Per-dose amounts can be fractional (half a pill) and overridden per dose, and an optional per-unit cost surfaces value on hand, cost per dose, and a monthly estimate.
@@ -185,7 +185,7 @@ or removing a patient just updates them. Each has seven parts:
 1. a red/green status panel (from the `needs_attention` sensors),
 2. a summary of **today's** scheduled doses (given / still to give, with times),
 3. one combined "Mark given" card with every dose due today (tap to mark),
-4. an "As needed (PRN)" card with a Log dose button per as-needed med and its "last taken" time,
+4. an "As needed (PRN)" card with a Log dose button per as-needed med, plus its "last taken" time, doses today, and rolling 30-day days-this-month count,
 5. one combined supplies card (units on hand, shown only if you track supplies),
 6. a per-patient schedule overview (every dose, time, medications, and days),
 7. a per-patient "current medications" list (full name, strength, brand, what it is for, dosage, and each med's dose times) for handing to a vet or doctor.
@@ -225,7 +225,7 @@ no HACS cards at all.
 
 ![As needed (PRN) card](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/PRN-card.png)
 
-*The As needed (PRN) card: a Log dose button per as-needed med, with its last-taken time and doses-today count.*
+*The As needed (PRN) card: a Log dose button per as-needed med, with its last-taken time, doses-today count, and rolling 30-day days-this-month count.*
 
 ### Status panel (red/green, glanceable)
 
