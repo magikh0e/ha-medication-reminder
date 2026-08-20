@@ -93,16 +93,29 @@
   trigger:
     - platform: event
       event_type: mobile_app_notification_action
+      id: notif
+    - platform: event
+      event_type: medication_reminder_dose_given
+      id: given
   condition:
-    - "{{ trigger.event.data.action.startswith('MED_GIVEN_') }}"
+    - >-
+      {{ trigger.id == 'given'
+         or (trigger.event.data.action is defined
+             and trigger.event.data.action.startswith('MED_GIVEN_')) }}
   variables:
-    oid: "{{ trigger.event.data.action | replace('MED_GIVEN_', '') }}"
+    oid: >-
+      {{ trigger.event.data.entity_id.split('.')[1] if trigger.id == 'given'
+         else trigger.event.data.action | replace('MED_GIVEN_', '') }}
     ent: "switch.{{ oid }}"
     notify_service: "{{ state_attr(ent, 'notify_service') or 'caretakers' }}"
   action:
-    - action: switch.turn_on
-      target:
-        entity_id: "{{ ent }}"
+    # Only the notification button flips the switch; the event path is a
+    # consequence of the switch turning on, so it must not re-trigger it.
+    - if: "{{ trigger.id == 'notif' }}"
+      then:
+        - action: switch.turn_on
+          target:
+            entity_id: "{{ ent }}"
     - action: "notify.{{ notify_service }}"
       data:
         message: "clear_notification"

@@ -149,7 +149,10 @@ notify:
 
 They send a reminder when a dose is due and not given, nag every 15 minutes for
 45 minutes, then escalate once as a time-sensitive "missed" alert. Tapping
-**Mark given** turns the dose's switch on and clears the notification. On
+**Mark given** turns the dose's switch on and clears the notification. The
+notification also clears if you mark the dose given another way (from the
+dashboard, an NFC tag, or the `mark_given` service), so a lingering reminder does
+not sit on your phone after you have already taken the dose. On
 Android the **Mark given** button shows on the notification directly; on iPhone,
 **long-press (or pull down) the notification** to reveal it. It works the same on
 both, just tucked behind a long-press on iOS. Tapping the notification **body**

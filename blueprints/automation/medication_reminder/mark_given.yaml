@@ -2,8 +2,10 @@ blueprint:
   name: Medication Reminder - mark given from notification
   description: >
     Handles the "Mark given" button on the reminder and missed-dose
-    notifications: turns the dose switch on and clears the related notifications.
-    Import this alongside the dose-reminders blueprint.
+    notifications (turns the dose switch on), and clears the reminder and
+    missed-dose notifications whenever a dose is marked given by any means:
+    the button, the dashboard, an NFC tag, or the mark_given service. Import
+    this alongside the dose-reminders blueprint.
   domain: automation
   author: magikh0e
   source_url: https://github.com/magikh0e/ha-medication-reminder/blob/main/blueprints/automation/medication_reminder/mark_given.yaml
@@ -18,19 +20,35 @@ blueprint:
         text:
 
 trigger:
+  # The notification's "Mark given" button.
   - platform: event
     event_type: mobile_app_notification_action
+    id: notif
+  # Any other way a dose is marked given (dashboard, NFC tag, mark_given
+  # service, another device) fires this event, so the notification clears too.
+  - platform: event
+    event_type: medication_reminder_dose_given
+    id: given
 condition:
-  - "{{ trigger.event.data.action.startswith('MED_GIVEN_') }}"
+  - >-
+    {{ trigger.id == 'given'
+       or (trigger.event.data.action is defined
+           and trigger.event.data.action.startswith('MED_GIVEN_')) }}
 variables:
   default_notify: !input fallback_notify
-  oid: "{{ trigger.event.data.action | replace('MED_GIVEN_', '') }}"
+  oid: >-
+    {{ trigger.event.data.entity_id.split('.')[1] if trigger.id == 'given'
+       else trigger.event.data.action | replace('MED_GIVEN_', '') }}
   ent: "switch.{{ oid }}"
   notify_service: "{{ state_attr(ent, 'notify_service') or default_notify }}"
 action:
-  - action: switch.turn_on
-    target:
-      entity_id: "{{ ent }}"
+  # Only the notification button needs to flip the switch; the event path is
+  # already a consequence of the switch turning on, so don't re-trigger it.
+  - if: "{{ trigger.id == 'notif' }}"
+    then:
+      - action: switch.turn_on
+        target:
+          entity_id: "{{ ent }}"
   - action: "notify.{{ notify_service }}"
     data:
       message: "clear_notification"
