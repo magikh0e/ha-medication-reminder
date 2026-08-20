@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.31.0] - 2026-08-19
+### Added
+- Rolling 30-day usage sensor for as-needed (PRN) meds: `sensor.<patient>_<med>_days_this_month` counts the distinct days a PRN med was logged in the last 30 days, with a `dates` attribute listing which days (an archive you can keep). Aimed at meds with a days-per-month limit, e.g. acute pain or migraine medication kept under about 10 days a month to avoid overuse. Restart-safe, and the window rolls forward on its own. (Requested by alva-seal in #21.)
+
+### Fixed
+- The reminder notification now clears whenever a dose is marked given, not only when its "Mark given" button is tapped. Marking a dose from the dashboard, an NFC tag, or the `mark_given` service left the notification on the phone; the mark-given automation now also triggers on the `medication_reminder_dose_given` event and clears the `med_<oid>` / `med_missed_<oid>` tags. Re-import the mark-given blueprint (or re-paste `companion-automations.yaml`). (Reported by RobertGalatNordic in #22.)
+
 ## [0.30.0] - 2026-08-14
 ### Added
 - Spanish (Latin America) translation (`es.json`) of the configuration UI, contributed by @markjimenezpy (#19). Home Assistant loads it automatically for Spanish users; any untranslated key falls back to English.

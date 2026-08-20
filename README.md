@@ -624,6 +624,8 @@ territory. A future version may move reminders into the integration itself.
 - Per-dose consumption amounts (0.28.0): "units consumed per dose" is now fractional (e.g. 0.5), and each dose can override the medication's default with its own amount, so one supply tracks a medication taken at different amounts on different days.
 - Manifest `integration_type` set to `service` (0.28.1), so the integration presents correctly in the Home Assistant integrations UI. (Suggested by @frenck during the HACS default-store review.)
 - Per-dose amount on the dashboard (0.29.0): the bundled dashboards show a dose's "Units consumed (this dose)" amount next to the medication (e.g. "Marcoumar ½"), so half-pill days read differently from full ones. (Requested by GitHub user ph-dekeyser in #18.)
+- Rolling 30-day PRN usage sensor (0.31.0): `days_this_month` counts the distinct days an as-needed med was logged in the last 30 days, for meds with a days-per-month limit. (Requested by alva-seal in #21.)
+- Notification clears on any mark-given (0.31.0): the reminder notification now clears when a dose is marked given from the dashboard, an NFC tag, or the mark_given service, not only the notification button. (Reported by RobertGalatNordic in #22.)
 
 ## Acknowledgements
 
