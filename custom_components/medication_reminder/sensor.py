@@ -345,9 +345,7 @@ class MedicationDaysThisMonthSensor(RestoreSensor):
 
     def _prune(self) -> None:
         """Drop any recorded day that has aged out of the rolling window."""
-        cutoff = (
-            dt_util.now().date() - timedelta(days=_WINDOW_DAYS - 1)
-        ).isoformat()
+        cutoff = (dt_util.now().date() - timedelta(days=_WINDOW_DAYS - 1)).isoformat()
         self._days = {d for d in self._days if d >= cutoff}
 
     @property
