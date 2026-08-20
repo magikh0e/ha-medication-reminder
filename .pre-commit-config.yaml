@@ -1,0 +1,23 @@
+# Pre-commit hooks that mirror the CI lint gate in .github/workflows/test.yml:
+#   ruff check custom_components/    and    black --check custom_components/
+#
+# Versions are pinned to match requirements_test.txt, so passing locally means
+# passing in CI. Scope is limited to custom_components/ for the same reason.
+#
+# One-time setup after cloning:
+#   pip install -r requirements_test.txt   # (installs pre-commit)
+#   pre-commit install
+#
+# Run against everything manually:  pre-commit run --all-files
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.16
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^custom_components/.*\.py$
+  - repo: https://github.com/psf/black
+    rev: 26.5.1
+    hooks:
+      - id: black
+        files: ^custom_components/.*\.py$
