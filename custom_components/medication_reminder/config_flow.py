@@ -527,6 +527,9 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
         doses = list(self._entry.options.get(CONF_DOSES, []))
         if user_input is not None:
             remove = set(user_input.get("remove", []))
+            for i, dose in enumerate(doses):
+                if str(i) in remove:
+                    self._prune_dose_entity(dose)
             options = dict(self._entry.options)
             options[CONF_DOSES] = [
                 d for i, d in enumerate(doses) if str(i) not in remove
@@ -601,15 +604,43 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
         )
 
     def _prune_dose_entity(self, dose: dict[str, Any]) -> None:
-        """Remove a dose's switch entity from the registry (used when an edit
-        changes the time/medications, so the old entity does not linger)."""
+        """Remove all of a dose's entities from the registry so none linger as
+        "unavailable" when the dose is removed, or when an edit changes its time
+        or medications (which moves it to a new entity id). Covers the switch
+        and, for as-needed (PRN) doses, the log-dose button and the last-taken,
+        doses-today, days-this-month, and dose-guard entities."""
         time = str(dose.get(CONF_TIME, ""))[:5]
         meds = str(dose.get(CONF_MEDS, ""))
-        unique_id = f"{self._entry.entry_id}_{slugify(time + '_' + meds)}"
+        slug = slugify(time + "_" + meds)
+        eid = self._entry.entry_id
+        targets = [
+            ("switch", f"{eid}_{slug}"),
+            ("button", f"{eid}_logdose_{slug}"),
+            ("sensor", f"{eid}_lasttaken_{slug}"),
+            ("sensor", f"{eid}_dosestoday_{slug}"),
+            ("sensor", f"{eid}_daysmonth_{slug}"),
+            ("binary_sensor", f"{eid}_doseguard_{slug}"),
+        ]
         registry = er.async_get(self.hass)
-        entity_id = registry.async_get_entity_id("switch", DOMAIN, unique_id)
-        if entity_id:
-            registry.async_remove(entity_id)
+        for domain, unique_id in targets:
+            entity_id = registry.async_get_entity_id(domain, DOMAIN, unique_id)
+            if entity_id:
+                registry.async_remove(entity_id)
+
+    def _prune_supply_entity(self, supply: dict[str, Any]) -> None:
+        """Remove a supply's number and refill-button entities from the registry
+        so they do not linger as "unavailable" after the supply is removed."""
+        slug = slugify(str(supply.get(CONF_SUPPLY_MED, "")).strip())
+        eid = self._entry.entry_id
+        targets = [
+            ("number", f"{eid}_supply_{slug}"),
+            ("button", f"{eid}_refill_{slug}"),
+        ]
+        registry = er.async_get(self.hass)
+        for domain, unique_id in targets:
+            entity_id = registry.async_get_entity_id(domain, DOMAIN, unique_id)
+            if entity_id:
+                registry.async_remove(entity_id)
 
     def _dose_medications(self) -> list[str]:
         """Distinct medications used across this patient's doses, sorted."""
@@ -787,6 +818,9 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
         supplies = list(self._entry.options.get(CONF_SUPPLIES, []))
         if user_input is not None:
             remove = set(user_input.get("remove", []))
+            for i, supply in enumerate(supplies):
+                if str(i) in remove:
+                    self._prune_supply_entity(supply)
             options = dict(self._entry.options)
             options[CONF_SUPPLIES] = [
                 s for i, s in enumerate(supplies) if str(i) not in remove
