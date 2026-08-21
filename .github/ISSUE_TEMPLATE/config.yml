@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and setup help
+    url: https://github.com/magikh0e/ha-medication-reminder/discussions/categories/q-a
+    about: How-do-I and setup questions get a faster answer here than in an issue.
+  - name: Ideas and general discussion
+    url: https://github.com/magikh0e/ha-medication-reminder/discussions
+    about: Float an idea, share your setup, or chat about medication tracking in Home Assistant.
