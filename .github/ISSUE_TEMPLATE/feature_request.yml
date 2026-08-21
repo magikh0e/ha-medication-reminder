@@ -1,0 +1,76 @@
+name: Feature request
+description: Suggest a new capability or an improvement
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea.
+
+        Half-formed thoughts and "would it be cool if..." are very welcome in
+        [Discussions](https://github.com/magikh0e/ha-medication-reminder/discussions/categories/ideas),
+        where they can be talked through before becoming an issue. Use this form
+        for a concrete request you would like tracked toward a release.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Before you start
+      options:
+        - label: I searched existing issues and discussions and did not find this already suggested.
+          required: true
+        - label: This is a feature request, not a bug report.
+          required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part does it relate to?
+      options:
+        - Doses / scheduling
+        - Supplies / refills / counts
+        - Reminders / notifications
+        - As-needed (PRN)
+        - Dashboards
+        - Config / setup flow
+        - Translations
+        - Something new
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: >
+        The problem or use case, not the solution yet. What are you trying to
+        accomplish, and where does the integration fall short today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like it to do?
+      description: The feature or change you have in mind, as concretely as you can put it.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Current workaround or alternatives
+      description: >
+        How you handle this today (an automation, a helper, doing it by hand),
+        and any other approaches you considered.
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else?
+      description: Mockups, examples from other integrations, dashboard snippets, or any extra context.
+    validations:
+      required: false
