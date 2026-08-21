@@ -1,0 +1,109 @@
+name: Bug report
+description: Something is broken or behaving wrong
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug.
+
+        If this is a how-do-I question, a setup problem, or an idea rather than a
+        clear malfunction, please post in
+        [Discussions](https://github.com/magikh0e/ha-medication-reminder/discussions)
+        instead, it will get a faster answer there.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Before you start
+      options:
+        - label: I am on the latest version of the integration (or I checked the CHANGELOG for a fix).
+          required: true
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Integration version
+      description: Shown in HACS, or the `version` field in `manifest.json`.
+      placeholder: e.g. 0.31.2
+    validations:
+      required: true
+
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant version
+      description: Settings, About.
+      placeholder: e.g. 2026.8.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install it?
+      options:
+        - HACS (default store)
+        - HACS (custom repository)
+        - Manual (copied custom_components)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part is affected?
+      options:
+        - Doses / scheduling
+        - Supplies / refills / counts
+        - Reminders / notifications
+        - As-needed (PRN)
+        - Dashboards
+        - Config / setup flow
+        - Translations
+        - Other / not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened, and what did you expect?
+      description: Describe the actual behavior and what you expected instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The exact steps, so it can be reproduced from a clean setup.
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and diagnostics
+      description: >
+        Relevant Home Assistant logs (Settings, System, Logs) and, if you can,
+        the integration's downloadable diagnostics (the device page has a
+        "Download diagnostics" link). Redact anything private first.
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else?
+      description: Screenshots, the dashboard YAML you use, config details, or any other context that helps.
+    validations:
+      required: false
