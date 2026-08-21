@@ -79,12 +79,14 @@
           "cycle_off": "Tage aus (für den Ein-/Ausschalt-Zyklus)",
           "anchor_date": "Startdatum (für die Intervall- oder Zyklus-Option)",
           "min_interval_hours": "Mindeststunden zwischen den Dosen (nur bei Bedarf; 0 = keine Begrenzung)",
-          "max_per_day": "Maximale Dosen pro Tag (nur bei Bedarf; 0 = keine Begrenzung)"
+          "max_per_day": "Maximale Dosen pro Tag (nur bei Bedarf; 0 = keine Begrenzung)",
+          "dose_units": "Verbrauchte Einheiten (diese Dosis)"
         },
         "data_description": {
           "meds": "Trenne mehrere Medikamente mit &, + oder einem Komma. Ein Schrägstrich teilt nur mit Leerzeichen drumherum, sodass ein Name wie 'Carbimazol 5mg (1/2)' ganz bleibt.",
           "min_interval_hours": "Bei einem Medikament nach Bedarf wird gewarnt (nie blockiert), wenn es erneut innerhalb dieser Stunden protokolliert wird, z. B. ein Schmerzmittel nicht öfter als alle 4 Stunden.",
-          "max_per_day": "Bei einem Medikament nach Bedarf wird einmal gewarnt, wenn diese Anzahl an Dosen heute bereits protokolliert wurde."
+          "max_per_day": "Bei einem Medikament nach Bedarf wird einmal gewarnt, wenn diese Anzahl an Dosen heute bereits protokolliert wurde.",
+          "dose_units": "Überschreibt die Standard-Einheiten pro Dosis des Medikaments, nur für diese Dosis. Lasse 0, um den Standardwert zu verwenden; verwende Dezimalzahlen wie 0.5 für eine halbe Tablette."
         }
       },
       "edit_dose": {
@@ -106,12 +108,14 @@
           "cycle_off": "Tage aus (für den Ein-/Ausschalt-Zyklus)",
           "anchor_date": "Startdatum (für die Intervall- oder Zyklus-Option)",
           "min_interval_hours": "Mindeststunden zwischen den Dosen (nur bei Bedarf; 0 = keine Begrenzung)",
-          "max_per_day": "Maximale Dosen pro Tag (nur bei Bedarf; 0 = keine Begrenzung)"
+          "max_per_day": "Maximale Dosen pro Tag (nur bei Bedarf; 0 = keine Begrenzung)",
+          "dose_units": "Verbrauchte Einheiten (diese Dosis)"
         },
         "data_description": {
           "meds": "Trenne mehrere Medikamente mit &, + oder einem Komma. Ein Schrägstrich teilt nur mit Leerzeichen drumherum, sodass ein Name wie 'Carbimazol 5mg (1/2)' ganz bleibt.",
           "min_interval_hours": "Bei einem Medikament nach Bedarf wird gewarnt (nie blockiert), wenn es erneut innerhalb dieser Stunden protokolliert wird, z. B. ein Schmerzmittel nicht öfter als alle 4 Stunden.",
-          "max_per_day": "Bei einem Medikament nach Bedarf wird einmal gewarnt, wenn diese Anzahl an Dosen heute bereits protokolliert wurde."
+          "max_per_day": "Bei einem Medikament nach Bedarf wird einmal gewarnt, wenn diese Anzahl an Dosen heute bereits protokolliert wurde.",
+          "dose_units": "Überschreibt die Standard-Einheiten pro Dosis des Medikaments, nur für diese Dosis. Lasse 0, um den Standardwert zu verwenden; verwende Dezimalzahlen wie 0.5 für eine halbe Tablette."
         }
       },
       "remove_dose": {
@@ -129,10 +133,12 @@
           "supply_per_dose": "Einheiten pro Dosis",
           "supply_threshold": "Niedrig-Bestand-Schwellenwert",
           "supply_refill_to": "Nachfüllmenge (ein voller Vorrat)",
-          "supply_refill_add": "Beim Nachfüllen hinzufügen (Packungsnachfüllung)"
+          "supply_refill_add": "Beim Nachfüllen hinzufügen (Packungsnachfüllung)",
+          "supply_cost": "Kosten pro Einheit (0 = nicht verfolgen)"
         },
         "data_description": {
-          "supply_refill_add": "Addiere beim Nachfüllen die Nachfüllmenge zum Restbestand (z. B. 17 + 30 = 47), anstatt den Bestand auf die Nachfüllmenge zu setzen."
+          "supply_refill_add": "Addiere beim Nachfüllen die Nachfüllmenge zum Restbestand (z. B. 17 + 30 = 47), anstatt den Bestand auf die Nachfüllmenge zu setzen.",
+          "supply_cost": "Kosten einer Einheit (Tablette, ml usw.) in deiner Währung, verwendet für die Attribute Bestandswert und Kosten pro Dosis. Lasse 0, um die Kostenverfolgung zu überspringen."
         }
       },
       "edit_supply": {
@@ -149,10 +155,12 @@
           "supply_per_dose": "Einheiten pro Dosis",
           "supply_threshold": "Niedrig-Bestand-Schwellenwert",
           "supply_refill_to": "Nachfüllmenge (ein voller Vorrat)",
-          "supply_refill_add": "Beim Nachfüllen hinzufügen (Packungsnachfüllung)"
+          "supply_refill_add": "Beim Nachfüllen hinzufügen (Packungsnachfüllung)",
+          "supply_cost": "Kosten pro Einheit (0 = nicht verfolgen)"
         },
         "data_description": {
-          "supply_refill_add": "Addiere beim Nachfüllen die Nachfüllmenge zum Restbestand (z. B. 17 + 30 = 47), anstatt den Bestand auf die Nachfüllmenge zu setzen."
+          "supply_refill_add": "Addiere beim Nachfüllen die Nachfüllmenge zum Restbestand (z. B. 17 + 30 = 47), anstatt den Bestand auf die Nachfüllmenge zu setzen.",
+          "supply_cost": "Kosten einer Einheit (Tablette, ml usw.) in deiner Währung, verwendet für die Attribute Bestandswert und Kosten pro Dosis. Lasse 0, um die Kostenverfolgung zu überspringen."
         }
       },
       "remove_supply": {
