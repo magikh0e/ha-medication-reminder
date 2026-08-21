@@ -31,6 +31,8 @@ setup with no custom integration? Use that one; otherwise use this.
 
 **Jump to:** [Highlights](#highlights) · [Installation](#installation) · [Dashboard](#dashboard) · [Roles](#roles--sharing) · [Settings](#settings-per-patient) · [Supply & refill](#supply--refill-tracking) · [Safety](#safety--fail-safes) · [Languages](#languages) · [Roadmap](#roadmap)
 
+Questions, setup help, or want to show off your setup? Come to [Discussions](https://github.com/magikh0e/ha-medication-reminder/discussions). Bugs and feature requests belong in [Issues](https://github.com/magikh0e/ha-medication-reminder/issues/new/choose).
+
 ## Highlights
 
 - **Pets and people, all in the UI.** Add patients and their dose schedule from Settings, no YAML; entities auto-create per patient and survive restarts.
