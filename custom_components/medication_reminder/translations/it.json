@@ -1,0 +1,224 @@
+{
+  "issues": {
+    "supply_no_matching_dose": {
+      "title": "La scorta monitorata non corrisponde a nessuna dose",
+      "description": "La scorta \"{medication}\" per {patient} non corrisponde ai farmaci di nessuna dose, quindi non verrà mai decrementata. Controlla l'ortografia in Config (deve corrispondere esattamente al farmaco di una dose), oppure rimuovi la scorta."
+    }
+  },
+  "config": {
+    "step": {
+      "user": {
+        "title": "Aggiungi un paziente",
+        "description": "Crea un piano terapeutico per un animale o una persona. Scegli il tipo di paziente (per l'icona) e chi deve ricevere i promemoria; potrai aggiungere le dosi in seguito.",
+        "data": {
+          "patient": "Nome del paziente",
+          "patient_type": "Tipo di paziente",
+          "notify": "Destinatario notifica (persona o gruppo)"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Un paziente con questo nome è già configurato."
+    }
+  },
+  "options": {
+    "abort": {
+      "no_doses": "Aggiungi prima una dose. Non ci sono ancora dosi da modificare.",
+      "no_medications": "Aggiungi prima una dose. Il dettaglio del farmaco si associa a un farmaco già usato in una delle dosi di questo paziente.",
+      "no_medication_detail": "Aggiungi prima il dettaglio del farmaco. Non c'è ancora nulla da modificare.",
+      "no_supplies": "Monitora prima una scorta. Non c'è ancora nulla da modificare."
+    },
+    "error": {
+      "duplicate_dose": "Esiste già una dose con questo orario e questi farmaci. Usa un orario diverso, oppure combinali in un'unica dose.",
+      "supply_exists": "Questo farmaco ha già una scorta monitorata. Usa Modifica una scorta per cambiarla."
+    },
+    "step": {
+      "init": {
+        "title": "Gestisci farmaci",
+        "menu_options": {
+          "doses": "Dosi",
+          "supplies": "Scorte",
+          "med_details": "Dettagli farmaci",
+          "settings": "Impostazioni promemoria"
+        }
+      },
+      "doses": {
+        "title": "Dosi",
+        "menu_options": {
+          "add_dose": "Aggiungi una dose",
+          "edit_dose": "Modifica una dose",
+          "remove_dose": "Rimuovi una dose"
+        }
+      },
+      "supplies": {
+        "title": "Scorte",
+        "menu_options": {
+          "add_supply": "Monitora una scorta",
+          "edit_supply": "Modifica una scorta",
+          "remove_supply": "Rimuovi una scorta"
+        }
+      },
+      "med_details": {
+        "title": "Dettagli farmaci",
+        "menu_options": {
+          "medication_detail": "Aggiungi dettaglio farmaco",
+          "edit_medication": "Modifica dettaglio farmaco",
+          "remove_medication": "Rimuovi dettaglio farmaco"
+        }
+      },
+      "add_dose": {
+        "title": "Aggiungi una dose",
+        "description": "Scegli l'orario ed elenca i farmaci, poi indica come si ripete: nei giorni della settimana scelti (tutti i giorni = giornaliero), ogni N giorni, oppure un ciclo attivo/pausa, a partire da una data di inizio.",
+        "data": {
+          "time": "Orario",
+          "meds": "Farmaci",
+          "schedule_type": "Ripetizione",
+          "days": "Giorni della settimana (per l'opzione settimanale)",
+          "interval_days": "Ogni N giorni (per l'opzione a intervallo)",
+          "cycle_on": "Giorni attivi (per il ciclo attivo/pausa)",
+          "cycle_off": "Giorni di pausa (per il ciclo attivo/pausa)",
+          "anchor_date": "Data di inizio (per l'opzione a intervallo o a ciclo)",
+          "min_interval_hours": "Ore minime tra le dosi (solo al bisogno; 0 = nessun limite)",
+          "max_per_day": "Numero massimo di dosi al giorno (solo al bisogno; 0 = nessun limite)",
+          "dose_units": "Unità consumate (questa dose)"
+        },
+        "data_description": {
+          "meds": "Separa più farmaci con &, + o una virgola. Una barra separa solo se circondata da spazi, quindi un nome come 'Carbimazolo 5mg (1/2)' resta intero.",
+          "min_interval_hours": "Per un farmaco al bisogno, avvisa (senza mai bloccare) se viene registrato di nuovo prima di queste ore, ad es. un antidolorifico non prima di 4 ore dal precedente.",
+          "max_per_day": "Per un farmaco al bisogno, avvisa una volta raggiunto questo numero di dosi registrate oggi.",
+          "dose_units": "Sostituisce le unità predefinite per dose del farmaco, solo per questa dose. Lascia 0 per usare il valore predefinito; usa decimali come 0.5 per mezza compressa."
+        }
+      },
+      "edit_dose": {
+        "title": "Modifica una dose",
+        "data": {
+          "dose": "Dose da modificare"
+        }
+      },
+      "edit_dose_details": {
+        "title": "Modifica dose",
+        "description": "Modifica questa dose e salva per sostituirla. Modificare solo la pianificazione mantiene la stessa entità; cambiare l'orario o i farmaci crea una nuova entità (la sua cronologia viene azzerata).",
+        "data": {
+          "time": "Orario",
+          "meds": "Farmaci",
+          "schedule_type": "Ripetizione",
+          "days": "Giorni della settimana (per l'opzione settimanale)",
+          "interval_days": "Ogni N giorni (per l'opzione a intervallo)",
+          "cycle_on": "Giorni attivi (per il ciclo attivo/pausa)",
+          "cycle_off": "Giorni di pausa (per il ciclo attivo/pausa)",
+          "anchor_date": "Data di inizio (per l'opzione a intervallo o a ciclo)",
+          "min_interval_hours": "Ore minime tra le dosi (solo al bisogno; 0 = nessun limite)",
+          "max_per_day": "Numero massimo di dosi al giorno (solo al bisogno; 0 = nessun limite)",
+          "dose_units": "Unità consumate (questa dose)"
+        },
+        "data_description": {
+          "meds": "Separa più farmaci con &, + o una virgola. Una barra separa solo se circondata da spazi, quindi un nome come 'Carbimazolo 5mg (1/2)' resta intero.",
+          "min_interval_hours": "Per un farmaco al bisogno, avvisa (senza mai bloccare) se viene registrato di nuovo prima di queste ore, ad es. un antidolorifico non prima di 4 ore dal precedente.",
+          "max_per_day": "Per un farmaco al bisogno, avvisa una volta raggiunto questo numero di dosi registrate oggi.",
+          "dose_units": "Sostituisce le unità predefinite per dose del farmaco, solo per questa dose. Lascia 0 per usare il valore predefinito; usa decimali come 0.5 per mezza compressa."
+        }
+      },
+      "remove_dose": {
+        "title": "Rimuovi dosi",
+        "data": {
+          "remove": "Dosi da rimuovere"
+        }
+      },
+      "add_supply": {
+        "title": "Monitora una scorta di farmaco",
+        "description": "Tieni conto di quanto farmaco è disponibile. Si decrementa ogni volta che una dose contenente questo farmaco viene segnata come somministrata, segnala scorta bassa alla tua soglia e stima una data di esaurimento in base alla pianificazione. Scegli il farmaco tra le tue dosi.",
+        "data": {
+          "supply_med": "Nome del farmaco",
+          "supply_units": "Unità disponibili ora",
+          "supply_per_dose": "Unità consumate per dose",
+          "supply_threshold": "Soglia di scorta bassa",
+          "supply_refill_to": "Quantità di rifornimento (scorta piena)",
+          "supply_refill_add": "Aggiungi al rifornimento (rifornimento confezione)",
+          "supply_cost": "Costo per unità (0 = non monitorare)"
+        },
+        "data_description": {
+          "supply_refill_add": "Al rifornimento, aggiunge la quantità di rifornimento a quella rimanente (ad es. 17 + 30 = 47) invece di impostare il conteggio alla quantità di rifornimento.",
+          "supply_cost": "Costo di un'unità (una compressa, ml, ecc.) nella tua valuta, usato per gli attributi di valore disponibile e costo per dose. Lascia 0 per non monitorare il costo."
+        }
+      },
+      "edit_supply": {
+        "title": "Modifica una scorta",
+        "data": {
+          "supply_med": "Farmaco"
+        }
+      },
+      "edit_supply_details": {
+        "title": "Modifica scorta di {medication}",
+        "description": "Aggiorna la scorta monitorata per {medication}.",
+        "data": {
+          "supply_units": "Unità disponibili ora",
+          "supply_per_dose": "Unità consumate per dose",
+          "supply_threshold": "Soglia di scorta bassa",
+          "supply_refill_to": "Quantità di rifornimento (scorta piena)",
+          "supply_refill_add": "Aggiungi al rifornimento (rifornimento confezione)",
+          "supply_cost": "Costo per unità (0 = non monitorare)"
+        },
+        "data_description": {
+          "supply_refill_add": "Al rifornimento, aggiunge la quantità di rifornimento a quella rimanente (ad es. 17 + 30 = 47) invece di impostare il conteggio alla quantità di rifornimento.",
+          "supply_cost": "Costo di un'unità (una compressa, ml, ecc.) nella tua valuta, usato per gli attributi di valore disponibile e costo per dose. Lascia 0 per non monitorare il costo."
+        }
+      },
+      "remove_supply": {
+        "title": "Rimuovi scorte monitorate",
+        "data": {
+          "remove": "Scorte da smettere di monitorare"
+        }
+      },
+      "medication_detail": {
+        "title": "Dettaglio farmaco",
+        "description": "Informazioni di riferimento opzionali per un farmaco, tenute separate dal nome breve della dose. Scegli un farmaco tra le dosi di questo paziente; salvare il dettaglio per uno che ce l'ha già lo aggiorna.",
+        "data": {
+          "med_name": "Nome del farmaco",
+          "full_name": "Nome completo (opzionale)",
+          "strength": "Dosaggio unitario (es. 5mg)",
+          "brand": "Marca (opzionale)",
+          "prescribed_for": "Prescritto per (condizione)",
+          "dosage": "Riepilogo posologia (es. 2 compresse due volte al giorno)"
+        }
+      },
+      "edit_medication": {
+        "title": "Modifica dettaglio farmaco",
+        "data": {
+          "med_name": "Farmaco"
+        }
+      },
+      "edit_medication_details": {
+        "title": "Modifica dettaglio per {medication}",
+        "description": "Aggiorna il dettaglio di riferimento per {medication}.",
+        "data": {
+          "full_name": "Nome completo (opzionale)",
+          "strength": "Dosaggio unitario (es. 5mg)",
+          "brand": "Marca (opzionale)",
+          "prescribed_for": "Prescritto per (condizione)",
+          "dosage": "Riepilogo posologia (es. 2 compresse due volte al giorno)"
+        }
+      },
+      "remove_medication": {
+        "title": "Rimuovi dettaglio farmaco",
+        "data": {
+          "remove": "Farmaci per cui cancellare il dettaglio"
+        }
+      },
+      "settings": {
+        "title": "Impostazioni promemoria",
+        "description": "Tipo di paziente, chi notificare, formato orario, quando le dosi si azzerano per il giorno e come insistono i promemoria.",
+        "data": {
+          "patient_type": "Tipo di paziente",
+          "notify": "Destinatario notifica (persona o gruppo)",
+          "time_format": "Formato orario",
+          "reset_time": "Orario di azzeramento giornaliero",
+          "nag_minutes": "Finestra di insistenza (minuti dopo la dose)",
+          "nag_interval": "Ripeti insistenza ogni (minuti)"
+        },
+        "data_description": {
+          "nag_interval": "Usa un multiplo di 5; i promemoria vengono valutati con un ciclo di 5 minuti, quindi altri valori causano un'insistenza meno regolare."
+        }
+      }
+    }
+  }
+}
