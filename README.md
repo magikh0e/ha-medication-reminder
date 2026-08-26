@@ -45,7 +45,7 @@ Questions, setup help, or want to show off your setup? Come to [Discussions](htt
 - **Next-dose sensor and calendar.** A `next_dose` timestamp and a read-only medication calendar per patient, handy for "remind me before" automations and seeing long cycles laid out.
 - **Zero-edit dashboard.** Auto-discovers every patient and dose, no names to maintain.
 - **Caregiver and admin dashboards.** Split day-to-day care from setup using Home Assistant's own user roles: hand a caregiver a non-admin user and a simplified, safe-to-share dashboard (mark doses given, log a PRN dose, refill a low supply, with no config and no editable counts), and keep an admin dashboard with the full per-patient setup audit, editable supply counts, and an audit trail of who marked or refilled. See [Roles & sharing](#roles--sharing).
-- **Localized UI.** The configuration screens follow your Home Assistant language, with German, Dutch, French, and Spanish alongside the English base (German, Dutch, and Spanish community-contributed), and any untranslated text falling back to English. See [Languages](#languages).
+- **Localized UI.** The configuration screens follow your Home Assistant language, with German, Dutch, French, Spanish, and Italian alongside the English base (all but French community-contributed), and any untranslated text falling back to English. See [Languages](#languages).
 - **Fail-safe by design.** Overdue detection trips on elapsed time alone and errs toward "problem", marking is reversible, dose state survives restarts, and every guard warns rather than blocks. See [Safety & fail-safes](#safety--fail-safes).
 
 ## Installation
@@ -582,8 +582,8 @@ now would be too soon or over the cap (the "no less than 4 hours apart" case).
 ## Languages
 
 The configuration UI follows your Home Assistant language. English is the source,
-with **German** (`de`), **Dutch** (`nl`), **French** (`fr`), and **Spanish**
-(`es`) included; German, Dutch, and Spanish are community-contributed. Any string a locale has not translated yet
+with **German** (`de`), **Dutch** (`nl`), **French** (`fr`), **Spanish** (`es`),
+and **Italian** (`it`) included; all but French are community-contributed. Any string a locale has not translated yet
 falls back to English, so a partial translation is always safe.
 
 Want your language added? It is a single-file pull request: copy
@@ -620,7 +620,7 @@ territory. A future version may move reminders into the integration itself.
 - Over-dose guard for as-needed (PRN) meds: a minimum interval between doses and a max-per-day cap, surfaced as a `<med>_dose_guard` problem sensor that warns when another dose now would be too soon or over the cap (0.19.0). Builds on the early-dose warning (0.10.0) and PRN taken-time recording (0.17.0). (Idea from community member IOT7712.)
 - Per-medication detail: optional strength/mg, brand, the condition it was prescribed for, a dosage summary, and a full name separate from the short reminder name, plus a `<patient>_medications` "current medications" view for handing a provider the "what" rather than the "when" (0.20.0). (Suggested by GitHub user VGrol.)
 - Edit a dose in place: a new Edit a dose step pre-fills the form with a dose's current values and replaces it on save, instead of removing and re-adding (0.21.0). Editing only the schedule keeps the same entity; changing the time or medications starts a fresh one. (Requested by GitHub user weswark.)
-- Localized configuration UI: German (0.24.1, contributed by GitHub user RookieIVG), Dutch (0.24.1, contributed by GitHub user VGrol), French (0.27.0), and Spanish (0.30.0, contributed by GitHub user markjimenezpy) alongside English, plus a translation coverage check for contributors (0.25.0). (Requested by GitHub user interkom.)
+- Localized configuration UI: German (0.24.1, contributed by GitHub user RookieIVG), Dutch (0.24.1, contributed by GitHub user VGrol), French (0.27.0), Spanish (0.30.0, contributed by GitHub user markjimenezpy), and Italian (0.32.0, contributed by GitHub user apilone) alongside English, plus a translation coverage check for contributors (0.25.0). (Requested by GitHub user interkom.)
 - Roles split with caregiver and admin dashboards (0.26.0): a safe-to-share caregiver view (mark given, log a PRN dose, refill a low supply) with no config or editable counts, and an admin view with a per-patient setup audit, editable supply counts, and a who-marked-or-refilled audit trail; plus tapping a notification body to open your meds dashboard.
 - Per-medication cost tracking (0.27.0): an optional cost per unit on each supply, exposing `value_on_hand`, `cost_per_dose`, and a schedule-based `est_monthly_cost` on the supply entity.
 - Per-dose consumption amounts (0.28.0): "units consumed per dose" is now fractional (e.g. 0.5), and each dose can override the medication's default with its own amount, so one supply tracks a medication taken at different amounts on different days.
@@ -646,8 +646,8 @@ option (also requested by GitHub user **DarkVeter**). Thanks for sharing it.
 The day-of-month / monthly schedule type grew from a request by Home Assistant
 Community user **ggaltqq** for more schedule options.
 
-The **German, Dutch, and Spanish translations** were contributed by GitHub users
-**RookieIVG** (`de`), **VGrol** (`nl`), and **markjimenezpy** (`es`), after **interkom** asked for
+The **German, Dutch, Spanish, and Italian translations** were contributed by GitHub users
+**RookieIVG** (`de`), **VGrol** (`nl`), **markjimenezpy** (`es`), and **apilone** (`it`), after **interkom** asked for
 multi-language support. Thanks for making the integration usable in more
 languages, and for the clean, complete locale files.
 

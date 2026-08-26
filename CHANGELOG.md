@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.32.0] - 2026-08-20
+### Added
+- Italian (`it`) translation of the configuration UI, contributed by @apilone (#26). Home Assistant loads it automatically for Italian users; any untranslated key falls back to English.
+
 ## [0.31.2] - 2026-08-20
 ### Fixed
 - Removing a dose or a supply now deletes its entities instead of leaving them behind. "Remove a dose" and "Remove a supply" dropped the item from the configuration but never removed the matching entities, so a removed supply's number and refill button (and a removed dose's switch, plus a PRN dose's log button and its last-taken / doses-today / days-this-month / dose-guard entities) lingered as "unavailable" under the patient. They are now pruned on removal, the same as an edit already prunes a renamed dose, which also fixes the same leftovers when a PRN dose's time or medications are edited. Delete any leftover unavailable entities once from the device page.
