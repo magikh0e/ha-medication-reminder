@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.32.1] - 2026-08-26
+### Fixed
+- "Needs attention" and "All doses given" now roll their day over at the patient's daily reset time instead of midnight. A dose left un-given late in the evening cleared its red "needs attention" the moment the clock passed midnight, even with a later reset time set, because those two sensors judged the day by the calendar date while the dose switches already reset at the configured time. They now use the same daily-reset boundary the switches use, so a late dose keeps nagging until the reset time passes. Set the reset time (Settings) to a small-hours value like 03:00 or 06:00 to give late doses that grace; the default 00:01 behaves as before. (Reported by Tomoyochan in #28.)
+
 ## [0.32.0] - 2026-08-20
 ### Added
 - Italian (`it`) translation of the configuration UI, contributed by @apilone (#26). Home Assistant loads it automatically for Italian users; any untranslated key falls back to English.

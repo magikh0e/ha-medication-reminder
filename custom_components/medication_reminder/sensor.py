@@ -44,7 +44,9 @@ from .const import (
     SCHEDULE_PRN,
     current_medications,
     is_due,
+    med_day,
     medication_summary_line,
+    reset_hms,
 )
 
 # Re-evaluate this often so "next dose" rolls forward as time passes.
@@ -233,24 +235,9 @@ class MedicationDosesTodaySensor(RestoreSensor):
             "manufacturer": "Medication Reminder",
         }
 
-    def _reset_hms(self) -> tuple[int, int, int]:
-        """The daily reset time as (hour, minute, second); 00:01:00 on bad input."""
-        try:
-            parts = [int(p) for p in str(self._reset_time).split(":")]
-            h, m = parts[0], parts[1]
-            s = parts[2] if len(parts) > 2 else 0
-        except (ValueError, IndexError, TypeError):
-            h, m, s = 0, 1, 0
-        return h % 24, m % 60, s % 60
-
     def _period_key(self) -> str:
         """The date of the counting period now belongs to (reset to reset)."""
-        now = dt_util.now()
-        h, m, s = self._reset_hms()
-        boundary = now.replace(hour=h, minute=m, second=s, microsecond=0)
-        if now < boundary:
-            boundary -= timedelta(days=1)
-        return boundary.date().isoformat()
+        return med_day(dt_util.now(), self._reset_time).isoformat()
 
     def _roll(self) -> None:
         """Zero the count if we have crossed into a new reset period."""
@@ -287,7 +274,7 @@ class MedicationDosesTodaySensor(RestoreSensor):
         self.async_on_remove(
             self.hass.bus.async_listen(EVENT_DOSE_LOGGED, self._on_dose_logged)
         )
-        h, m, s = self._reset_hms()
+        h, m, s = reset_hms(self._reset_time)
         self.async_on_remove(
             async_track_time_change(
                 self.hass, self._on_reset, hour=h, minute=m, second=s

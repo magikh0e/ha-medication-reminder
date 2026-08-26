@@ -3,12 +3,14 @@
 - <patient> all doses given : on when every dose scheduled today is given.
 - <patient> needs attention  : problem sensor, on (red) when a dose is overdue.
 
-Both consider only doses scheduled for the current day (any schedule type).
+Both consider only doses scheduled for the current medication day (any schedule
+type). That day rolls over at the patient's daily reset time, not midnight, so a
+dose left un-given late at night keeps counting until the reset time passes.
 """
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any
 
 import homeassistant.util.dt as dt_util
@@ -47,7 +49,9 @@ from .const import (
     dose_over_cap,
     dose_too_soon,
     is_due,
+    med_day,
     next_dose_allowed,
+    reset_hms,
 )
 
 # Re-check the overdue status this often, so it trips on time alone.
@@ -62,9 +66,12 @@ async def async_setup_entry(
     """Create the per-patient status sensors."""
     patient = entry.data[CONF_PATIENT]
     patient_type = entry.options.get(CONF_PATIENT_TYPE, DEFAULT_PATIENT_TYPE)
+    # The status sensors roll their "day" over at the daily reset time, not
+    # midnight, so a late dose keeps nagging until reset.
+    reset_time = entry.options.get(CONF_RESET_TIME, DEFAULT_RESET_TIME)
     entities = [
-        AllDosesGivenBinarySensor(entry, patient, patient_type),
-        NeedsAttentionBinarySensor(entry, patient),
+        AllDosesGivenBinarySensor(entry, patient, patient_type, reset_time),
+        NeedsAttentionBinarySensor(entry, patient, reset_time),
     ]
     # Only expose the supply-low sensor when supplies are configured.
     if entry.options.get(CONF_SUPPLIES):
@@ -72,7 +79,6 @@ async def async_setup_entry(
         entities.append(SuppliesLowBinarySensor(entry, patient, notify_target))
     # Over-dose guard: one per as-needed (PRN) dose that sets a minimum interval
     # between doses or a daily cap.
-    reset_time = entry.options.get(CONF_RESET_TIME, DEFAULT_RESET_TIME)
     for dose in entry.options.get(CONF_DOSES, []):
         if (dose.get(CONF_SCHEDULE_TYPE) or "") != SCHEDULE_PRN:
             continue
@@ -98,6 +104,7 @@ class _DoseLookupMixin:
     """Shared helpers to find a patient's dose switches and track changes."""
 
     _patient: str
+    _reset_time: str
     hass: HomeAssistant
 
     def _doses(self) -> list:
@@ -109,10 +116,16 @@ class _DoseLookupMixin:
             and s.attributes.get("patient") == self._patient
         ]
 
+    def _med_day(self) -> date:
+        """The current medication day, bounded by the daily reset time rather
+        than midnight. Before today's reset boundary we are still on the
+        previous day, so a late dose stays "today's"."""
+        return med_day(dt_util.now(), self._reset_time)
+
     def _todays_doses(self) -> list:
-        """This patient's doses scheduled for today (any schedule type)."""
-        today = dt_util.now().date()
-        return [s for s in self._doses() if is_due(s.attributes, today)]
+        """This patient's doses scheduled for the current medication day."""
+        day = self._med_day()
+        return [s for s in self._doses() if is_due(s.attributes, day)]
 
     @callback
     def _track_dose_changes(self) -> None:
@@ -140,9 +153,16 @@ class AllDosesGivenBinarySensor(_DoseLookupMixin, BinarySensorEntity):
     _attr_should_poll = False
     _attr_has_entity_name = True
 
-    def __init__(self, entry: ConfigEntry, patient: str, patient_type: str) -> None:
+    def __init__(
+        self,
+        entry: ConfigEntry,
+        patient: str,
+        patient_type: str,
+        reset_time: str,
+    ) -> None:
         self._patient = patient
         self._patient_type = patient_type
+        self._reset_time = reset_time
         self._attr_name = "All doses given"
         self._attr_unique_id = f"{entry.entry_id}_all_doses_given"
         self._attr_icon = PATIENT_ICONS.get(patient_type, "mdi:check-all")
@@ -190,8 +210,9 @@ class NeedsAttentionBinarySensor(_DoseLookupMixin, BinarySensorEntity):
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
     _attr_has_entity_name = True
 
-    def __init__(self, entry: ConfigEntry, patient: str) -> None:
+    def __init__(self, entry: ConfigEntry, patient: str, reset_time: str) -> None:
         self._patient = patient
+        self._reset_time = reset_time
         self._attr_name = "Needs attention"
         self._attr_unique_id = f"{entry.entry_id}_needs_attention"
         self._attr_device_info = {
@@ -201,10 +222,14 @@ class NeedsAttentionBinarySensor(_DoseLookupMixin, BinarySensorEntity):
         }
 
     def _overdue(self) -> list:
-        """Today's doses past their time + nag window and still not given."""
+        """This med-day's doses past their time + nag window and still not
+        given. The due time is anchored to the medication day (which may be
+        yesterday's date after midnight but before the reset), so a late dose
+        stays overdue past midnight until the daily reset."""
         from .const import DEFAULT_NAG_MINUTES
 
         now = dt_util.now()
+        day = self._med_day()
         overdue: list = []
         for s in self._todays_doses():
             if s.state == "on":
@@ -213,7 +238,15 @@ class NeedsAttentionBinarySensor(_DoseLookupMixin, BinarySensorEntity):
             nag = s.attributes.get("nag_minutes", DEFAULT_NAG_MINUTES)
             try:
                 hour, minute = (int(p) for p in str(dose_time).split(":")[:2])
-                due = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+                due = now.replace(
+                    year=day.year,
+                    month=day.month,
+                    day=day.day,
+                    hour=hour,
+                    minute=minute,
+                    second=0,
+                    microsecond=0,
+                )
                 if now >= due + timedelta(minutes=int(nag)):
                     overdue.append(s)
             except (ValueError, TypeError, AttributeError):
@@ -373,22 +406,8 @@ class DoseGuardBinarySensor(RestoreEntity, BinarySensorEntity):
             "manufacturer": "Medication Reminder",
         }
 
-    def _reset_hms(self) -> tuple[int, int, int]:
-        try:
-            parts = [int(p) for p in str(self._reset_time).split(":")]
-            h, m = parts[0], parts[1]
-            s = parts[2] if len(parts) > 2 else 0
-        except (ValueError, IndexError, TypeError):
-            h, m, s = 0, 1, 0
-        return h % 24, m % 60, s % 60
-
     def _period_key(self) -> str:
-        now = dt_util.now()
-        h, m, s = self._reset_hms()
-        boundary = now.replace(hour=h, minute=m, second=s, microsecond=0)
-        if now < boundary:
-            boundary -= timedelta(days=1)
-        return boundary.date().isoformat()
+        return med_day(dt_util.now(), self._reset_time).isoformat()
 
     def _roll(self) -> None:
         cur = self._period_key()
@@ -440,7 +459,7 @@ class DoseGuardBinarySensor(RestoreEntity, BinarySensorEntity):
         self.async_on_remove(
             self.hass.bus.async_listen(EVENT_DOSE_LOGGED, self._on_dose_logged)
         )
-        h, m, s = self._reset_hms()
+        h, m, s = reset_hms(self._reset_time)
         self.async_on_remove(
             async_track_time_change(
                 self.hass, self._on_reset, hour=h, minute=m, second=s

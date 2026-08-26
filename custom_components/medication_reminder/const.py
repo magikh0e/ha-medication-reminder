@@ -222,6 +222,37 @@ def is_due(data, on_date):
     return WEEKDAYS[on_date.weekday()] in days
 
 
+def reset_hms(reset_time):
+    """Parse a daily reset time string into an (hour, minute, second) tuple.
+
+    Falls back to 00:01:00 (the default) on malformed input, so a bad value
+    never raises where a reset time is read.
+    """
+    try:
+        parts = [int(p) for p in str(reset_time).split(":")]
+        h, m = parts[0], parts[1]
+        s = parts[2] if len(parts) > 2 else 0
+    except (ValueError, IndexError, TypeError):
+        h, m, s = 0, 1, 0
+    return h % 24, m % 60, s % 60
+
+
+def med_day(now, reset_time):
+    """The date of the medication day that `now` falls in.
+
+    The day rolls over at the patient's daily reset time, not midnight, so a
+    dose left un-given late at night stays "today's" (and keeps nagging) until
+    the reset time passes. With the default 00:01 reset this matches the old
+    calendar-date behaviour to within a minute. `now` is a timezone-aware
+    local datetime.
+    """
+    h, m, s = reset_hms(reset_time)
+    boundary = now.replace(hour=h, minute=m, second=s, microsecond=0)
+    if now < boundary:
+        return (now - timedelta(days=1)).date()
+    return now.date()
+
+
 def doses_per_week(data):
     """Average times per week a dose fires, for the run-out estimate."""
     stype = data.get(CONF_SCHEDULE_TYPE) or SCHEDULE_WEEKDAYS
