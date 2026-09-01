@@ -16,12 +16,13 @@ auto-creates a switch per dose (on = given today) and resets them daily. Pair it
 with the included companion automations for actionable, nagging, missed-dose
 reminders synced across every Companion app.
 
-This is the full-featured, actively developed version. A lighter
+This is the full-featured, actively developed version, and the recommended way
+to run Medication Reminder. An older, now-deprecated
 [ha-medication-reminder-yaml](https://github.com/magikh0e/ha-medication-reminder-yaml)
-package covers the core reminder, nag, and missed-dose flow in pure YAML, but
-without the newer features here (UI-managed schedules, supply tracking, the
-as-needed/PRN tools, and the extra sensors and calendar). Prefer a YAML-only
-setup with no custom integration? Use that one; otherwise use this.
+package covered the core reminder, nag, and missed-dose flow in pure YAML; it
+still works for anyone already running it but is no longer maintained, and
+everything it did now lives here (UI-managed schedules, supply tracking, the
+as-needed/PRN tools, and the extra sensors and calendar).
 
 ![Medication Reminder dashboard](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/dashboard.png)
 
