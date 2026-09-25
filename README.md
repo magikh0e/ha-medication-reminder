@@ -197,6 +197,14 @@ Where a dose has a **Units consumed (this dose)** amount set, the today summary 
 schedule show it next to the medication (e.g. "Marcoumar ½"), so a half-pill day
 reads differently from a full one at a glance.
 
+> **Dose ordering.** The bundled dashboards list each dose strictly in schedule
+> order (by time of day), so they stay correct however you display times. Home
+> Assistant's auto-generated device page is different: its **Controls** card sorts
+> entities alphabetically by name, so in 12-hour format times like "10:00 AM",
+> "2:00 PM", and "6:00 AM" sort as plain text and fall out of chronological order.
+> If you prefer that device page, set the patient's **Time format** to 24-hour in
+> Settings; the times then read 06:00, 14:00, 22:00 and sort correctly there too.
+
 Pick a layout (each file opens with a banner telling you exactly where to paste it):
 
 - **Recommended: [`lovelace-sections.yaml`](dashboards/lovelace-sections.yaml)** is a
