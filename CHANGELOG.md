@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.34.1] - 2026-09-29
+### Changed
+- Documentation: aligned the README with the current feature set after cross-checking it against the actual entities, attributes, config fields, events, and services. Added Russian to the Highlights and Acknowledgements language lists; noted that `supplies_low` also trips when a tracked prescription runs out of refills; added day-of-month to the "no false alarms on off-days" list and Patient type to the Settings list; completed the switch attribute contract (`dose_units`, `nag_minutes`, `nag_interval`, `time_format`) and the dose-guard list (`last_taken`); and corrected the dose entity-id example to `switch.<patient>_<time>_<meds>`. No functional change.
+
 ## [0.34.0] - 2026-09-29
 ### Added
 - Russian (`ru`) translation of the configuration UI, contributed by @interkom (who first requested localization in #8). Home Assistant loads it automatically for Russian users; any untranslated key falls back to English. Completed to 100% coverage against `en.json`, including the new refills-remaining fields.
