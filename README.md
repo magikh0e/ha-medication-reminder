@@ -46,7 +46,7 @@ Questions, setup help, or want to show off your setup? Come to [Discussions](htt
 - **Next-dose sensor and calendar.** A `next_dose` timestamp and a read-only medication calendar per patient, handy for "remind me before" automations and seeing long cycles laid out.
 - **Zero-edit dashboard.** Auto-discovers every patient and dose, no names to maintain.
 - **Caregiver and admin dashboards.** Split day-to-day care from setup using Home Assistant's own user roles: hand a caregiver a non-admin user and a simplified, safe-to-share dashboard (mark doses given, log a PRN dose, refill a low supply, with no config and no editable counts), and keep an admin dashboard with the full per-patient setup audit, editable supply counts, and an audit trail of who marked or refilled. See [Roles & sharing](#roles--sharing).
-- **Localized UI.** The configuration screens follow your Home Assistant language, with German, Dutch, French, Spanish, and Italian alongside the English base (all but French community-contributed), and any untranslated text falling back to English. See [Languages](#languages).
+- **Localized UI.** The configuration screens follow your Home Assistant language, with German, Dutch, French, Spanish, Italian, and Russian alongside the English base (all but French community-contributed), and any untranslated text falling back to English. See [Languages](#languages).
 - **Fail-safe by design.** Overdue detection trips on elapsed time alone and errs toward "problem", marking is reversible, dose state survives restarts, and every guard warns rather than blocks. See [Safety & fail-safes](#safety--fail-safes).
 
 ## Installation
@@ -106,8 +106,9 @@ Each group opens its actions:
 
 ![Add a dose form](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/add-a-dose.png)
 
-Each dose appears as `switch.<patient>_<time>` with attributes `patient`,
-`dose_time`, `medications`, and `notify_service`.
+Each dose appears as `switch.<patient>_<time>_<meds>` (e.g.
+`switch.bella_8_00_am_apoquel`; as-needed doses are `switch.<patient>_<meds>_as_needed`)
+with attributes `patient`, `dose_time`, `medications`, and `notify_service`.
 
 ### 3. Add the reminder automations
 
@@ -423,6 +424,7 @@ who marked or refilled, and a test-reminder button.*
 
 Each patient has its own **Configure, Reminder settings** with:
 
+- **Patient type** - Person / Dog / Cat / ..., which sets the icon.
 - **Notify target** - who gets that patient's reminders.
 - **Time format** - 12-hour (`2:00 PM`) or 24-hour (`14:00`) in the dose entity names (default 12-hour).
 - **Daily reset time** - when the day's doses reset to "not given" (default 00:01).
@@ -499,7 +501,8 @@ medication then gets:
   daily cap. **Red when another dose now would be too soon** (within the minimum
   hours since the last log) or over the daily cap; otherwise off. It warns, never
   blocks. Attributes: `too_soon`, `over_cap`, `next_allowed` (when it is safe
-  again), `doses_today`, `remaining_today`, `min_interval_hours`, `max_per_day`.
+  again), `last_taken`, `doses_today`, `remaining_today`, `min_interval_hours`,
+  `max_per_day`.
 - `binary_sensor.<patient>_supplies_low` (device class `problem`) - **red when any
   of that patient's supplies reaches its threshold, or a tracked prescription runs
   out of refills**, with a `low` list of which medications are short and a
@@ -515,7 +518,7 @@ notify target for anything low.
 
 ## How marking works (the contract)
 
-- The integration publishes `switch.*` entities carrying `patient` / `patient_type` / `dose_time` / `medications` / `days` / `schedule_type` / `interval_days` / `anchor_date` / `cycle_on` / `cycle_off` / `month_days` / `scheduled_today` / `given_at` / `notify_service` attributes (a dose is only reminded, counted, or flagged overdue when `scheduled_today` is true, which respects day-of-week, every-N-days, on/off-cycle, and monthly schedules). Per patient it also publishes two binary sensors:
+- The integration publishes `switch.*` entities carrying `patient` / `patient_type` / `dose_time` / `medications` / `dose_units` / `days` / `schedule_type` / `interval_days` / `anchor_date` / `cycle_on` / `cycle_off` / `month_days` / `scheduled_today` / `notify_service` / `nag_minutes` / `nag_interval` / `time_format` / `given_at` attributes (a dose is only reminded, counted, or flagged overdue when `scheduled_today` is true, which respects day-of-week, every-N-days, on/off-cycle, and monthly schedules). Per patient it also publishes two binary sensors:
   - `binary_sensor.<patient>_all_doses_given` (patient-type icon) - on when all of that patient's doses are given today, with `total` / `given` / `remaining` / `pending` attributes.
   - `binary_sensor.<patient>_needs_attention` (device class `problem`) - **red when a dose is overdue** (past its time by the nag window and still not given), green when all is well. It re-evaluates on a 60-second timer so it trips on elapsed time alone, and fails safe toward "problem". Attributes: `overdue` / `overdue_count`.
 - It also publishes `sensor.<patient>_next_dose` (timestamp of the next upcoming dose, with the medications as an attribute) and `calendar.<patient>_medication` (the schedule as calendar events). The entry offers **downloadable diagnostics** on its device page, and raises a **Repairs** warning if a tracked supply's medication matches no dose (so it would never decrement).
@@ -582,12 +585,14 @@ safety-relevant behaviours:
   without silently losing "already given" and inviting a double dose.
 - **Supply run-out protection.** `binary_sensor.<patient>_supplies_low` (device
   class `problem`) flags low stock at your threshold, with doses-left and an
-  estimated run-out date, plus a once-a-day refill reminder.
+  estimated run-out date, plus a once-a-day refill reminder. It also trips when a
+  tracked prescription runs out of refills, so you are prompted to renew the script
+  before the pills run out.
 - **Misconfiguration check.** If a tracked supply's medication matches no dose (so
   it would never decrement), the integration raises a **Repairs** warning.
 - **No false alarms on off-days.** Overdue and missed only fire on days a dose is
-  actually due (`scheduled_today` honours day-of-week, every-N-days, and on/off
-  cycles), to avoid alarm fatigue.
+  actually due (`scheduled_today` honours day-of-week, every-N-days, on/off
+  cycles, and day-of-month schedules), to avoid alarm fatigue.
 
 **By design, every guard warns, it never blocks.** The integration will not stop
 you marking a dose early or twice; it surfaces the risk and leaves the decision to
@@ -663,8 +668,8 @@ option (also requested by GitHub user **DarkVeter**). Thanks for sharing it.
 The day-of-month / monthly schedule type grew from a request by Home Assistant
 Community user **ggaltqq** for more schedule options.
 
-The **German, Dutch, Spanish, and Italian translations** were contributed by GitHub users
-**RookieIVG** (`de`), **VGrol** (`nl`), **markjimenezpy** (`es`), and **apilone** (`it`), after **interkom** asked for
+The **German, Dutch, Spanish, Italian, and Russian translations** were contributed by GitHub users
+**RookieIVG** (`de`), **VGrol** (`nl`), **markjimenezpy** (`es`), **apilone** (`it`), and **interkom** (`ru`), after **interkom** asked for
 multi-language support. Thanks for making the integration usable in more
 languages, and for the clean, complete locale files.
 
