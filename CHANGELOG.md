@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.34.0] - 2026-09-29
+### Added
+- Russian (`ru`) translation of the configuration UI, contributed by @interkom (who first requested localization in #8). Home Assistant loads it automatically for Russian users; any untranslated key falls back to English. Completed to 100% coverage against `en.json`, including the new refills-remaining fields.
+
 ## [0.33.0] - 2026-09-29
 ### Added
 - Prescription refills remaining. Each tracked supply can now hold an optional **Refills remaining** count (in Track a medication supply / Edit a supply): the number of refills the pharmacy script still allows, separate from the pill-count on hand. Each press of the refill button counts it down by one, and the supply exposes `refills_remaining`, `refills_configured`, and `refills_out` attributes. When it reaches zero, `binary_sensor.<patient>_supplies_low` turns red (with a `refills_out` list of which prescriptions are out) so an automation can prompt to book a doctor visit and get a new prescription before running out. Leave it at 0 to skip refill tracking; existing supplies are unaffected. (Requested by a community member on the Home Assistant forum, tracked in #31.)
