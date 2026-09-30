@@ -41,7 +41,7 @@ Questions, setup help, or want to show off your setup? Come to [Discussions](htt
 - **As-needed (PRN) meds.** A "Log dose" button (and `log_dose` service) records each dose taken, with a last-taken timestamp, a doses-today count, and a supply decrement, so meds taken several times a day stay tracked. Optional **over-dose guard**: set a minimum interval and/or a daily cap, and a `problem` sensor warns (never blocks) when another dose now would be too soon or over the cap. A rolling 30-day **days this month** count per med helps with days-per-month limits, like keeping acute pain or migraine meds under about 10 days.
 - **Glanceable, fail-safe status.** A per-patient red/green "needs attention" sensor that trips on elapsed time alone and errs toward "problem"; wire it to a panel, light, or siren.
 - **Actionable reminders.** Nagging, missed-dose escalation, and a "Mark given" button from the notification, routed to each patient's own notify target. Tapping the notification body (not the button) can open your meds dashboard.
-- **Supply & refill tracking.** Per-medication counts that decrement as doses are given, with doses-left, a run-out estimate, a low-stock red flag at your reorder threshold, and a refill reminder. Per-dose amounts can be fractional (half a pill) and overridden per dose, and an optional per-unit cost surfaces value on hand, cost per dose, and a monthly estimate.
+- **Supply & refill tracking.** Per-medication counts that decrement as doses are given, with doses-left, a run-out estimate, a low-stock red flag at your reorder threshold, and a refill reminder. Optionally track **refills remaining** on the prescription too: each refill counts one down, and the supply flags when the prescription is out and needs renewing. Per-dose amounts can be fractional (half a pill) and overridden per dose, and an optional per-unit cost surfaces value on hand, cost per dose, and a monthly estimate.
 - **Per-medication detail.** Optional strength, brand, full name, "prescribed for", and a dosage summary per medication, plus a `medications` sensor that lists everything the patient takes for a ready-to-share "current medications" view to hand a vet or doctor.
 - **Next-dose sensor and calendar.** A `next_dose` timestamp and a read-only medication calendar per patient, handy for "remind me before" automations and seeing long cycles laid out.
 - **Zero-edit dashboard.** Auto-discovers every patient and dose, no names to maintain.
@@ -442,8 +442,9 @@ as switch attributes that the companion automations read.
 
 Optionally track how much of each medication you have on hand. In **Configure,
 Track a medication supply**, pick the medication from your doses, then set units
-on hand, units consumed per dose, a low-stock threshold, a refill amount, and
-(optionally) a **cost per unit**. Change those later with **Edit a supply** in the
+on hand, units consumed per dose, a low-stock threshold, a refill amount,
+(optionally) a **cost per unit**, and (optionally) the number of **refills
+remaining** on the prescription. Change those later with **Edit a supply** in the
 same menu. Units consumed per dose accepts fractions (e.g. `0.5` for half a pill),
 and any single dose can override it with its own **Units consumed (this dose)**
 field, so a medication taken as half a pill on some days and a whole pill on others
@@ -457,7 +458,12 @@ medication then gets:
   `est_runout_date`, computed from the schedule. Setting a **cost per unit** on the
   supply adds `value_on_hand`, `cost_per_dose`, and `est_monthly_cost` attributes.
   Un-marking a dose (the early-dose "undo" or a manual toggle-off) adds the units
-  back. Adjust it any time to correct a miscount or to refill.
+  back. Adjust it any time to correct a miscount or to refill. Setting **Refills
+  remaining** on the supply tracks how many refills the prescription still allows:
+  each press of the refill button counts it down by one, adding `refills_remaining`,
+  `refills_configured`, and `refills_out` attributes. When it reaches zero the
+  supply flags low (see `supplies_low` below) so you know to renew the prescription
+  before the next refill. Leave it at 0 to skip refill tracking.
 - `button.<patient>_<med>_refill` - a one-tap restock, instead of editing the
   number by hand. By default it sets the supply to its configured refill amount;
   turn on **Add on refill (package refill)** for that supply to instead add the
@@ -495,8 +501,9 @@ medication then gets:
   blocks. Attributes: `too_soon`, `over_cap`, `next_allowed` (when it is safe
   again), `doses_today`, `remaining_today`, `min_interval_hours`, `max_per_day`.
 - `binary_sensor.<patient>_supplies_low` (device class `problem`) - **red when any
-  of that patient's supplies reaches its threshold**, with a `low` list of which
-  medications are short.
+  of that patient's supplies reaches its threshold, or a tracked prescription runs
+  out of refills**, with a `low` list of which medications are short and a
+  `refills_out` list (plus `refills_out_count`) of which have no refills left.
 
 A medication shared across several doses (e.g. one given morning and night) draws
 from a single pool; dose `meds` strings are split on `&`, `+`, a comma, or a
@@ -637,6 +644,7 @@ territory. A future version may move reminders into the integration itself.
 - Per-dose amount on the dashboard (0.29.0): the bundled dashboards show a dose's "Units consumed (this dose)" amount next to the medication (e.g. "Marcoumar ½"), so half-pill days read differently from full ones. (Requested by GitHub user ph-dekeyser in #18.)
 - Rolling 30-day PRN usage sensor (0.31.0): `days_this_month` counts the distinct days an as-needed med was logged in the last 30 days, for meds with a days-per-month limit. (Requested by alva-seal in #21.)
 - Notification clears on any mark-given (0.31.0): the reminder notification now clears when a dose is marked given from the dashboard, an NFC tag, or the mark_given service, not only the notification button. (Reported by RobertGalatNordic in #22.)
+- Prescription refills remaining (0.33.0): an optional per-supply "refills remaining" count that starts at the number of refills the script allows and counts down one on each refill, exposing `refills_remaining`, `refills_configured`, and `refills_out` on the supply. When it hits zero, `supplies_low` turns red so an automation can prompt "time to schedule a new prescription," separate from pill-count low stock. (Requested by a community member on the forum, tracked in #31.)
 
 ## Acknowledgements
 

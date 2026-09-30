@@ -134,11 +134,13 @@
           "supply_threshold": "Low-stock threshold",
           "supply_refill_to": "Refill amount (a full supply)",
           "supply_refill_add": "Add on refill (package refill)",
-          "supply_cost": "Cost per unit (0 = do not track)"
+          "supply_cost": "Cost per unit (0 = do not track)",
+          "supply_refills": "Refills remaining on prescription (0 = do not track)"
         },
         "data_description": {
           "supply_refill_add": "On refill, add the refill amount to what is left (e.g. 17 + 30 = 47) instead of setting the count to the refill amount.",
-          "supply_cost": "Cost of one unit (a pill, ml, etc.) in your currency, used for the value-on-hand and cost-per-dose attributes. Leave at 0 to skip cost tracking."
+          "supply_cost": "Cost of one unit (a pill, ml, etc.) in your currency, used for the value-on-hand and cost-per-dose attributes. Leave at 0 to skip cost tracking.",
+          "supply_refills": "How many refills the prescription still allows. Each time you press the refill button, this counts down by one, and the supply flags as low when it reaches zero so you know to reorder. Leave at 0 to skip refill tracking."
         }
       },
       "edit_supply": {
@@ -156,11 +158,13 @@
           "supply_threshold": "Low-stock threshold",
           "supply_refill_to": "Refill amount (a full supply)",
           "supply_refill_add": "Add on refill (package refill)",
-          "supply_cost": "Cost per unit (0 = do not track)"
+          "supply_cost": "Cost per unit (0 = do not track)",
+          "supply_refills": "Refills remaining on prescription (0 = do not track)"
         },
         "data_description": {
           "supply_refill_add": "On refill, add the refill amount to what is left (e.g. 17 + 30 = 47) instead of setting the count to the refill amount.",
-          "supply_cost": "Cost of one unit (a pill, ml, etc.) in your currency, used for the value-on-hand and cost-per-dose attributes. Leave at 0 to skip cost tracking."
+          "supply_cost": "Cost of one unit (a pill, ml, etc.) in your currency, used for the value-on-hand and cost-per-dose attributes. Leave at 0 to skip cost tracking.",
+          "supply_refills": "How many refills the prescription still allows. Each time you press the refill button, this counts down by one, and the supply flags as low when it reaches zero so you know to reorder. Leave at 0 to skip refill tracking."
         }
       },
       "remove_supply": {

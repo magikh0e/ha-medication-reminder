@@ -57,6 +57,7 @@ CONF_SUPPLY_THRESHOLD = "supply_threshold"
 CONF_SUPPLY_REFILL_TO = "supply_refill_to"
 CONF_SUPPLY_REFILL_ADD = "supply_refill_add"
 CONF_SUPPLY_COST = "supply_cost"  # cost per unit; 0 = untracked
+CONF_SUPPLY_REFILLS = "supply_refills"  # prescription refills remaining; 0 = untracked
 
 # Per-medication reference detail (optional), kept separate from the short dose
 # name. Keyed by the medication name as it appears in a dose's meds string.
@@ -95,6 +96,7 @@ DEFAULT_SUPPLY_THRESHOLD = 10
 DEFAULT_SUPPLY_REFILL_TO = 30
 DEFAULT_SUPPLY_REFILL_ADD = False
 DEFAULT_SUPPLY_COST = 0.0
+DEFAULT_SUPPLY_REFILLS = 0
 
 # Icon for the patient-level "all doses given" sensor, by patient type.
 PATIENT_ICONS = {
@@ -333,6 +335,39 @@ def apply_consumption(value, amount):
         a = 0.0
     new = max(0.0, v - a)
     return new, v - new
+
+
+def next_refills_remaining(remaining):
+    """Prescription refills left after using one, never below zero."""
+    try:
+        return max(0, int(remaining) - 1)
+    except (TypeError, ValueError):
+        return 0
+
+
+def restore_refills(configured, restored_configured, restored_remaining):
+    """Refills-remaining value to use on (re)load.
+
+    Keep the live decremented count while the configured prescription count is
+    unchanged, so a decrement survives the entry reloads the options flow does on
+    every edit. Reset to the configured count when it changes, which is how a new
+    prescription (editing "Refills remaining") starts the counter over.
+    """
+    try:
+        cfg = max(0, int(configured))
+    except (TypeError, ValueError):
+        cfg = 0
+    try:
+        rcfg = int(restored_configured)
+    except (TypeError, ValueError):
+        rcfg = None
+    try:
+        rem = max(0, int(restored_remaining))
+    except (TypeError, ValueError):
+        rem = None
+    if rem is not None and rcfg == cfg:
+        return rem
+    return cfg
 
 
 def dose_min_interval_hours(data):

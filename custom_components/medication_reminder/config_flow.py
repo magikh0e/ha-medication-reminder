@@ -45,6 +45,7 @@ from .const import (
     CONF_SUPPLY_COST,
     CONF_SUPPLY_MED,
     CONF_SUPPLY_PER_DOSE,
+    CONF_SUPPLY_REFILLS,
     CONF_SUPPLY_REFILL_ADD,
     CONF_SUPPLY_REFILL_TO,
     CONF_SUPPLY_THRESHOLD,
@@ -66,6 +67,7 @@ from .const import (
     DEFAULT_SCHEDULE_TYPE,
     DEFAULT_SUPPLY_COST,
     DEFAULT_SUPPLY_PER_DOSE,
+    DEFAULT_SUPPLY_REFILLS,
     DEFAULT_SUPPLY_REFILL_ADD,
     DEFAULT_SUPPLY_REFILL_TO,
     DEFAULT_SUPPLY_THRESHOLD,
@@ -747,6 +749,7 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
             CONF_SUPPLY_REFILL_TO: int(user_input[CONF_SUPPLY_REFILL_TO]),
             CONF_SUPPLY_REFILL_ADD: bool(user_input.get(CONF_SUPPLY_REFILL_ADD, False)),
             CONF_SUPPLY_COST: float(user_input.get(CONF_SUPPLY_COST, 0) or 0),
+            CONF_SUPPLY_REFILLS: int(user_input.get(CONF_SUPPLY_REFILLS, 0) or 0),
         }
 
     def _save_supply(
@@ -790,6 +793,10 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
                 CONF_SUPPLY_COST,
                 default=float(s.get(CONF_SUPPLY_COST, DEFAULT_SUPPLY_COST) or 0),
             ): _cost_selector(),
+            vol.Optional(
+                CONF_SUPPLY_REFILLS,
+                default=int(s.get(CONF_SUPPLY_REFILLS, DEFAULT_SUPPLY_REFILLS)),
+            ): _count_selector(),
         }
 
     def _add_supply_schema(self, med_names: list[str], d: dict[str, Any]) -> vol.Schema:

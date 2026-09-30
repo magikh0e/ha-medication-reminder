@@ -280,7 +280,9 @@ class NeedsAttentionBinarySensor(_DoseLookupMixin, BinarySensorEntity):
 
 
 class SuppliesLowBinarySensor(BinarySensorEntity):
-    """Problem sensor: on (red) when any of this patient's supplies is low.
+    """Problem sensor: on (red) when any of this patient's supplies needs
+    attention: its units are at or below the reorder threshold, or a tracked
+    prescription is out of refills (0 left, time for a new prescription).
 
     Aggregates the per-medication supply numbers (created by the number
     platform). A supply is "low" when its value is at or below its threshold.
@@ -324,13 +326,18 @@ class SuppliesLowBinarySensor(BinarySensorEntity):
                 continue
         return low
 
+    def _refills_out(self) -> list:
+        """Supplies tracking prescription refills that have none left."""
+        return [s for s in self._supplies() if s.attributes.get("refills_out") is True]
+
     @property
     def is_on(self) -> bool:
-        return bool(self._low())
+        return bool(self._low() or self._refills_out())
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         low = self._low()
+        out = self._refills_out()
 
         def _left(state) -> str:
             try:
@@ -343,6 +350,8 @@ class SuppliesLowBinarySensor(BinarySensorEntity):
             "notify_service": self._notify,
             "low_count": len(low),
             "low": [f"{s.attributes.get('medication')}: {_left(s)} left" for s in low],
+            "refills_out_count": len(out),
+            "refills_out": [s.attributes.get("medication") for s in out],
         }
 
     async def async_added_to_hass(self) -> None:

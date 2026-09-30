@@ -40,12 +40,14 @@ from .const import (
     CONF_SUPPLY_COST,
     CONF_SUPPLY_MED,
     CONF_SUPPLY_PER_DOSE,
+    CONF_SUPPLY_REFILLS,
     CONF_SUPPLY_REFILL_ADD,
     CONF_SUPPLY_REFILL_TO,
     CONF_SUPPLY_THRESHOLD,
     CONF_SUPPLY_UNITS,
     DEFAULT_SUPPLY_COST,
     DEFAULT_SUPPLY_PER_DOSE,
+    DEFAULT_SUPPLY_REFILLS,
     DEFAULT_SUPPLY_REFILL_ADD,
     DEFAULT_SUPPLY_REFILL_TO,
     DEFAULT_SUPPLY_THRESHOLD,
@@ -59,6 +61,8 @@ from .const import (
     doses_per_week,
     is_due,
     meds_contains,
+    next_refills_remaining,
+    restore_refills,
     supply_cost_breakdown,
 )
 
@@ -109,6 +113,13 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
         self._value = float(supply.get(CONF_SUPPLY_UNITS, DEFAULT_SUPPLY_UNITS))
         # Per-unit cost (0 = untracked); drives the optional cost attributes.
         self._cost = float(supply.get(CONF_SUPPLY_COST, DEFAULT_SUPPLY_COST) or 0)
+        # Prescription refills remaining (0 = untracked). The configured value is
+        # the baseline a new prescription resets to; the live count decrements on
+        # each refill and is persisted across reloads (see async_added_to_hass).
+        self._refills_cfg = int(
+            supply.get(CONF_SUPPLY_REFILLS, DEFAULT_SUPPLY_REFILLS) or 0
+        )
+        self._refills_remaining = self._refills_cfg
         # dose entity_id -> calendar date already counted, to avoid double-count.
         self._consumed: dict[str, str] = {}
         # dose entity_id -> amount decremented today, so an un-mark restores exactly.
@@ -149,6 +160,13 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
                     self._value, self._per_dose, self._cost, self._doses_per_week()
                 )
             )
+        if self._refills_cfg > 0:
+            # Prescription refills: how many are left, the configured baseline (so
+            # a reload can tell an edit from a decrement), and whether they are out
+            # (0 left -> the current fill is the last, time for a new prescription).
+            attrs["refills_remaining"] = self._refills_remaining
+            attrs["refills_configured"] = self._refills_cfg
+            attrs["refills_out"] = self._refills_remaining <= 0
         return attrs
 
     def _doses_left(self) -> int | None:
@@ -211,6 +229,13 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
                         self._consumed_amount[str(key)] = float(val)
                     except (TypeError, ValueError):
                         pass
+            # Keep the live refills count across reloads, but reset to the new
+            # configured value when the prescription's refill count was edited.
+            self._refills_remaining = restore_refills(
+                self._refills_cfg,
+                last.attributes.get("refills_configured"),
+                last.attributes.get("refills_remaining"),
+            )
         self.async_on_remove(
             self.hass.bus.async_listen("state_changed", self._on_state_changed)
         )
@@ -260,6 +285,11 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
             # later un-mark cannot add a dose back on top of the refilled count.
             self._consumed.clear()
             self._consumed_amount.clear()
+            # Using a refill spends one of the prescription's refills.
+            if self._refills_cfg > 0:
+                self._refills_remaining = next_refills_remaining(
+                    self._refills_remaining
+                )
             self.async_write_ha_state()
 
     @callback
