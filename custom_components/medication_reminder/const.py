@@ -12,6 +12,8 @@ EVENT_DOSE_UNDONE = f"{DOMAIN}_dose_undone"
 EVENT_DOSE_LOGGED = f"{DOMAIN}_dose_logged"  # one as-needed (PRN) dose taken
 # Fired when a dose is skipped for the day (not taken, supply untouched).
 EVENT_DOSE_SKIPPED = f"{DOMAIN}_dose_skipped"
+# Fired when a dose reminder is snoozed ("remind me later").
+EVENT_DOSE_SNOOZED = f"{DOMAIN}_dose_snoozed"
 # Fired when a refill button is pressed; the matching supply restocks to full.
 EVENT_SUPPLY_REFILL = f"{DOMAIN}_supply_refill"
 
@@ -19,6 +21,7 @@ EVENT_SUPPLY_REFILL = f"{DOMAIN}_supply_refill"
 SERVICE_MARK_GIVEN = "mark_given"  # mark a dose given, optionally at a set time
 SERVICE_LOG_DOSE = "log_dose"  # log an as-needed (PRN) dose, optionally at a set time
 SERVICE_SKIP_TODAY = "skip_today"  # skip a dose for the day (not taken, no decrement)
+SERVICE_SNOOZE = "snooze"  # defer a dose's reminder for a delay ("remind me later")
 
 CONF_PATIENT = "patient"
 CONF_PATIENT_TYPE = "patient_type"
@@ -95,6 +98,7 @@ DEFAULT_NAG_MINUTES = 45
 DEFAULT_NAG_INTERVAL = 15
 DEFAULT_TIME_FORMAT = "12h"
 DEFAULT_SKIP_BUTTONS = False
+DEFAULT_SNOOZE_MINUTES = 30
 DEFAULT_SUPPLY_UNITS = 30
 DEFAULT_SUPPLY_PER_DOSE = 1
 DEFAULT_SUPPLY_THRESHOLD = 10
@@ -125,6 +129,21 @@ def split_medications(meds):
     if not meds:
         return []
     return [p.strip() for p in re.split(r"[&,+]|\s+/\s+", str(meds)) if p.strip()]
+
+
+def clamp_snooze_minutes(value, default=DEFAULT_SNOOZE_MINUTES):
+    """A valid snooze delay in minutes: a positive int, capped at a day.
+
+    Falls back to ``default`` for a missing or unparseable value, and to 1 for a
+    zero/negative one, so a snooze always defers by at least a minute.
+    """
+    if value is None:
+        return default
+    try:
+        minutes = int(value)
+    except (TypeError, ValueError):
+        return default
+    return max(1, min(minutes, 1440))
 
 
 def dose_handled(state, skipped_today):

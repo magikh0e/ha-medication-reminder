@@ -70,7 +70,11 @@ action:
             notify_service: "{{ state_attr(ent, 'notify_service') or default_notify }}"
             nag_minutes: "{{ state_attr(ent, 'nag_minutes') | int(45) }}"
             nag_interval: "{{ state_attr(ent, 'nag_interval') | int(15) }}"
-            mins_since: "{{ (now() - today_at(dtime)).total_seconds() / 60 }}"
+            snooze_until: "{{ state_attr(ent, 'snooze_until') }}"
+            # A snooze ("remind me later") pushes the whole nag/missed window out:
+            # time the dose from the later of its scheduled time and the snooze.
+            ref_ts: "{{ [as_timestamp(today_at(dtime)), (as_timestamp(snooze_until) if snooze_until else 0)] | max }}"
+            mins_since: "{{ (as_timestamp(now()) - ref_ts) / 60 }}"
             clock: "{{ (as_timestamp(today_at(dtime)) | timestamp_custom('%H:%M')) if state_attr(ent, 'time_format') == '24h' else (as_timestamp(today_at(dtime)) | timestamp_custom('%I:%M %p')).lstrip('0') }}"
         - choose:
             # Reminder: scheduled today, within the nag window, not yet handled.
@@ -84,6 +88,7 @@ action:
                     data: >-
                       {{ {"tag": "med_" ~ oid,
                           "actions": [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"},
+                                      {"action": "MED_SNOOZE_" ~ oid, "title": "⏰ Remind me later"},
                                       {"action": "MED_SKIP_" ~ oid, "title": "⏭️ Skip today"}]}
                          | combine(nav) }}
             # Missed: past the window-end, fires once.
@@ -100,11 +105,13 @@ action:
                           "push": {"interruption-level": "critical",
                                    "sound": {"name": "default", "critical": 1, "volume": 1.0}},
                           "actions": [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"},
+                                      {"action": "MED_SNOOZE_" ~ oid, "title": "⏰ Remind me later"},
                                       {"action": "MED_SKIP_" ~ oid, "title": "⏭️ Skip today"}]}
                          if critical_missed else
                          {"tag": "med_missed_" ~ oid, "priority": "high", "ttl": 0,
                           "push": {"interruption-level": "time-sensitive"},
                           "actions": [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"},
+                                      {"action": "MED_SNOOZE_" ~ oid, "title": "⏰ Remind me later"},
                                       {"action": "MED_SKIP_" ~ oid, "title": "⏭️ Skip today"}]}) | combine(nav) }}
                 - action: "notify.{{ notify_service }}"
                   data:

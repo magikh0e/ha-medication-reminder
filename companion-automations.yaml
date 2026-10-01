@@ -50,7 +50,11 @@
               notify_service: "{{ state_attr(ent, 'notify_service') or default_notify }}"
               nag_minutes: "{{ state_attr(ent, 'nag_minutes') | int(45) }}"
               nag_interval: "{{ state_attr(ent, 'nag_interval') | int(15) }}"
-              mins_since: "{{ (now() - today_at(dtime)).total_seconds() / 60 }}"
+              snooze_until: "{{ state_attr(ent, 'snooze_until') }}"
+              # A snooze ("remind me later") pushes the whole nag/missed window
+              # out: time the dose from the later of its time and the snooze.
+              ref_ts: "{{ [as_timestamp(today_at(dtime)), (as_timestamp(snooze_until) if snooze_until else 0)] | max }}"
+              mins_since: "{{ (as_timestamp(now()) - ref_ts) / 60 }}"
               clock: "{{ (as_timestamp(today_at(dtime)) | timestamp_custom('%H:%M')) if state_attr(ent, 'time_format') == '24h' else (as_timestamp(today_at(dtime)) | timestamp_custom('%I:%M %p')).lstrip('0') }}"
           - choose:
               # Reminder: only if scheduled today, within the nag window, not handled
@@ -64,6 +68,7 @@
                       data: >-
                         {{ {"tag": "med_" ~ oid,
                             "actions": [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"},
+                                        {"action": "MED_SNOOZE_" ~ oid, "title": "⏰ Remind me later"},
                                         {"action": "MED_SKIP_" ~ oid, "title": "⏭️ Skip today"}]}
                            | combine(nav) }}
               # Missed: scheduled today, past the window-end, fires once
@@ -80,11 +85,13 @@
                             "push": {"interruption-level": "critical",
                                      "sound": {"name": "default", "critical": 1, "volume": 1.0}},
                             "actions": [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"},
+                                        {"action": "MED_SNOOZE_" ~ oid, "title": "⏰ Remind me later"},
                                         {"action": "MED_SKIP_" ~ oid, "title": "⏭️ Skip today"}]}
                            if critical_missed else
                            {"tag": "med_missed_" ~ oid, "priority": "high", "ttl": 0,
                             "push": {"interruption-level": "time-sensitive"},
                             "actions": [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"},
+                                        {"action": "MED_SNOOZE_" ~ oid, "title": "⏰ Remind me later"},
                                         {"action": "MED_SKIP_" ~ oid, "title": "⏭️ Skip today"}]}) | combine(nav) }}
                   - action: "notify.{{ notify_service }}"
                     data:
@@ -94,7 +101,7 @@
   mode: single
 
 - id: med_reminder_mark_given
-  alias: "Medication - Mark given or skip from notification"
+  alias: "Medication - Notification actions (mark given / skip / snooze)"
   trigger:
     - platform: event
       event_type: mobile_app_notification_action
@@ -105,17 +112,24 @@
     - platform: event
       event_type: medication_reminder_dose_skipped
       id: skipped
+    - platform: event
+      event_type: medication_reminder_dose_snoozed
+      id: snoozed
   condition:
     - >-
-      {{ trigger.id in ['given', 'skipped']
+      {{ trigger.id in ['given', 'skipped', 'snoozed']
          or (trigger.event.data.action is defined
              and (trigger.event.data.action.startswith('MED_GIVEN_')
-                  or trigger.event.data.action.startswith('MED_SKIP_'))) }}
+                  or trigger.event.data.action.startswith('MED_SKIP_')
+                  or trigger.event.data.action.startswith('MED_SNOOZE_'))) }}
   variables:
+    # Change this to adjust how long "Remind me later" defers a reminder.
+    snooze_minutes: 30
     oid: >-
       {{ trigger.event.data.entity_id.split('.')[1]
-           if trigger.id in ['given', 'skipped']
-         else trigger.event.data.action | replace('MED_GIVEN_', '') | replace('MED_SKIP_', '') }}
+           if trigger.id in ['given', 'skipped', 'snoozed']
+         else trigger.event.data.action
+              | replace('MED_GIVEN_', '') | replace('MED_SKIP_', '') | replace('MED_SNOOZE_', '') }}
     ent: "switch.{{ oid }}"
     notify_service: "{{ state_attr(ent, 'notify_service') or 'caretakers' }}"
     is_give_button: >-
@@ -124,6 +138,9 @@
     is_skip_button: >-
       {{ trigger.id == 'notif' and trigger.event.data.action is defined
          and trigger.event.data.action.startswith('MED_SKIP_') }}
+    is_snooze_button: >-
+      {{ trigger.id == 'notif' and trigger.event.data.action is defined
+         and trigger.event.data.action.startswith('MED_SNOOZE_') }}
   action:
     # A button press performs the action; the event paths are a consequence of
     # the switch changing, so they only clear the notifications.
@@ -137,6 +154,13 @@
         - action: medication_reminder.skip_today
           target:
             entity_id: "{{ ent }}"
+    - if: "{{ is_snooze_button }}"
+      then:
+        - action: medication_reminder.snooze
+          target:
+            entity_id: "{{ ent }}"
+          data:
+            minutes: "{{ snooze_minutes | int(30) }}"
     - action: "notify.{{ notify_service }}"
       data:
         message: "clear_notification"

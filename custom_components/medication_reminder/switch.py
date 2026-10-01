@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 import homeassistant.util.dt as dt_util
@@ -51,11 +51,14 @@ from .const import (
     DOMAIN,
     EVENT_DOSE_GIVEN,
     EVENT_DOSE_SKIPPED,
+    EVENT_DOSE_SNOOZED,
     EVENT_DOSE_UNDONE,
     SCHEDULE_PRN,
     SCHEDULE_WEEKDAYS,
     SERVICE_MARK_GIVEN,
     SERVICE_SKIP_TODAY,
+    SERVICE_SNOOZE,
+    clamp_snooze_minutes,
     is_due,
     normalize_skipped,
 )
@@ -148,6 +151,13 @@ async def async_setup_entry(
         {},
         "async_skip_today",
     )
+    # snooze service: "remind me later". Defers this dose's reminder (and its
+    # missed-dose escalation) by `minutes`, without marking it given or skipped.
+    platform.async_register_entity_service(
+        SERVICE_SNOOZE,
+        {vol.Optional("minutes"): vol.Coerce(int)},
+        "async_snooze",
+    )
 
     # Parse the configured daily-reset time (defaults to 00:01).
     reset_time = entry.options.get(CONF_RESET_TIME, DEFAULT_RESET_TIME)
@@ -223,6 +233,9 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         # not-given. Reminders stop and supply is untouched; cleared on mark-given
         # and the daily reset.
         self._skipped_today: bool = False
+        # "Remind me later": an ISO time until which the reminder (and its missed
+        # escalation) is deferred. Cleared on mark-given, skip, un-mark, and reset.
+        self._snooze_until: str | None = None
         # Name: as-needed (PRN) doses have no meaningful time, so name them by
         # the medication; scheduled doses lead with their display time.
         if self._schedule_type == SCHEDULE_PRN:
@@ -287,6 +300,7 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
             "scheduled_today": self._scheduled_today(),
             "skipped": self._skipped,
             "skipped_today": self._skipped_today,
+            "snooze_until": self._snooze_until,
             "notify_service": self._notify,
             "nag_minutes": self._nag_minutes,
             "nag_interval": self._nag_interval,
@@ -324,6 +338,10 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         # too, so a restored skip never outlives its day.
         if not self._attr_is_on and last_state is not None:
             self._skipped_today = bool(last_state.attributes.get("skipped_today"))
+            # Restore a pending snooze; a stale (past) value is harmless, as the
+            # reminder logic only defers while now is before it, and the daily
+            # reset clears it.
+            self._snooze_until = last_state.attributes.get("snooze_until")
         if not self._attr_is_on:
             self._given_at = None
         elif not self._given_at and last_state is not None:
@@ -362,6 +380,7 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         self._attr_is_on = True
         # Marking given overrides a "skipped today": the dose was taken after all.
         self._skipped_today = False
+        self._snooze_until = None
         if given_at is not None:
             self._given_at = dt_util.as_local(given_at).isoformat()
         elif not was_on:
@@ -417,6 +436,7 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         self._given_at = None
         self._skipped = []
         self._skipped_today = True
+        self._snooze_until = None
         self._given_state[self._attr_unique_id] = None
         await self._save_given()
         self.async_write_ha_state()
@@ -441,6 +461,31 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
             },
         )
 
+    async def async_snooze(self, minutes: int | None = None) -> None:
+        """Defer this dose's reminder for a delay ("remind me later").
+
+        Records a ``snooze_until`` time; the reminder automation pushes this
+        dose's nag window and its missed-dose escalation out to that time, so the
+        reminder goes quiet and comes back once, later, if the dose is still not
+        given or skipped. It does not mark the dose given or skipped. A snooze on
+        an already-given dose is a no-op in effect, since a given dose is not
+        reminded; the daily reset and marking given both clear it.
+        """
+        until = dt_util.now() + timedelta(minutes=clamp_snooze_minutes(minutes))
+        self._snooze_until = until.isoformat()
+        self.async_write_ha_state()
+        self.hass.bus.async_fire(
+            EVENT_DOSE_SNOOZED,
+            {
+                "entity_id": self.entity_id,
+                "patient": self._patient,
+                "dose_time": self._time,
+                "medications": self._meds,
+                "snooze_until": self._snooze_until,
+                "notify_service": self._notify,
+            },
+        )
+
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Mark this dose not given (un-mark). The daily reset uses reset_given,
         not this, so only a deliberate un-mark fires the undone event."""
@@ -449,6 +494,7 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         self._given_at = None
         self._skipped = []
         self._skipped_today = False
+        self._snooze_until = None
         self._given_state[self._attr_unique_id] = None
         await self._save_given()
         self.async_write_ha_state()
@@ -470,5 +516,6 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         self._given_at = None
         self._skipped = []
         self._skipped_today = False
+        self._snooze_until = None
         self._given_state[self._attr_unique_id] = None
         self.async_write_ha_state()

@@ -43,6 +43,33 @@ skip_today:
       integration: medication_reminder
       domain: switch
 
+snooze:
+  name: Snooze (remind me later)
+  description: >-
+    Defer a dose's reminder for a delay without marking it given or skipped. The
+    reminder goes quiet and comes back once, later, if the dose is still not given
+    or skipped. The missed-dose escalation is deferred too, not cancelled, so a
+    snoozed-then-forgotten dose still escalates eventually. Marking the dose given
+    or skipped, and the daily reset, clear the snooze.
+  target:
+    entity:
+      integration: medication_reminder
+      domain: switch
+  fields:
+    minutes:
+      name: Minutes
+      description: How long to defer the reminder. Defaults to 30.
+      required: false
+      example: 30
+      default: 30
+      selector:
+        number:
+          min: 1
+          max: 1440
+          step: 1
+          unit_of_measurement: min
+          mode: box
+
 log_dose:
   name: Log dose (as needed)
   description: >-

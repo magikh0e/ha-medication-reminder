@@ -259,6 +259,9 @@ class NeedsAttentionBinarySensor(_DoseLookupMixin, BinarySensorEntity):
                     second=0,
                     microsecond=0,
                 )
+                # Snooze only quiets the phone reminder (see the reminder
+                # blueprint). The glanceable panel still shows a snoozed-but-not-
+                # taken dose as needing attention once past its window, by design.
                 if now >= due + timedelta(minutes=int(nag)):
                     overdue.append(s)
             except (ValueError, TypeError, AttributeError):

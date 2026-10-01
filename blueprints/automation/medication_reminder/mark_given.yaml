@@ -1,11 +1,12 @@
 blueprint:
-  name: Medication Reminder - mark given or skip from notification
+  name: Medication Reminder - notification actions (mark given / skip / snooze)
   description: >
-    Handles the "Mark given" and "Skip today" buttons on the reminder and
-    missed-dose notifications (marks the dose given, or skips it for the day),
-    and clears those notifications whenever a dose is marked given or skipped by
-    any means: a button, the dashboard, an NFC tag, or the mark_given /
-    skip_today service. Import this alongside the dose-reminders blueprint.
+    Handles the "Mark given", "Skip today", and "Remind me later" buttons on the
+    reminder and missed-dose notifications (marks the dose given, skips it for the
+    day, or snoozes its reminder), and clears those notifications whenever a dose
+    is marked given, skipped, or snoozed by any means: a button, the dashboard, an
+    NFC tag, or the mark_given / skip_today / snooze service. Import this alongside
+    the dose-reminders blueprint.
   domain: automation
   author: magikh0e
   source_url: https://github.com/magikh0e/ha-medication-reminder/blob/main/blueprints/automation/medication_reminder/mark_given.yaml
@@ -18,9 +19,21 @@ blueprint:
       default: caretakers
       selector:
         text:
+    snooze_minutes:
+      name: Snooze delay (minutes)
+      description: >
+        How long "Remind me later" defers a dose's reminder before it comes back.
+      default: 30
+      selector:
+        number:
+          min: 1
+          max: 1440
+          step: 1
+          unit_of_measurement: min
+          mode: box
 
 trigger:
-  # The notification's "Mark given" / "Skip today" buttons.
+  # The notification's "Mark given" / "Remind me later" / "Skip today" buttons.
   - platform: event
     event_type: mobile_app_notification_action
     id: notif
@@ -33,18 +46,25 @@ trigger:
   - platform: event
     event_type: medication_reminder_dose_skipped
     id: skipped
+  # And for a dose snoozed by any means, so the current reminder clears.
+  - platform: event
+    event_type: medication_reminder_dose_snoozed
+    id: snoozed
 condition:
   - >-
-    {{ trigger.id in ['given', 'skipped']
+    {{ trigger.id in ['given', 'skipped', 'snoozed']
        or (trigger.event.data.action is defined
            and (trigger.event.data.action.startswith('MED_GIVEN_')
-                or trigger.event.data.action.startswith('MED_SKIP_'))) }}
+                or trigger.event.data.action.startswith('MED_SKIP_')
+                or trigger.event.data.action.startswith('MED_SNOOZE_'))) }}
 variables:
   default_notify: !input fallback_notify
+  snooze_minutes: !input snooze_minutes
   oid: >-
     {{ trigger.event.data.entity_id.split('.')[1]
-         if trigger.id in ['given', 'skipped']
-       else trigger.event.data.action | replace('MED_GIVEN_', '') | replace('MED_SKIP_', '') }}
+         if trigger.id in ['given', 'skipped', 'snoozed']
+       else trigger.event.data.action
+            | replace('MED_GIVEN_', '') | replace('MED_SKIP_', '') | replace('MED_SNOOZE_', '') }}
   ent: "switch.{{ oid }}"
   notify_service: "{{ state_attr(ent, 'notify_service') or default_notify }}"
   is_give_button: >-
@@ -53,6 +73,9 @@ variables:
   is_skip_button: >-
     {{ trigger.id == 'notif' and trigger.event.data.action is defined
        and trigger.event.data.action.startswith('MED_SKIP_') }}
+  is_snooze_button: >-
+    {{ trigger.id == 'notif' and trigger.event.data.action is defined
+       and trigger.event.data.action.startswith('MED_SNOOZE_') }}
 action:
   # A button press performs the action; the event paths are already a consequence
   # of the switch changing, so they only clear the notifications.
@@ -66,6 +89,13 @@ action:
       - action: medication_reminder.skip_today
         target:
           entity_id: "{{ ent }}"
+  - if: "{{ is_snooze_button }}"
+    then:
+      - action: medication_reminder.snooze
+        target:
+          entity_id: "{{ ent }}"
+        data:
+          minutes: "{{ snooze_minutes | int(30) }}"
   - action: "notify.{{ notify_service }}"
     data:
       message: "clear_notification"
