@@ -28,6 +28,7 @@ CONF_RESET_TIME = "reset_time"
 CONF_NAG_MINUTES = "nag_minutes"
 CONF_NAG_INTERVAL = "nag_interval"
 CONF_TIME_FORMAT = "time_format"
+CONF_SKIP_BUTTONS = "skip_buttons"  # opt-in per-med skip buttons for grouped doses
 
 # Per-dose schedule type and its interval / cycle settings.
 CONF_SCHEDULE_TYPE = "schedule_type"
@@ -90,6 +91,7 @@ DEFAULT_RESET_TIME = "00:01:00"
 DEFAULT_NAG_MINUTES = 45
 DEFAULT_NAG_INTERVAL = 15
 DEFAULT_TIME_FORMAT = "12h"
+DEFAULT_SKIP_BUTTONS = False
 DEFAULT_SUPPLY_UNITS = 30
 DEFAULT_SUPPLY_PER_DOSE = 1
 DEFAULT_SUPPLY_THRESHOLD = 10
@@ -120,6 +122,19 @@ def split_medications(meds):
     if not meds:
         return []
     return [p.strip() for p in re.split(r"[&,+]|\s+/\s+", str(meds)) if p.strip()]
+
+
+def partial_skip_meds(meds, schedule_type):
+    """Meds eligible for a per-med "skip" button on a grouped dose.
+
+    Empty unless the dose is scheduled (not PRN) and lists two or more meds: a
+    single-med dose has nothing to partially skip, and a PRN dose is logged per
+    med already. Backs the opt-in partial-dose skip buttons.
+    """
+    if (schedule_type or "") == SCHEDULE_PRN:
+        return []
+    meds_list = split_medications(meds)
+    return meds_list if len(meds_list) >= 2 else []
 
 
 def meds_contains(meds, med_name):

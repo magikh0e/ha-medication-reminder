@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.36.0] - 2026-09-30
+### Added
+- Partial-dose skip buttons on the dashboard. A new **Partial-dose skip buttons** option in Reminder settings (off by default) creates, for each scheduled dose that groups two or more meds, a one-tap `button.<patient>_<time>_<meds>_skip_<med>` per med: "Mark given, skip <med>". Pressing it marks the whole dose given with that one med in the `skipped` list, so the dose counts as taken while that med's supply is left alone, the common "one pill was missing" case, without the `mark_given` service. The bundled dashboards (sections, single-card, two-column, caregiver) auto-discover these into a "Took most of it" card that shows only for doses due and not yet given. Single-med and PRN doses get no buttons; skipping more than one med at once still uses the service with a full `skipped` list. Builds on the partial dose marking from 0.35.0 (#30).
+
 ## [0.35.0] - 2026-09-30
 ### Added
 - Partial dose marking. The `medication_reminder.mark_given` service takes a new optional `skipped` list naming meds in a grouped dose that were not actually taken. The dose is still marked given, but the supply for each skipped med is left alone, so you no longer have to split a sometimes-missing med into its own dose to keep its count accurate. The skipped meds show as a `skipped` attribute on the dose switch and in the `medication_reminder_dose_given` event (visible in history), and clear on un-mark and the daily reset. Skips are applied when the dose is first marked given, not on a later time-correction. (Requested by a community member on the Home Assistant forum, tracked in #30.)

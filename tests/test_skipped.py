@@ -65,3 +65,34 @@ def test_med_skipped_empty_is_false():
 def test_med_skipped_handles_combo_skip_entry():
     # A single skipped entry that itself lists several meds matches each of them.
     assert const.med_skipped(["Keppra & Phenobarbital"], "Phenobarbital") is True
+
+
+def test_partial_skip_meds_lists_each_med_of_a_grouped_dose():
+    assert const.partial_skip_meds("Apoquel & Vitamin D", "weekdays") == [
+        "Apoquel",
+        "Vitamin D",
+    ]
+
+
+def test_partial_skip_meds_empty_for_single_med_dose():
+    # Nothing to partially skip when the dose has only one med.
+    assert const.partial_skip_meds("Apoquel", "weekdays") == []
+
+
+def test_partial_skip_meds_empty_for_prn():
+    # PRN doses are logged per med already; no skip buttons.
+    assert const.partial_skip_meds("Apoquel & Vitamin D", "prn") == []
+
+
+def test_partial_skip_meds_keeps_bare_slash_name_whole():
+    # A combo name with a bare slash stays one med, so a two-name dose like this
+    # is still eligible and not mis-split.
+    assert const.partial_skip_meds("TMP/SMX & Vitamin D", "weekdays") == [
+        "TMP/SMX",
+        "Vitamin D",
+    ]
+
+
+def test_partial_skip_meds_handles_empty_and_none():
+    assert const.partial_skip_meds("", "weekdays") == []
+    assert const.partial_skip_meds(None, "weekdays") == []

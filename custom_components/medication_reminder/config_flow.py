@@ -41,6 +41,7 @@ from .const import (
     CONF_PATIENT_TYPE,
     CONF_RESET_TIME,
     CONF_SCHEDULE_TYPE,
+    CONF_SKIP_BUTTONS,
     CONF_SUPPLIES,
     CONF_SUPPLY_COST,
     CONF_SUPPLY_MED,
@@ -64,6 +65,7 @@ from .const import (
     DEFAULT_NAG_MINUTES,
     DEFAULT_PATIENT_TYPE,
     DEFAULT_RESET_TIME,
+    DEFAULT_SKIP_BUTTONS,
     DEFAULT_SCHEDULE_TYPE,
     DEFAULT_SUPPLY_COST,
     DEFAULT_SUPPLY_PER_DOSE,
@@ -1006,6 +1008,7 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
             options[CONF_NAG_MINUTES] = int(user_input[CONF_NAG_MINUTES])
             options[CONF_NAG_INTERVAL] = int(user_input[CONF_NAG_INTERVAL])
             options[CONF_TIME_FORMAT] = user_input[CONF_TIME_FORMAT]
+            options[CONF_SKIP_BUTTONS] = bool(user_input.get(CONF_SKIP_BUTTONS, False))
             return self.async_create_entry(title="", data=options)
         opts = self._entry.options
         schema = vol.Schema(
@@ -1033,6 +1036,10 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
                     CONF_NAG_INTERVAL,
                     default=opts.get(CONF_NAG_INTERVAL, DEFAULT_NAG_INTERVAL),
                 ): _minutes_selector(5, 120),
+                vol.Optional(
+                    CONF_SKIP_BUTTONS,
+                    default=bool(opts.get(CONF_SKIP_BUTTONS, DEFAULT_SKIP_BUTTONS)),
+                ): selector.BooleanSelector(),
             }
         )
         return self.async_show_form(step_id="settings", data_schema=schema)

@@ -21,7 +21,11 @@ import voluptuous as vol
 from homeassistant.components.button import ButtonEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import config_validation as cv, entity_platform
+from homeassistant.helpers import (
+    config_validation as cv,
+    entity_platform,
+    entity_registry as er,
+)
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import slugify
 
@@ -31,6 +35,7 @@ from .const import (
     CONF_MEDS,
     CONF_PATIENT,
     CONF_SCHEDULE_TYPE,
+    CONF_SKIP_BUTTONS,
     CONF_SUPPLIES,
     CONF_SUPPLY_MED,
     CONF_SUPPLY_REFILL_ADD,
@@ -43,6 +48,8 @@ from .const import (
     EVENT_SUPPLY_REFILL,
     SCHEDULE_PRN,
     SERVICE_LOG_DOSE,
+    SERVICE_MARK_GIVEN,
+    partial_skip_meds,
 )
 
 
@@ -79,6 +86,17 @@ async def async_setup_entry(
         for dose in doses
         if (dose.get(CONF_SCHEDULE_TYPE) or "") == SCHEDULE_PRN
     )
+    # Opt-in partial-dose skip buttons: one "mark given, skip <med>" button per
+    # med on each scheduled dose that groups two or more meds. Off by default so
+    # patients who never partially dose do not get extra entities.
+    if entry.options.get(CONF_SKIP_BUTTONS):
+        for dose in doses:
+            time = str(dose[CONF_TIME])[:5]
+            meds = str(dose[CONF_MEDS])
+            for med in partial_skip_meds(meds, dose.get(CONF_SCHEDULE_TYPE)):
+                entities.append(
+                    MedicationDoseSkipButton(entry, patient, time, meds, med)
+                )
     async_add_entities(entities)
 
     # Service to log a PRN dose at a specified time (the "Specify Time" counterpart
@@ -191,4 +209,70 @@ class MedicationLogDoseButton(ButtonEntity):
                 "dose_units": self._dose_units,
                 "logged_at": when.isoformat(),
             },
+        )
+
+
+class MedicationDoseSkipButton(ButtonEntity):
+    """One-tap "mark this grouped dose given, but skip one med".
+
+    Created only for scheduled doses that list two or more meds, and only when
+    the entry's partial-dose option is on. Pressing it marks the parent dose
+    given with this one med in the ``skipped`` list, so the dose counts as taken
+    while this med's supply is left alone, the common "one pill was missing"
+    case, without splitting the med into its own dose. Skipping more than one med
+    at once still needs the ``mark_given`` service with a full ``skipped`` list.
+    """
+
+    _attr_should_poll = False
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:pill-off"
+
+    def __init__(
+        self,
+        entry: ConfigEntry,
+        patient: str,
+        time: str,
+        meds: str,
+        skip_med: str,
+    ) -> None:
+        self._patient = patient
+        self._time = time
+        self._meds = meds
+        self._skip_med = skip_med
+        # The parent dose switch shares this unique_id; resolve its entity_id at
+        # press time so a user rename of the switch does not break the button.
+        self._parent_unique_id = f"{entry.entry_id}_{slugify(time + '_' + meds)}"
+        self._attr_name = f"Mark given, skip {skip_med}"
+        self._attr_unique_id = (
+            f"{entry.entry_id}_skipbtn_{slugify(time + '_' + meds)}_{slugify(skip_med)}"
+        )
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, entry.entry_id)},
+            "name": patient,
+            "manufacturer": "Medication Reminder",
+        }
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Patient/dose/med, so the dashboard can group these under their dose."""
+        return {
+            "patient": self._patient,
+            "dose_time": self._time,
+            "medications": self._meds,
+            "skip_med": self._skip_med,
+        }
+
+    async def async_press(self) -> None:
+        """Mark the parent dose given with this med skipped."""
+        registry = er.async_get(self.hass)
+        parent_eid = registry.async_get_entity_id(
+            "switch", DOMAIN, self._parent_unique_id
+        )
+        if not parent_eid:
+            return
+        await self.hass.services.async_call(
+            DOMAIN,
+            SERVICE_MARK_GIVEN,
+            {"entity_id": parent_eid, "skipped": [self._skip_med]},
+            blocking=True,
         )

@@ -217,10 +217,12 @@
           "time_format": "Time format",
           "reset_time": "Daily reset time",
           "nag_minutes": "Nag window (minutes after dose)",
-          "nag_interval": "Re-nag every (minutes)"
+          "nag_interval": "Re-nag every (minutes)",
+          "skip_buttons": "Partial-dose skip buttons"
         },
         "data_description": {
-          "nag_interval": "Use a multiple of 5; reminders are evaluated on a 5-minute tick, so other values re-nag less evenly."
+          "nag_interval": "Use a multiple of 5; reminders are evaluated on a 5-minute tick, so other values re-nag less evenly.",
+          "skip_buttons": "For doses that group two or more meds, add a button per med that marks the dose given while skipping that one med (its supply is not counted). Off by default; turn on if a med in a grouped dose is sometimes missing."
         }
       }
     }

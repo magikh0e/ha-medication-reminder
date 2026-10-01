@@ -125,6 +125,39 @@ cards:
     sort:
       method: name
 
+  # 3c. Partial dose (opt-in): "mark given, skip <med>" per med, for doses that
+  # group 2+ meds. Shows only when Reminder settings has the skip-buttons option
+  # on and the dose is due and not yet given; empty/hidden otherwise.
+  - type: custom:auto-entities
+    show_empty: false
+    card:
+      type: entities
+      title: Took most of it (skip a med)
+      show_header_toggle: false
+      card_mod:
+        style: |
+          ha-card {
+            --state-icon-color: #90caf9;
+            --paper-item-icon-color: #90caf9;
+          }
+    filter:
+      template: >
+        {% set today = ['mon','tue','wed','thu','fri','sat','sun'][now().weekday()] %}
+        {% for b in states.button if b.attributes.skip_med is defined %}
+        {% set sw = states.switch
+           | selectattr('attributes.medications','defined')
+           | selectattr('attributes.patient','eq', b.attributes.patient)
+           | selectattr('attributes.dose_time','eq', b.attributes.dose_time)
+           | selectattr('attributes.medications','eq', b.attributes.medications)
+           | list | first %}
+        {% if sw and sw.state == 'off'
+           and sw.attributes.get('scheduled_today', today in (sw.attributes.days or ['mon','tue','wed','thu','fri','sat','sun'])) %}
+        {{ b.entity_id }}
+        {% endif %}
+        {% endfor %}
+    sort:
+      method: name
+
   # 3b. As-needed (PRN) meds: tap "Log dose" to record one (decrements supply),
   # with each med's "last taken" time shown beside it. Hidden if you have no PRN
   # doses.

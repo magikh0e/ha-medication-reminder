@@ -39,7 +39,7 @@ Questions, setup help, or want to show off your setup? Come to [Discussions](htt
 - **Pets and people, all in the UI.** Add patients and their dose schedule from Settings, no YAML; entities auto-create per patient and survive restarts.
 - **Flexible scheduling.** Each dose daily, on specific days of the week, every N days, an on/off cycle (e.g. 21 on / 7 off), specific days of the month, or as-needed (PRN, no reminders), in 12h or 24h.
 - **As-needed (PRN) meds.** A "Log dose" button (and `log_dose` service) records each dose taken, with a last-taken timestamp, a doses-today count, and a supply decrement, so meds taken several times a day stay tracked. Optional **over-dose guard**: set a minimum interval and/or a daily cap, and a `problem` sensor warns (never blocks) when another dose now would be too soon or over the cap. A rolling 30-day **days this month** count per med helps with days-per-month limits, like keeping acute pain or migraine meds under about 10 days.
-- **Partial dose marking.** For a dose that groups several meds, mark it given while flagging one or more meds as skipped (via the `mark_given` service), so the skipped med's supply is not counted and the skip shows in history. No need to split a sometimes-missing med into its own dose.
+- **Partial dose marking.** For a dose that groups several meds, mark it given while flagging one or more meds as skipped, so the skipped med's supply is not counted and the skip shows in history. No need to split a sometimes-missing med into its own dose. Use the `mark_given` service, or turn on optional per-med "skip" buttons that put it one tap away on the dashboard.
 - **Glanceable, fail-safe status.** A per-patient red/green "needs attention" sensor that trips on elapsed time alone and errs toward "problem"; wire it to a panel, light, or siren.
 - **Actionable reminders.** Nagging, missed-dose escalation, and a "Mark given" button from the notification, routed to each patient's own notify target. Tapping the notification body (not the button) can open your meds dashboard.
 - **Supply & refill tracking.** Per-medication counts that decrement as doses are given, with doses-left, a run-out estimate, a low-stock red flag at your reorder threshold, and a refill reminder. Optionally track **refills remaining** on the prescription too: each refill counts one down, and the supply flags when the prescription is out and needs renewing. Per-dose amounts can be fractional (half a pill) and overridden per dose, and an optional per-unit cost surfaces value on hand, cost per dose, and a monthly estimate.
@@ -194,6 +194,11 @@ or removing a patient just updates them. Each has seven parts:
 5. one combined supplies card (units on hand, shown only if you track supplies),
 6. a per-patient schedule overview (every dose, time, medications, and days),
 7. a per-patient "current medications" list (full name, strength, brand, what it is for, dosage, and each med's dose times) for handing to a vet or doctor.
+
+With **Partial-dose skip buttons** turned on (Settings), an eighth "Took most of it"
+card appears alongside Mark given, with a one-tap "skip <med>" per med for grouped
+doses that are due and not yet given (see [Partial dose marking](#how-marking-works-the-contract)).
+It stays hidden when the option is off or nothing qualifies.
 
 Where a dose has a **Units consumed (this dose)** amount set, the today summary and
 schedule show it next to the medication (e.g. "Marcoumar ½"), so a half-pill day
@@ -431,6 +436,7 @@ Each patient has its own **Configure, Reminder settings** with:
 - **Daily reset time** - when the day's doses reset to "not given" (default 00:01).
 - **Nag window** - how long to keep reminding after a dose time (default 45 min).
 - **Re-nag interval** - how often to re-remind within that window (default 15 min).
+- **Partial-dose skip buttons** - off by default. When on, each scheduled dose that groups two or more meds gains a one-tap "Mark given, skip <med>" button per med (see [How marking works](#how-marking-works-the-contract) below). Leave off to avoid the extra button entities if you never partially dose.
 
 The reset time is applied by the integration; the nag window/interval are exposed
 as switch attributes that the companion automations read.
@@ -536,6 +542,7 @@ notify target for anything low.
     skipped:
       - Vitamin D
   ```
+  For a one-tap version on the dashboard, turn on **Partial-dose skip buttons** in Reminder settings. Each scheduled dose that groups two or more meds then gets a `button.<patient>_<time>_<meds>_skip_<med>` per med ("Mark given, skip <med>"), which marks that dose given with just that one med skipped. The bundled dashboards surface these in a "Took most of it" card for doses due and not yet given. It is off by default so single-med users get no extra entities; skipping two or more meds at once still uses the service with a full `skipped` list.
 - When a dose is marked given, the switch fires a `medication_reminder_dose_given` event (with `patient`, `dose_time`, `medications`, `scheduled_today`, `minutes_early`, `skipped`, `notify_service`), so companion automations can react cleanly. The bundled `med_early_given` automation uses it to warn when a dose is marked given well before its scheduled time, with an "undo" button that turns the dose back off. Un-marking a dose fires `medication_reminder_dose_undone`, which restores that dose's supply count.
 
 The `calendar.<patient>_medication` entity lays the whole schedule out by day,
@@ -661,6 +668,7 @@ territory. A future version may move reminders into the integration itself.
 - Notification clears on any mark-given (0.31.0): the reminder notification now clears when a dose is marked given from the dashboard, an NFC tag, or the mark_given service, not only the notification button. (Reported by RobertGalatNordic in #22.)
 - Prescription refills remaining (0.33.0): an optional per-supply "refills remaining" count that starts at the number of refills the script allows and counts down one on each refill, exposing `refills_remaining`, `refills_configured`, and `refills_out` on the supply. When it hits zero, `supplies_low` turns red so an automation can prompt "time to schedule a new prescription," separate from pill-count low stock. (Requested by a community member on the forum, tracked in #31.)
 - Partial dose marking (0.35.0): the `mark_given` service takes a `skipped` list naming meds in a grouped dose that were not taken, so the dose is still marked given but each skipped med's supply is left alone, without splitting it into its own dose. The skip shows in the `skipped` switch attribute and the given event. (Requested by a community member on the forum, tracked in #30.)
+- Partial-dose skip buttons (0.36.0): an opt-in that adds a one-tap "Mark given, skip <med>" button per med on grouped doses, auto-discovered into a "Took most of it" dashboard card, so partial marking no longer needs the service for the common one-missing-pill case. Off by default. Builds on #30.
 
 ## Acknowledgements
 
