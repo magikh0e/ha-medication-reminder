@@ -56,7 +56,8 @@ views:
               {% set ns.meds = ns.meds + [s] %}
               {% endfor %}
               {% set given = ns.meds | selectattr('state','eq','on') | list %}
-              {% set pending = ns.meds | selectattr('state','eq','off') | list %}
+              {% set skipped = ns.meds | selectattr('attributes.skipped_today','eq',true) | list %}
+              {% set pending = ns.meds | selectattr('state','eq','off') | rejectattr('attributes.skipped_today','eq',true) | list %}
               {% set ns2 = namespace(overdue=[], upcoming=[]) %}
               {% for x in pending %}
               {% set mins = (as_timestamp(now()) - as_timestamp(today_at(x.attributes.dose_time))) / 60 %}
@@ -66,11 +67,12 @@ views:
               {% set ns2.upcoming = ns2.upcoming + [x] %}
               {% endif %}
               {% endfor %}
-              ### 💊 Doses today: {{ given|length }}/{{ ns.meds|length }} given
+              ### 💊 Doses today: {{ given|length }}/{{ ns.meds|length }} given{% if skipped %}, {{ skipped|length }} skipped{% endif %}
+              {% if skipped %}**⏭️ Skipped:** {{ skipped | map(attribute='attributes.medications') | join(', ') }}{% endif %}
               {% if ns.meds|length == 0 -%}
               No doses scheduled today.
               {%- elif not pending -%}
-              ✅ All doses given for today.
+              ✅ All doses {{ 'handled' if skipped else 'given' }} for today.
               {%- else -%}
               {% if ns2.overdue %}**⚠️ Overdue:**
               {% for x in ns2.overdue | sort(attribute='attributes.dose_time') %}

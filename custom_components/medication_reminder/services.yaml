@@ -30,6 +30,19 @@ mark_given:
         text:
           multiple: true
 
+skip_today:
+  name: Skip dose for today
+  description: >-
+    Skip a dose for the current day without taking it. The dose is cleared for
+    the day (reminders and missed-dose alerts stop) but it is NOT recorded as
+    given and NO supply is deducted. A skipped dose counts as handled, so it does
+    not show as overdue. Resets at the daily reset time, the same as a given dose;
+    marking the dose given cancels the skip.
+  target:
+    entity:
+      integration: medication_reminder
+      domain: switch
+
 log_dose:
   name: Log dose (as needed)
   description: >-

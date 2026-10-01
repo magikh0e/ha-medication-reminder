@@ -50,10 +50,12 @@ from .const import (
     DEFAULT_TIME_FORMAT,
     DOMAIN,
     EVENT_DOSE_GIVEN,
+    EVENT_DOSE_SKIPPED,
     EVENT_DOSE_UNDONE,
     SCHEDULE_PRN,
     SCHEDULE_WEEKDAYS,
     SERVICE_MARK_GIVEN,
+    SERVICE_SKIP_TODAY,
     is_due,
     normalize_skipped,
 )
@@ -138,6 +140,14 @@ async def async_setup_entry(
         },
         "async_mark_given_at",
     )
+    # skip_today service: clear a dose for the day without taking it. It is a
+    # third state, distinct from given and not-given: reminders stop, supply is
+    # untouched, and the status sensors treat it as handled until the daily reset.
+    platform.async_register_entity_service(
+        SERVICE_SKIP_TODAY,
+        {},
+        "async_skip_today",
+    )
 
     # Parse the configured daily-reset time (defaults to 00:01).
     reset_time = entry.options.get(CONF_RESET_TIME, DEFAULT_RESET_TIME)
@@ -209,6 +219,10 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         # the dose was marked given with a `skipped` list; cleared on un-mark and
         # the daily reset.
         self._skipped: list[str] = []
+        # Whole-dose "skipped for today": a third state, neither given nor
+        # not-given. Reminders stop and supply is untouched; cleared on mark-given
+        # and the daily reset.
+        self._skipped_today: bool = False
         # Name: as-needed (PRN) doses have no meaningful time, so name them by
         # the medication; scheduled doses lead with their display time.
         if self._schedule_type == SCHEDULE_PRN:
@@ -272,6 +286,7 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
             "month_days": self._month_days,
             "scheduled_today": self._scheduled_today(),
             "skipped": self._skipped,
+            "skipped_today": self._skipped_today,
             "notify_service": self._notify,
             "nag_minutes": self._nag_minutes,
             "nag_interval": self._nag_interval,
@@ -304,6 +319,11 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         # re-toggle would not then decrement a skipped med's supply).
         if self._attr_is_on and last_state is not None:
             self._skipped = normalize_skipped(last_state.attributes.get("skipped"))
+        # Restore a "skipped today" across a reload/restart. Only meaningful while
+        # the dose is not given; marking given clears it and the daily reset does
+        # too, so a restored skip never outlives its day.
+        if not self._attr_is_on and last_state is not None:
+            self._skipped_today = bool(last_state.attributes.get("skipped_today"))
         if not self._attr_is_on:
             self._given_at = None
         elif not self._given_at and last_state is not None:
@@ -340,6 +360,8 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         """
         was_on = self._attr_is_on
         self._attr_is_on = True
+        # Marking given overrides a "skipped today": the dose was taken after all.
+        self._skipped_today = False
         if given_at is not None:
             self._given_at = dt_util.as_local(given_at).isoformat()
         elif not was_on:
@@ -380,6 +402,45 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
             },
         )
 
+    async def async_skip_today(self) -> None:
+        """Skip this dose for the day: not taken, supply untouched, reminders off.
+
+        A third state distinct from given and not-given. The switch stays off but
+        carries ``skipped_today``, which the status sensors and reminder blueprint
+        treat as handled. If the dose had already been marked given, the give is
+        undone first (firing the undone event, which restores its supply) so a
+        skip never leaves a phantom decrement behind. Cleared at the daily reset,
+        or by marking the dose given.
+        """
+        was_on = self._attr_is_on
+        self._attr_is_on = False
+        self._given_at = None
+        self._skipped = []
+        self._skipped_today = True
+        self._given_state[self._attr_unique_id] = None
+        await self._save_given()
+        self.async_write_ha_state()
+        if was_on:
+            # Undo the earlier give so its supply is put back before the skip.
+            self.hass.bus.async_fire(
+                EVENT_DOSE_UNDONE,
+                {
+                    "entity_id": self.entity_id,
+                    "patient": self._patient,
+                    "medications": self._meds,
+                },
+            )
+        self.hass.bus.async_fire(
+            EVENT_DOSE_SKIPPED,
+            {
+                "entity_id": self.entity_id,
+                "patient": self._patient,
+                "dose_time": self._time,
+                "medications": self._meds,
+                "notify_service": self._notify,
+            },
+        )
+
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Mark this dose not given (un-mark). The daily reset uses reset_given,
         not this, so only a deliberate un-mark fires the undone event."""
@@ -387,6 +448,7 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         self._attr_is_on = False
         self._given_at = None
         self._skipped = []
+        self._skipped_today = False
         self._given_state[self._attr_unique_id] = None
         await self._save_given()
         self.async_write_ha_state()
@@ -407,5 +469,6 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         self._attr_is_on = False
         self._given_at = None
         self._skipped = []
+        self._skipped_today = False
         self._given_state[self._attr_unique_id] = None
         self.async_write_ha_state()

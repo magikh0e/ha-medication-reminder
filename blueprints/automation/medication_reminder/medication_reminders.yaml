@@ -60,6 +60,8 @@ action:
             ent: "{{ repeat.item }}"
             oid: "{{ ent.split('.')[1] }}"
             given: "{{ is_state(ent, 'on') }}"
+            skipped: "{{ state_attr(ent, 'skipped_today') | default(false, true) }}"
+            handled: "{{ given or skipped }}"
             dtime: "{{ state_attr(ent, 'dose_time') }}"
             patient: "{{ state_attr(ent, 'patient') }}"
             meds: "{{ state_attr(ent, 'medications') }}"
@@ -71,9 +73,9 @@ action:
             mins_since: "{{ (now() - today_at(dtime)).total_seconds() / 60 }}"
             clock: "{{ (as_timestamp(today_at(dtime)) | timestamp_custom('%H:%M')) if state_attr(ent, 'time_format') == '24h' else (as_timestamp(today_at(dtime)) | timestamp_custom('%I:%M %p')).lstrip('0') }}"
         - choose:
-            # Reminder: scheduled today, within the nag window, not given.
+            # Reminder: scheduled today, within the nag window, not yet handled.
             - conditions:
-                - "{{ scheduled and not given and mins_since >= 0 and mins_since < nag_minutes and (mins_since % nag_interval) < 5 }}"
+                - "{{ scheduled and not handled and mins_since >= 0 and mins_since < nag_minutes and (mins_since % nag_interval) < 5 }}"
               sequence:
                 - action: "notify.{{ notify_service }}"
                   data:
@@ -81,11 +83,12 @@ action:
                     message: "Give {{ patient }}'s medication: {{ meds }}. Has it been given?"
                     data: >-
                       {{ {"tag": "med_" ~ oid,
-                          "actions": [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"}]}
+                          "actions": [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"},
+                                      {"action": "MED_SKIP_" ~ oid, "title": "⏭️ Skip today"}]}
                          | combine(nav) }}
             # Missed: past the window-end, fires once.
             - conditions:
-                - "{{ scheduled and not given and mins_since >= nag_minutes and mins_since < nag_minutes + 5 }}"
+                - "{{ scheduled and not handled and mins_since >= nag_minutes and mins_since < nag_minutes + 5 }}"
               sequence:
                 # Critical (override Silent/DND) or normal time-sensitive, per
                 # the input. One payload: iPhones read interruption-level/sound,
@@ -96,11 +99,13 @@ action:
                           "channel": "Medication critical", "importance": "high",
                           "push": {"interruption-level": "critical",
                                    "sound": {"name": "default", "critical": 1, "volume": 1.0}},
-                          "actions": [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"}]}
+                          "actions": [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"},
+                                      {"action": "MED_SKIP_" ~ oid, "title": "⏭️ Skip today"}]}
                          if critical_missed else
                          {"tag": "med_missed_" ~ oid, "priority": "high", "ttl": 0,
                           "push": {"interruption-level": "time-sensitive"},
-                          "actions": [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"}]}) | combine(nav) }}
+                          "actions": [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"},
+                                      {"action": "MED_SKIP_" ~ oid, "title": "⏭️ Skip today"}]}) | combine(nav) }}
                 - action: "notify.{{ notify_service }}"
                   data:
                     title: "⚠️ MISSED: {{ patient }} ({{ clock }})"

@@ -40,6 +40,8 @@
               ent: "{{ repeat.item }}"
               oid: "{{ ent.split('.')[1] }}"
               given: "{{ is_state(ent, 'on') }}"
+              skipped: "{{ state_attr(ent, 'skipped_today') | default(false, true) }}"
+              handled: "{{ given or skipped }}"
               dtime: "{{ state_attr(ent, 'dose_time') }}"
               patient: "{{ state_attr(ent, 'patient') }}"
               meds: "{{ state_attr(ent, 'medications') }}"
@@ -51,9 +53,9 @@
               mins_since: "{{ (now() - today_at(dtime)).total_seconds() / 60 }}"
               clock: "{{ (as_timestamp(today_at(dtime)) | timestamp_custom('%H:%M')) if state_attr(ent, 'time_format') == '24h' else (as_timestamp(today_at(dtime)) | timestamp_custom('%I:%M %p')).lstrip('0') }}"
           - choose:
-              # Reminder: only if scheduled today, within the nag window, not given
+              # Reminder: only if scheduled today, within the nag window, not handled
               - conditions:
-                  - "{{ scheduled and not given and mins_since >= 0 and mins_since < nag_minutes and (mins_since % nag_interval) < 5 }}"
+                  - "{{ scheduled and not handled and mins_since >= 0 and mins_since < nag_minutes and (mins_since % nag_interval) < 5 }}"
                 sequence:
                   - action: "notify.{{ notify_service }}"
                     data:
@@ -61,11 +63,12 @@
                       message: "Give {{ patient }}'s medication: {{ meds }}. Has it been given?"
                       data: >-
                         {{ {"tag": "med_" ~ oid,
-                            "actions": [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"}]}
+                            "actions": [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"},
+                                        {"action": "MED_SKIP_" ~ oid, "title": "⏭️ Skip today"}]}
                            | combine(nav) }}
               # Missed: scheduled today, past the window-end, fires once
               - conditions:
-                  - "{{ scheduled and not given and mins_since >= nag_minutes and mins_since < nag_minutes + 5 }}"
+                  - "{{ scheduled and not handled and mins_since >= nag_minutes and mins_since < nag_minutes + 5 }}"
                 sequence:
                   # Critical (override Silent/DND) or normal time-sensitive, per
                   # critical_missed. One payload: iPhones read
@@ -76,11 +79,13 @@
                             "channel": "Medication critical", "importance": "high",
                             "push": {"interruption-level": "critical",
                                      "sound": {"name": "default", "critical": 1, "volume": 1.0}},
-                            "actions": [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"}]}
+                            "actions": [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"},
+                                        {"action": "MED_SKIP_" ~ oid, "title": "⏭️ Skip today"}]}
                            if critical_missed else
                            {"tag": "med_missed_" ~ oid, "priority": "high", "ttl": 0,
                             "push": {"interruption-level": "time-sensitive"},
-                            "actions": [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"}]}) | combine(nav) }}
+                            "actions": [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"},
+                                        {"action": "MED_SKIP_" ~ oid, "title": "⏭️ Skip today"}]}) | combine(nav) }}
                   - action: "notify.{{ notify_service }}"
                     data:
                       title: "⚠️ MISSED: {{ patient }} ({{ clock }})"
@@ -89,7 +94,7 @@
   mode: single
 
 - id: med_reminder_mark_given
-  alias: "Medication - Mark given from notification"
+  alias: "Medication - Mark given or skip from notification"
   trigger:
     - platform: event
       event_type: mobile_app_notification_action
@@ -97,23 +102,39 @@
     - platform: event
       event_type: medication_reminder_dose_given
       id: given
+    - platform: event
+      event_type: medication_reminder_dose_skipped
+      id: skipped
   condition:
     - >-
-      {{ trigger.id == 'given'
+      {{ trigger.id in ['given', 'skipped']
          or (trigger.event.data.action is defined
-             and trigger.event.data.action.startswith('MED_GIVEN_')) }}
+             and (trigger.event.data.action.startswith('MED_GIVEN_')
+                  or trigger.event.data.action.startswith('MED_SKIP_'))) }}
   variables:
     oid: >-
-      {{ trigger.event.data.entity_id.split('.')[1] if trigger.id == 'given'
-         else trigger.event.data.action | replace('MED_GIVEN_', '') }}
+      {{ trigger.event.data.entity_id.split('.')[1]
+           if trigger.id in ['given', 'skipped']
+         else trigger.event.data.action | replace('MED_GIVEN_', '') | replace('MED_SKIP_', '') }}
     ent: "switch.{{ oid }}"
     notify_service: "{{ state_attr(ent, 'notify_service') or 'caretakers' }}"
+    is_give_button: >-
+      {{ trigger.id == 'notif' and trigger.event.data.action is defined
+         and trigger.event.data.action.startswith('MED_GIVEN_') }}
+    is_skip_button: >-
+      {{ trigger.id == 'notif' and trigger.event.data.action is defined
+         and trigger.event.data.action.startswith('MED_SKIP_') }}
   action:
-    # Only the notification button flips the switch; the event path is a
-    # consequence of the switch turning on, so it must not re-trigger it.
-    - if: "{{ trigger.id == 'notif' }}"
+    # A button press performs the action; the event paths are a consequence of
+    # the switch changing, so they only clear the notifications.
+    - if: "{{ is_give_button }}"
       then:
         - action: switch.turn_on
+          target:
+            entity_id: "{{ ent }}"
+    - if: "{{ is_skip_button }}"
+      then:
+        - action: medication_reminder.skip_today
           target:
             entity_id: "{{ ent }}"
     - action: "notify.{{ notify_service }}"

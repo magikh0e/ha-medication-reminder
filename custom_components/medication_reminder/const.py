@@ -10,12 +10,15 @@ DOMAIN = "medication_reminder"
 EVENT_DOSE_GIVEN = f"{DOMAIN}_dose_given"
 EVENT_DOSE_UNDONE = f"{DOMAIN}_dose_undone"
 EVENT_DOSE_LOGGED = f"{DOMAIN}_dose_logged"  # one as-needed (PRN) dose taken
+# Fired when a dose is skipped for the day (not taken, supply untouched).
+EVENT_DOSE_SKIPPED = f"{DOMAIN}_dose_skipped"
 # Fired when a refill button is pressed; the matching supply restocks to full.
 EVENT_SUPPLY_REFILL = f"{DOMAIN}_supply_refill"
 
 # Services.
 SERVICE_MARK_GIVEN = "mark_given"  # mark a dose given, optionally at a set time
 SERVICE_LOG_DOSE = "log_dose"  # log an as-needed (PRN) dose, optionally at a set time
+SERVICE_SKIP_TODAY = "skip_today"  # skip a dose for the day (not taken, no decrement)
 
 CONF_PATIENT = "patient"
 CONF_PATIENT_TYPE = "patient_type"
@@ -122,6 +125,16 @@ def split_medications(meds):
     if not meds:
         return []
     return [p.strip() for p in re.split(r"[&,+]|\s+/\s+", str(meds)) if p.strip()]
+
+
+def dose_handled(state, skipped_today):
+    """A dose is handled for the day when it is given or skipped for today.
+
+    The status sensors and dashboards treat a skipped dose like a given one, as
+    done for the day: not pending, not overdue. Shared so "given or skipped" has
+    a single definition.
+    """
+    return state == "on" or bool(skipped_today)
 
 
 def partial_skip_meds(meds, schedule_type):

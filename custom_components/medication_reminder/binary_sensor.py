@@ -44,6 +44,7 @@ from .const import (
     EVENT_DOSE_LOGGED,
     PATIENT_ICONS,
     SCHEDULE_PRN,
+    dose_handled,
     dose_max_per_day,
     dose_min_interval_hours,
     dose_over_cap,
@@ -177,20 +178,31 @@ class AllDosesGivenBinarySensor(_DoseLookupMixin, BinarySensorEntity):
         doses = self._todays_doses()
         if not doses:
             return None
-        return all(s.state == "on" for s in doses)
+        # A skipped dose counts as handled for the day, like a given one.
+        return all(
+            dose_handled(s.state, s.attributes.get("skipped_today")) for s in doses
+        )
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         doses = self._todays_doses()
         total = len(doses)
         given = sum(1 for s in doses if s.state == "on")
+        skipped = [s for s in doses if s.attributes.get("skipped_today")]
+        pending = [
+            s.name
+            for s in doses
+            if not dose_handled(s.state, s.attributes.get("skipped_today"))
+        ]
         return {
             "patient": self._patient,
             "patient_type": self._patient_type,
             "total": total,
             "given": given,
-            "remaining": total - given,
-            "pending": [s.name for s in doses if s.state != "on"],
+            "skipped": len(skipped),
+            "skipped_doses": [s.name for s in skipped],
+            "remaining": len(pending),
+            "pending": pending,
         }
 
     async def async_added_to_hass(self) -> None:
@@ -232,8 +244,8 @@ class NeedsAttentionBinarySensor(_DoseLookupMixin, BinarySensorEntity):
         day = self._med_day()
         overdue: list = []
         for s in self._todays_doses():
-            if s.state == "on":
-                continue  # given -> fine
+            if dose_handled(s.state, s.attributes.get("skipped_today")):
+                continue  # given or skipped for today -> fine
             dose_time = s.attributes.get("dose_time")
             nag = s.attributes.get("nag_minutes", DEFAULT_NAG_MINUTES)
             try:
