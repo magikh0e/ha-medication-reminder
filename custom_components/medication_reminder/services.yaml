@@ -17,6 +17,18 @@ mark_given:
       example: "2026-06-09 08:00:00"
       selector:
         datetime:
+    skipped:
+      name: Skipped medications
+      description: >-
+        Names of medications in this dose that were NOT taken (a partial dose).
+        The dose is still marked given, but the supply for each skipped med is
+        left alone. Match the names as written in the dose. Applies only when the
+        dose is first marked given, not on a later time-correction.
+      required: false
+      example: '["Vitamin D"]'
+      selector:
+        text:
+          multiple: true
 
 log_dose:
   name: Log dose (as needed)

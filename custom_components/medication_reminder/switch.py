@@ -55,6 +55,7 @@ from .const import (
     SCHEDULE_WEEKDAYS,
     SERVICE_MARK_GIVEN,
     is_due,
+    normalize_skipped,
 )
 
 
@@ -129,7 +130,12 @@ async def async_setup_entry(
     platform = entity_platform.async_get_current_platform()
     platform.async_register_entity_service(
         SERVICE_MARK_GIVEN,
-        {vol.Optional("given_at"): cv.datetime},
+        {
+            vol.Optional("given_at"): cv.datetime,
+            # Meds in this dose that were NOT taken (partial dose). Their supply
+            # is not decremented. Accepts a list or a single/separated string.
+            vol.Optional("skipped"): vol.Any(cv.string, [cv.string]),
+        },
         "async_mark_given_at",
     )
 
@@ -199,6 +205,10 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         self._month_days = dose.get(CONF_MONTH_DAYS) or list(DEFAULT_MONTH_DAYS)
         # When the dose was last marked given (ISO), persisted across restarts.
         self._given_at: str | None = None
+        # Meds in this dose skipped on today's mark (partial dose). Empty unless
+        # the dose was marked given with a `skipped` list; cleared on un-mark and
+        # the daily reset.
+        self._skipped: list[str] = []
         # Name: as-needed (PRN) doses have no meaningful time, so name them by
         # the medication; scheduled doses lead with their display time.
         if self._schedule_type == SCHEDULE_PRN:
@@ -261,6 +271,7 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
             "cycle_off": self._cycle_off,
             "month_days": self._month_days,
             "scheduled_today": self._scheduled_today(),
+            "skipped": self._skipped,
             "notify_service": self._notify,
             "nag_minutes": self._nag_minutes,
             "nag_interval": self._nag_interval,
@@ -288,6 +299,11 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         if self._attr_unique_id in self._given_state:
             self._given_at = self._given_state[self._attr_unique_id]
             self._attr_is_on = self._given_at is not None
+        # Restore today's skipped-meds list while the dose is still marked given,
+        # so a reload/restart does not lose which meds were skipped (and a later
+        # re-toggle would not then decrement a skipped med's supply).
+        if self._attr_is_on and last_state is not None:
+            self._skipped = normalize_skipped(last_state.attributes.get("skipped"))
         if not self._attr_is_on:
             self._given_at = None
         elif not self._given_at and last_state is not None:
@@ -305,7 +321,9 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         """Mark this dose given now ("Take Now")."""
         await self.async_mark_given_at()
 
-    async def async_mark_given_at(self, given_at: datetime | None = None) -> None:
+    async def async_mark_given_at(
+        self, given_at: datetime | None = None, skipped: Any = None
+    ) -> None:
         """Mark this dose given, optionally at a specified time.
 
         Backs the ``mark_given`` service. With no time it behaves like the
@@ -313,6 +331,12 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         taken at a different time than when you are tapping. Correcting the time
         on a dose already marked given just updates the timestamp; it does not
         re-fire the given event, so it will not re-warn or re-decrement supply.
+
+        ``skipped`` names meds in this dose that were not actually taken (a
+        partial dose); their supply is left alone. It is only applied on a fresh
+        mark (off -> on), so it must be given when the dose is first marked, not
+        on a later time-correction, and it is set before the state write so the
+        supply numbers see it as they decide whether to decrement.
         """
         was_on = self._attr_is_on
         self._attr_is_on = True
@@ -320,6 +344,8 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
             self._given_at = dt_util.as_local(given_at).isoformat()
         elif not was_on:
             self._given_at = dt_util.now().isoformat()
+        if not was_on:
+            self._skipped = normalize_skipped(skipped)
         self._given_state[self._attr_unique_id] = self._given_at
         await self._save_given()
         self.async_write_ha_state()
@@ -350,6 +376,7 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
                 "notify_service": self._notify,
                 "scheduled_today": is_due(self._schedule_attrs(), when.date()),
                 "minutes_early": minutes_early,
+                "skipped": self._skipped,
             },
         )
 
@@ -359,6 +386,7 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         was_on = self._attr_is_on
         self._attr_is_on = False
         self._given_at = None
+        self._skipped = []
         self._given_state[self._attr_unique_id] = None
         await self._save_given()
         self.async_write_ha_state()
@@ -378,5 +406,6 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         saved once by the reset loop, not per dose."""
         self._attr_is_on = False
         self._given_at = None
+        self._skipped = []
         self._given_state[self._attr_unique_id] = None
         self.async_write_ha_state()

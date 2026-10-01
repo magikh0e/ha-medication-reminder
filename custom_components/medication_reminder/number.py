@@ -60,6 +60,7 @@ from .const import (
     dose_consumption,
     doses_per_week,
     is_due,
+    med_skipped,
     meds_contains,
     next_refills_remaining,
     restore_refills,
@@ -322,6 +323,10 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
             return
         meds = new.attributes.get("medications")
         if meds is None or not meds_contains(meds, self._med):
+            return
+        # Partial dose: this med was marked skipped on this dose today, so the
+        # dose is "given" but this supply should not come down.
+        if med_skipped(new.attributes.get("skipped"), self._med):
             return
         if not is_due(new.attributes, dt_util.now().date()):
             return

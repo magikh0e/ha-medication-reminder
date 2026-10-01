@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.35.0] - 2026-09-30
+### Added
+- Partial dose marking. The `medication_reminder.mark_given` service takes a new optional `skipped` list naming meds in a grouped dose that were not actually taken. The dose is still marked given, but the supply for each skipped med is left alone, so you no longer have to split a sometimes-missing med into its own dose to keep its count accurate. The skipped meds show as a `skipped` attribute on the dose switch and in the `medication_reminder_dose_given` event (visible in history), and clear on un-mark and the daily reset. Skips are applied when the dose is first marked given, not on a later time-correction. (Requested by a community member on the Home Assistant forum, tracked in #30.)
+
 ## [0.34.1] - 2026-09-29
 ### Changed
 - Documentation: aligned the README with the current feature set after cross-checking it against the actual entities, attributes, config fields, events, and services. Added Russian to the Highlights and Acknowledgements language lists; noted that `supplies_low` also trips when a tracked prescription runs out of refills; added day-of-month to the "no false alarms on off-days" list and Patient type to the Settings list; completed the switch attribute contract (`dose_units`, `nag_minutes`, `nag_interval`, `time_format`) and the dose-guard list (`last_taken`); and corrected the dose entity-id example to `switch.<patient>_<time>_<meds>`. No functional change.

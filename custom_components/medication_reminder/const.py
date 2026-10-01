@@ -130,6 +130,29 @@ def meds_contains(meds, med_name):
     return any(part.lower() == target for part in split_medications(meds))
 
 
+def normalize_skipped(value):
+    """Clean a "skipped medications" input into a list of medication names.
+
+    Accepts a list of names or a single string (split on the same separators as
+    a dose's meds). Blank entries are dropped. Used by partial dose marking,
+    where a dose is marked given but one or more of its meds were not taken.
+    """
+    if not value:
+        return []
+    items = split_medications(value) if isinstance(value, str) else value
+    result = []
+    for item in items:
+        name = str(item).strip()
+        if name:
+            result.append(name)
+    return result
+
+
+def med_skipped(skipped, med_name):
+    """True if `med_name` is in a dose's skipped-medications list."""
+    return any(meds_contains(entry, med_name) for entry in normalize_skipped(skipped))
+
+
 def _parse_iso_date(value):
     """Parse an ISO 'YYYY-MM-DD' string to a date, or None if unparseable."""
     if not value:
