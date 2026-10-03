@@ -121,8 +121,9 @@ escalation, refill reminders, early-dose warning, and un-mark alert are driven
 by automations. Pick one of two ways to add them:
 
 **Blueprints (recommended), one-click import and easy updates.** In **Settings,
-Automations & Scenes, Blueprints, Import Blueprint**, paste each URL you want,
-then create an automation from it. To update later, re-import the blueprint (its
+Automations & Scenes, Blueprints, Import Blueprint**, paste each **URL** you want
+(the link to the file, **not** the file's contents), then create an automation
+from it. To update later, re-import the blueprint (its
 **three-dot menu, Re-import**) and the automations created from it pick up the
 change automatically, with their inputs preserved. A HACS integration update
 does **not** need a re-import; only re-import when a release note says a
@@ -142,6 +143,18 @@ blueprint itself changed.
 **Or copy the YAML.** Paste the automations from
 [`companion-automations.yaml`](companion-automations.yaml) into your
 `automations.yaml` and reload; re-paste to update.
+
+> **Which file goes where (important).** The blueprint files listed above
+> (`medication_reminders.yaml`, `mark_given.yaml`, `early_dose.yaml`,
+> `low_supply.yaml`, `unmark_alert.yaml`) use Home Assistant's `!input` tag and
+> **only work when imported by URL** (the blueprint step above). If you paste
+> their contents into `automations.yaml`, `configuration.yaml`, or a YAML editor,
+> you get a parse error like **`unknown scalar tag !`** / "could not determine a
+> constructor for the tag !input", because only the blueprint importer resolves
+> `!input`. The paste-this-YAML route uses **only**
+> [`companion-automations.yaml`](companion-automations.yaml), which has no
+> `!input` and drops straight into `automations.yaml`. Pick one route, blueprints
+> **or** the companion YAML, not both, so reminders are not duplicated.
 
 Each patient's reminders go to the **notify target you chose in the UI** (read
 from the switch's `notify_service` attribute). The `default_notify` value in the
