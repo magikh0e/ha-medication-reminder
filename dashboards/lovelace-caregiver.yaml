@@ -128,6 +128,27 @@ views:
                 {% endfor %}
             sort:
               method: name
+          # 3b2. Adjustable-quantity doses (opt-in): set the amount about to be
+          # taken, then Mark given uses it. Only for doses with "Ask for amount
+          # when marking" turned on; hidden otherwise.
+          - type: custom:auto-entities
+            show_empty: false
+            card:
+              type: entities
+              title: Dose amounts
+              card_mod:
+                style: |
+                  ha-card {
+                    --state-icon-color: #90caf9;
+                    --paper-item-icon-color: #90caf9;
+                  }
+            filter:
+              template: >
+                {% for n in states.number if n.attributes.dose_time is defined %}
+                {{ n.entity_id }}
+                {% endfor %}
+            sort:
+              method: name
           # 3c. Partial dose (opt-in): "mark given, skip <med>" per med, for doses
           # that group 2+ meds. Shows only when Reminder settings has the skip-buttons
           # option on and the dose is due and not yet given; empty/hidden otherwise.

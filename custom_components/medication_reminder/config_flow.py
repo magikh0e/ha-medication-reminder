@@ -18,6 +18,7 @@ from homeassistant.util import dt as dt_util, slugify
 from .const import (
     CONF_ANCHOR_DATE,
     CONF_CYCLE_OFF,
+    CONF_ASK_UNITS,
     CONF_CYCLE_ON,
     CONF_DAYS,
     CONF_DOSES,
@@ -53,6 +54,7 @@ from .const import (
     CONF_SUPPLY_UNITS,
     CONF_TIME,
     CONF_TIME_FORMAT,
+    DEFAULT_ASK_UNITS,
     DEFAULT_CYCLE_OFF,
     DEFAULT_CYCLE_ON,
     DEFAULT_DAYS,
@@ -423,6 +425,7 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
             CONF_MEDS: user_input[CONF_MEDS],
             CONF_SCHEDULE_TYPE: stype,
             CONF_DOSE_UNITS: float(user_input.get(CONF_DOSE_UNITS, 0) or 0),
+            CONF_ASK_UNITS: bool(user_input.get(CONF_ASK_UNITS, False)),
         }
         if stype == SCHEDULE_INTERVAL:
             dose[CONF_INTERVAL_DAYS] = int(
@@ -521,6 +524,10 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
                     CONF_DOSE_UNITS,
                     default=float(_val(CONF_DOSE_UNITS, DEFAULT_DOSE_UNITS)),
                 ): _amount_selector(),
+                vol.Optional(
+                    CONF_ASK_UNITS,
+                    default=bool(_val(CONF_ASK_UNITS, DEFAULT_ASK_UNITS)),
+                ): selector.BooleanSelector(),
             }
         )
 
@@ -619,6 +626,7 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
         eid = self._entry.entry_id
         targets = [
             ("switch", f"{eid}_{slug}"),
+            ("number", f"{eid}_amount_{slug}"),
             ("button", f"{eid}_logdose_{slug}"),
             ("sensor", f"{eid}_lasttaken_{slug}"),
             ("sensor", f"{eid}_dosestoday_{slug}"),

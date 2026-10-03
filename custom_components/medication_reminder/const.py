@@ -54,6 +54,11 @@ DEFAULT_MAX_PER_DAY = 0
 # medication's supply. 0 = use the supply's default "units consumed per dose".
 CONF_DOSE_UNITS = "dose_units"
 DEFAULT_DOSE_UNITS = 0.0
+# Opt-in: ask for the amount actually taken when marking this dose given (for a
+# med whose dose varies, e.g. adjusted from a reading). Adds a per-dose amount
+# number the mark honours. Off = always decrement the configured amount.
+CONF_ASK_UNITS = "ask_units"
+DEFAULT_ASK_UNITS = False
 
 # Supply / refill tracking (per medication).
 CONF_SUPPLIES = "supplies"
@@ -384,6 +389,22 @@ def dose_consumption(dose_units, supply_per_dose):
         return max(float(supply_per_dose or 0), 0.0)
     except (TypeError, ValueError):
         return 0.0
+
+
+def resolve_mark_amount(marked_units, dose_units, supply_per_dose):
+    """Units to decrement for a mark: an explicit per-mark amount if one was
+    given (adjustable-quantity doses), else the dose/supply default.
+
+    ``marked_units`` is the amount chosen at mark time; when it is None the dose
+    falls back to ``dose_consumption`` (its own amount, or the supply default).
+    A negative amount is clamped to zero.
+    """
+    if marked_units is not None:
+        try:
+            return max(0.0, float(marked_units))
+        except (TypeError, ValueError):
+            pass
+    return dose_consumption(dose_units, supply_per_dose)
 
 
 def apply_consumption(value, amount):

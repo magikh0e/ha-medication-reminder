@@ -80,13 +80,15 @@
           "anchor_date": "Start date (for the interval or cycle option)",
           "min_interval_hours": "Minimum hours between doses (as-needed only; 0 = no limit)",
           "max_per_day": "Max doses per day (as-needed only; 0 = no limit)",
-          "dose_units": "Units consumed (this dose)"
+          "dose_units": "Units consumed (this dose)",
+          "ask_units": "Ask for amount when marking"
         },
         "data_description": {
           "meds": "Separate multiple medications with &, +, or a comma. A slash only splits with spaces around it, so a name like 'Carbimazol 5mg (1/2)' stays whole.",
           "min_interval_hours": "For an as-needed medication, warn (never block) when it is logged again sooner than this many hours, e.g. a pain med no less than 4 hours apart.",
           "max_per_day": "For an as-needed medication, warn once this many doses have been logged today.",
-          "dose_units": "Overrides the medication's default units per dose, for this dose only. Leave 0 to use the default; use decimals like 0.5 for half a pill."
+          "dose_units": "Overrides the medication's default units per dose, for this dose only. Leave 0 to use the default; use decimals like 0.5 for half a pill.",
+          "ask_units": "Turn on for a medication whose dose varies (e.g. adjusted from a reading). It adds an amount field you set before marking the dose given, and the supply decrements by that amount instead of the configured one. Off = always use the configured amount."
         }
       },
       "edit_dose": {
@@ -109,13 +111,15 @@
           "anchor_date": "Start date (for the interval or cycle option)",
           "min_interval_hours": "Minimum hours between doses (as-needed only; 0 = no limit)",
           "max_per_day": "Max doses per day (as-needed only; 0 = no limit)",
-          "dose_units": "Units consumed (this dose)"
+          "dose_units": "Units consumed (this dose)",
+          "ask_units": "Ask for amount when marking"
         },
         "data_description": {
           "meds": "Separate multiple medications with &, +, or a comma. A slash only splits with spaces around it, so a name like 'Carbimazol 5mg (1/2)' stays whole.",
           "min_interval_hours": "For an as-needed medication, warn (never block) when it is logged again sooner than this many hours, e.g. a pain med no less than 4 hours apart.",
           "max_per_day": "For an as-needed medication, warn once this many doses have been logged today.",
-          "dose_units": "Overrides the medication's default units per dose, for this dose only. Leave 0 to use the default; use decimals like 0.5 for half a pill."
+          "dose_units": "Overrides the medication's default units per dose, for this dose only. Leave 0 to use the default; use decimals like 0.5 for half a pill.",
+          "ask_units": "Turn on for a medication whose dose varies (e.g. adjusted from a reading). It adds an amount field you set before marking the dose given, and the supply decrements by that amount instead of the configured one. Off = always use the configured amount."
         }
       },
       "remove_dose": {

@@ -12,7 +12,11 @@ import voluptuous as vol
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import config_validation as cv, entity_platform
+from homeassistant.helpers import (
+    config_validation as cv,
+    entity_platform,
+    entity_registry as er,
+)
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.restore_state import ExtraStoredData, RestoreEntity
@@ -21,6 +25,7 @@ from homeassistant.util import slugify
 
 from .const import (
     CONF_ANCHOR_DATE,
+    CONF_ASK_UNITS,
     CONF_CYCLE_OFF,
     CONF_CYCLE_ON,
     CONF_DAYS,
@@ -140,6 +145,9 @@ async def async_setup_entry(
             # Meds in this dose that were NOT taken (partial dose). Their supply
             # is not decremented. Accepts a list or a single/separated string.
             vol.Optional("skipped"): vol.Any(cv.string, [cv.string]),
+            # The amount actually taken, for a dose whose quantity varies. The
+            # matching supply decrements by this instead of the configured amount.
+            vol.Optional("units"): vol.Coerce(float),
         },
         "async_mark_given_at",
     )
@@ -213,6 +221,10 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         self._meds = dose[CONF_MEDS]
         # Optional per-dose consumption override (0 = use the supply default).
         self._dose_units = float(dose.get(CONF_DOSE_UNITS) or 0)
+        # Opt-in: honour an amount chosen at mark time (for a varying-dose med).
+        self._ask_units = bool(dose.get(CONF_ASK_UNITS, False))
+        # The amount used on today's mark (None = the configured amount).
+        self._marked_units: float | None = None
         # Days of the week this dose applies to (default: every day).
         self._days = dose.get(CONF_DAYS) or list(DEFAULT_DAYS)
         # Schedule type: weekdays (default) or every-N-days from an anchor date.
@@ -244,6 +256,11 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
             self._attr_name = f"{self._format_time(self._time)} ({self._meds})"
         self._attr_unique_id = (
             f"{entry.entry_id}_{slugify(self._time + '_' + self._meds)}"
+        )
+        # The sibling amount-input number (created only for ask_units doses), read
+        # at mark time so the normal mark-given honours the chosen amount.
+        self._amount_unique_id = (
+            f"{entry.entry_id}_amount_{slugify(self._time + '_' + self._meds)}"
         )
         self._attr_is_on = False
         self._attr_device_info = {
@@ -281,6 +298,28 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         """Whether this dose is due today, honouring its schedule type."""
         return is_due(self._schedule_attrs(), dt_util.now().date())
 
+    def _read_amount(self) -> float | None:
+        """The current value of this dose's amount-input number, if it has one.
+
+        Returns None when the dose is not an adjustable-quantity one or the
+        number is unavailable, so the mark falls back to the configured amount.
+        """
+        if not self._ask_units:
+            return None
+        registry = er.async_get(self.hass)
+        amount_eid = registry.async_get_entity_id(
+            "number", DOMAIN, self._amount_unique_id
+        )
+        if not amount_eid:
+            return None
+        state = self.hass.states.get(amount_eid)
+        if state is None:
+            return None
+        try:
+            return max(0.0, float(state.state))
+        except (TypeError, ValueError):
+            return None
+
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Metadata the companion automations read to build reminders."""
@@ -301,6 +340,8 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
             "skipped": self._skipped,
             "skipped_today": self._skipped_today,
             "snooze_until": self._snooze_until,
+            "ask_units": self._ask_units,
+            "marked_units": self._marked_units,
             "notify_service": self._notify,
             "nag_minutes": self._nag_minutes,
             "nag_interval": self._nag_interval,
@@ -333,6 +374,14 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         # re-toggle would not then decrement a skipped med's supply).
         if self._attr_is_on and last_state is not None:
             self._skipped = normalize_skipped(last_state.attributes.get("skipped"))
+            # Restore the amount this mark used, so the display and a later
+            # un-mark stay consistent (the supply was already decremented by it).
+            restored_units = last_state.attributes.get("marked_units")
+            if restored_units is not None:
+                try:
+                    self._marked_units = float(restored_units)
+                except (TypeError, ValueError):
+                    self._marked_units = None
         # Restore a "skipped today" across a reload/restart. Only meaningful while
         # the dose is not given; marking given clears it and the daily reset does
         # too, so a restored skip never outlives its day.
@@ -360,7 +409,10 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         await self.async_mark_given_at()
 
     async def async_mark_given_at(
-        self, given_at: datetime | None = None, skipped: Any = None
+        self,
+        given_at: datetime | None = None,
+        skipped: Any = None,
+        units: float | None = None,
     ) -> None:
         """Mark this dose given, optionally at a specified time.
 
@@ -387,6 +439,16 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
             self._given_at = dt_util.now().isoformat()
         if not was_on:
             self._skipped = normalize_skipped(skipped)
+            # The amount this mark used: an explicit units value wins, else the
+            # dose's amount-input number (for an adjustable-quantity dose), else
+            # None, meaning the configured per-dose/supply amount.
+            if units is not None:
+                try:
+                    self._marked_units = max(0.0, float(units))
+                except (TypeError, ValueError):
+                    self._marked_units = None
+            else:
+                self._marked_units = self._read_amount()
         self._given_state[self._attr_unique_id] = self._given_at
         await self._save_given()
         self.async_write_ha_state()
@@ -418,6 +480,7 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
                 "scheduled_today": is_due(self._schedule_attrs(), when.date()),
                 "minutes_early": minutes_early,
                 "skipped": self._skipped,
+                "units": self._marked_units,
             },
         )
 
@@ -437,6 +500,7 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         self._skipped = []
         self._skipped_today = True
         self._snooze_until = None
+        self._marked_units = None
         self._given_state[self._attr_unique_id] = None
         await self._save_given()
         self.async_write_ha_state()
@@ -495,6 +559,7 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         self._skipped = []
         self._skipped_today = False
         self._snooze_until = None
+        self._marked_units = None
         self._given_state[self._attr_unique_id] = None
         await self._save_given()
         self.async_write_ha_state()
@@ -517,5 +582,6 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         self._skipped = []
         self._skipped_today = False
         self._snooze_until = None
+        self._marked_units = None
         self._given_state[self._attr_unique_id] = None
         self.async_write_ha_state()

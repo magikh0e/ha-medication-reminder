@@ -35,7 +35,12 @@ from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import slugify
 
 from .const import (
+    CONF_ASK_UNITS,
+    CONF_DOSES,
+    CONF_DOSE_UNITS,
+    CONF_MEDS,
     CONF_PATIENT,
+    CONF_SCHEDULE_TYPE,
     CONF_SUPPLIES,
     CONF_SUPPLY_COST,
     CONF_SUPPLY_MED,
@@ -45,6 +50,7 @@ from .const import (
     CONF_SUPPLY_REFILL_TO,
     CONF_SUPPLY_THRESHOLD,
     CONF_SUPPLY_UNITS,
+    CONF_TIME,
     DEFAULT_SUPPLY_COST,
     DEFAULT_SUPPLY_PER_DOSE,
     DEFAULT_SUPPLY_REFILLS,
@@ -56,6 +62,7 @@ from .const import (
     EVENT_DOSE_LOGGED,
     EVENT_DOSE_UNDONE,
     EVENT_SUPPLY_REFILL,
+    SCHEDULE_PRN,
     apply_consumption,
     dose_consumption,
     doses_per_week,
@@ -63,6 +70,7 @@ from .const import (
     med_skipped,
     meds_contains,
     next_refills_remaining,
+    resolve_mark_amount,
     restore_refills,
     supply_cost_breakdown,
 )
@@ -73,12 +81,22 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Create a supply number per configured medication."""
+    """Create a supply number per medication, plus an amount number per
+    adjustable-quantity dose."""
     patient: str = entry.data[CONF_PATIENT]
     supplies: list[dict[str, Any]] = entry.options.get(CONF_SUPPLIES, [])
-    async_add_entities(
+    entities: list[NumberEntity] = [
         MedicationSupplyNumber(entry, patient, supply) for supply in supplies
-    )
+    ]
+    # Amount-input number for each scheduled dose that opted into "ask for amount
+    # when marking"; the mark reads it to decrement by the amount actually taken.
+    for dose in entry.options.get(CONF_DOSES, []):
+        if not dose.get(CONF_ASK_UNITS):
+            continue
+        if (dose.get(CONF_SCHEDULE_TYPE) or "") == SCHEDULE_PRN:
+            continue
+        entities.append(MedicationDoseAmountNumber(entry, patient, dose))
+    async_add_entities(entities)
 
 
 class MedicationSupplyNumber(NumberEntity, RestoreEntity):
@@ -333,7 +351,13 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
         date_str = dt_util.now().date().isoformat()
         if self._consumed.get(entity_id) == date_str:
             return  # already counted this dose today
-        amount = dose_consumption(new.attributes.get("dose_units"), self._per_dose)
+        # Honour an amount chosen at mark time (adjustable-quantity dose); else
+        # fall back to the dose's own amount or the supply default.
+        amount = resolve_mark_amount(
+            new.attributes.get("marked_units"),
+            new.attributes.get("dose_units"),
+            self._per_dose,
+        )
         self._value, removed = apply_consumption(self._value, amount)
         self._consumed[entity_id] = date_str
         # Record what actually came off (clamped at 0), so an un-mark gives back
@@ -348,4 +372,63 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
         # so a later un-mark does not add a dose back on top of the new value.
         self._consumed.clear()
         self._consumed_amount.clear()
+        self.async_write_ha_state()
+
+
+class MedicationDoseAmountNumber(RestoreEntity, NumberEntity):
+    """The amount to log when marking an adjustable-quantity dose given.
+
+    A settable input: set it to what you are about to take (e.g. 0.5 of a pill),
+    then mark the dose given by any means, and the matching supply decrements by
+    this instead of the dose's configured amount. Created only for doses with
+    "Ask for amount when marking" turned on; remembers its value across restarts.
+    """
+
+    _attr_should_poll = False
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:numeric"
+    _attr_native_min_value = 0
+    _attr_native_max_value = 99
+    _attr_native_step = 0.25
+    _attr_mode = NumberMode.BOX
+
+    def __init__(self, entry: ConfigEntry, patient: str, dose: dict[str, Any]) -> None:
+        self._patient = patient
+        self._time = str(dose[CONF_TIME])[:5]
+        self._meds = str(dose[CONF_MEDS])
+        # Start at the dose's configured amount if it has one, else one unit.
+        self._value = float(dose.get(CONF_DOSE_UNITS) or 0) or 1.0
+        self._attr_name = f"{self._meds} amount ({self._time})"
+        self._attr_unique_id = (
+            f"{entry.entry_id}_amount_{slugify(self._time + '_' + self._meds)}"
+        )
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, entry.entry_id)},
+            "name": patient,
+            "manufacturer": "Medication Reminder",
+        }
+
+    @property
+    def native_value(self) -> float:
+        return self._value
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {
+            "patient": self._patient,
+            "dose_time": self._time,
+            "medications": self._meds,
+        }
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        last = await self.async_get_last_state()
+        if last is not None:
+            try:
+                self._value = float(last.state)
+            except (ValueError, TypeError):
+                pass
+
+    async def async_set_native_value(self, value: float) -> None:
+        self._value = max(0.0, float(value))
         self.async_write_ha_state()
