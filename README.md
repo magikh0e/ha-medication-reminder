@@ -44,7 +44,7 @@ Questions, setup help, or want to show off your setup? Come to [Discussions](htt
 - **Snooze a reminder.** Cannot take it this second? A "Remind me later" button on the reminder (and the `snooze` service) defers it by a configurable delay (default 30 min), then reminds again once if the dose is still not handled. The missed-dose escalation is deferred, not cancelled, so a snoozed-then-forgotten dose still escalates.
 - **Adjustable amount at mark time.** For a med whose dose varies (e.g. adjusted from a blood reading), turn on "Ask for amount when marking" on the dose. An amount input appears; set what you are about to take, mark given, and the supply decrements by that instead of the fixed amount. Off by default, so fixed-dose meds are unaffected.
 - **Glanceable, fail-safe status.** A per-patient red/green "needs attention" sensor that trips on elapsed time alone and errs toward "problem"; wire it to a panel, light, or siren.
-- **Actionable reminders.** Nagging, missed-dose escalation, and a "Mark given" button from the notification, routed to each patient's own notify target. Tapping the notification body (not the button) can open your meds dashboard.
+- **Actionable reminders.** Nagging, missed-dose escalation, and a "Mark given" button from the notification, routed to each patient's own notify target. Tapping the notification body (not the button) can open your meds dashboard. When several doses are due for the same patient at the same time, the reminders are grouped into one notification (optional) so you are not pinged several times at once.
 - **Supply & refill tracking.** Per-medication counts that decrement as doses are given, with doses-left, a run-out estimate, a low-stock red flag at your reorder threshold, and a refill reminder. Optionally track **refills remaining** on the prescription too: each refill counts one down, and the supply flags when the prescription is out and needs renewing. Per-dose amounts can be fractional (half a pill) and overridden per dose, and an optional per-unit cost surfaces value on hand, cost per dose, and a monthly estimate.
 - **Per-medication detail.** Optional strength, brand, full name, "prescribed for", and a dosage summary per medication, plus a `medications` sensor that lists everything the patient takes for a ready-to-share "current medications" view to hand a vet or doctor.
 - **Next-dose sensor and calendar.** A `next_dose` timestamp and a read-only medication calendar per patient, handy for "remind me before" automations and seeing long cycles laid out.
@@ -128,7 +128,7 @@ change automatically, with their inputs preserved. A HACS integration update
 does **not** need a re-import; only re-import when a release note says a
 blueprint itself changed.
 
-- Reminders and missed-dose escalation (core):
+- Reminders and missed-dose escalation (core, with the group-reminders-by-time toggle):
   `https://github.com/magikh0e/ha-medication-reminder/blob/main/blueprints/automation/medication_reminder/medication_reminders.yaml`
 - Notification actions (core, pairs with the above, handles the "Mark given", "Skip today", and "Remind me later" buttons; has the snooze-delay input):
   `https://github.com/magikh0e/ha-medication-reminder/blob/main/blueprints/automation/medication_reminder/mark_given.yaml`
@@ -156,8 +156,12 @@ notify:
 ```
 
 They send a reminder when a dose is due and not given, nag every 15 minutes for
-45 minutes, then escalate once as a time-sensitive "missed" alert. Tapping
-**Mark given** turns the dose's switch on and clears the notification. The
+45 minutes, then escalate once as a time-sensitive "missed" alert. When several
+doses are due for the same patient at the same time, the reminders are **grouped
+into one notification** listing them, which you tap to open the dashboard and act
+on each; the **Group reminders at the same time** input (on by default) toggles
+this, and single-dose reminders and the missed alert are unchanged either way.
+Tapping **Mark given** turns the dose's switch on and clears the notification. The
 notification also clears if you mark the dose given another way (from the
 dashboard, an NFC tag, or the `mark_given` service), so a lingering reminder does
 not sit on your phone after you have already taken the dose. On
@@ -681,6 +685,7 @@ territory. A future version may move reminders into the integration itself.
 - Skip a dose for the day (0.37.0): a `skip_today` service and a "Skip today" notification button clear a dose for the day without taking it or deducting supply, a third state that `needs_attention` and `all_doses_given` treat as handled. Distinct from the partial-dose med skip. (Requested by a community member on the forum, tracked in #33.)
 - Snooze a reminder (0.38.0): a "Remind me later" notification button and a `snooze` service defer a dose's reminder by a configurable delay (default 30 min), pushing the nag window and the missed-dose escalation out rather than cancelling them. (Requested by a community member on the forum, tracked in #32.)
 - Adjustable quantity at mark time (0.39.0): a per-dose "Ask for amount when marking" opt-in and a `units` option on `mark_given`, for a med whose dose varies, so the supply decrements by the amount actually taken. Off by default. (Requested by GitHub user ph-dekeyser, tracked in #35.)
+- Grouped reminders by time (0.40.0): when several doses are due for one patient at the same time, the reminder blueprint sends one combined notification (tap to open the dashboard) instead of one per dose. On by default, toggleable; single-dose reminders and the missed alert are unchanged. (Requested by GitHub user ph-dekeyser, tracked in #36.)
 
 ## Acknowledgements
 

@@ -67,6 +67,10 @@ variables:
             | replace('MED_GIVEN_', '') | replace('MED_SKIP_', '') | replace('MED_SNOOZE_', '') }}
   ent: "switch.{{ oid }}"
   notify_service: "{{ state_attr(ent, 'notify_service') or default_notify }}"
+  # The grouped-reminder tag for this dose's (patient, time) slot, so a grouped
+  # notification clears too when one of its doses is handled.
+  gtag: >-
+    {{ ('med_grp_' ~ (state_attr(ent, 'patient') or '') ~ '_' ~ (state_attr(ent, 'dose_time') or '')) | replace(' ', '_') | replace(':', '') }}
   is_give_button: >-
     {{ trigger.id == 'notif' and trigger.event.data.action is defined
        and trigger.event.data.action.startswith('MED_GIVEN_') }}
@@ -106,4 +110,10 @@ action:
       message: "clear_notification"
       data:
         tag: "med_missed_{{ oid }}"
+  # Clear the grouped reminder for this dose's slot too (a no-op if there is none).
+  - action: "notify.{{ notify_service }}"
+    data:
+      message: "clear_notification"
+      data:
+        tag: "{{ gtag }}"
 mode: parallel

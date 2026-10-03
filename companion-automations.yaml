@@ -26,9 +26,14 @@
     # Set to a Lovelace path (e.g. /lovelace-meds/0) to open that dashboard when
     # the notification body is tapped. Leave "" to open the app default.
     dashboard_path: ""
+    # When several doses are due for the same patient at the same time, send one
+    # combined reminder (tap to open the dashboard) instead of one per dose. Set
+    # to false for one notification per dose with its action buttons.
+    group_reminders: true
     nav: >-
       {{ {"clickAction": dashboard_path, "url": dashboard_path} if dashboard_path else {} }}
     today: "{{ ['mon','tue','wed','thu','fri','sat','sun'][now().weekday()] }}"
+    week: "{{ ['mon','tue','wed','thu','fri','sat','sun'] }}"
   action:
     - repeat:
         for_each: >
@@ -56,10 +61,38 @@
               ref_ts: "{{ [as_timestamp(today_at(dtime)), (as_timestamp(snooze_until) if snooze_until else 0)] | max }}"
               mins_since: "{{ (as_timestamp(now()) - ref_ts) / 60 }}"
               clock: "{{ (as_timestamp(today_at(dtime)) | timestamp_custom('%H:%M')) if state_attr(ent, 'time_format') == '24h' else (as_timestamp(today_at(dtime)) | timestamp_custom('%I:%M %p')).lstrip('0') }}"
+              reminder_due: "{{ scheduled and not handled and mins_since >= 0 and mins_since < nag_minutes and (mins_since % nag_interval) < 5 }}"
+              missed_due: "{{ scheduled and not handled and mins_since >= nag_minutes and mins_since < nag_minutes + 5 }}"
+              # Oids of doses in the same (patient, time) slot reminder-due now,
+              # each judged by its own state and snooze. Derived live (no
+              # serialized data), so any med/patient name is safe.
+              slot_reminder: >
+                {% set ns = namespace(l=[]) %}
+                {% for t in states.switch if t.attributes.medications is defined
+                     and t.attributes.patient == patient
+                     and t.attributes.dose_time == dtime %}
+                {% set ta = t.attributes %}
+                {% set th = (t.state == 'on') or (ta.skipped_today | default(false, true)) %}
+                {% set tsch = (today in (ta.days or week)) if ta.scheduled_today is none else ta.scheduled_today %}
+                {% set tsu = ta.snooze_until %}
+                {% set tref = [as_timestamp(today_at(dtime)), (as_timestamp(tsu) if tsu else 0)] | max %}
+                {% set tmins = (as_timestamp(now()) - tref) / 60 %}
+                {% set tnagm = ta.nag_minutes | int(45) %}
+                {% set tnagi = ta.nag_interval | int(15) %}
+                {% if tsch and not th and tmins >= 0 and tmins < tnagm and (tmins % tnagi) < 5 %}
+                {% set ns.l = ns.l + [t.entity_id.split('.')[1]] %}
+                {% endif %}
+                {% endfor %}
+                {{ ns.l | sort }}
+              group_n: "{{ slot_reminder | length }}"
+              is_rep: "{{ slot_reminder and oid == slot_reminder[0] }}"
+              slot_meds: "{{ slot_reminder | map('regex_replace', '^', 'switch.') | map('state_attr', 'medications') | list | join('; ') }}"
+              gtag: "{{ ('med_grp_' ~ patient ~ '_' ~ dtime) | replace(' ', '_') | replace(':', '') }}"
           - choose:
-              # Reminder: only if scheduled today, within the nag window, not handled
+              # Reminder, per-dose: every due dose when grouping is off, or the
+              # only dose due in its slot. Classic behaviour, with action buttons.
               - conditions:
-                  - "{{ scheduled and not handled and mins_since >= 0 and mins_since < nag_minutes and (mins_since % nag_interval) < 5 }}"
+                  - "{{ reminder_due and (not group_reminders or group_n <= 1) }}"
                 sequence:
                   - action: "notify.{{ notify_service }}"
                     data:
@@ -71,9 +104,19 @@
                                         {"action": "MED_SNOOZE_" ~ oid, "title": "⏰ Remind me later"},
                                         {"action": "MED_SKIP_" ~ oid, "title": "⏭️ Skip today"}]}
                            | combine(nav) }}
-              # Missed: scheduled today, past the window-end, fires once
+              # Reminder, grouped: several doses due in the slot. One message from
+              # the slot's first dose; tap it to open the dashboard and act there.
               - conditions:
-                  - "{{ scheduled and not handled and mins_since >= nag_minutes and mins_since < nag_minutes + 5 }}"
+                  - "{{ reminder_due and group_reminders and group_n > 1 and is_rep }}"
+                sequence:
+                  - action: "notify.{{ notify_service }}"
+                    data:
+                      title: "💊 {{ patient }} ({{ clock }})"
+                      message: "{{ group_n }} doses due: {{ slot_meds }}. Open the dashboard to handle them."
+                      data: "{{ {'tag': gtag} | combine(nav) }}"
+              # Missed: scheduled today, past the window-end, fires once (per-dose)
+              - conditions:
+                  - "{{ missed_due }}"
                 sequence:
                   # Critical (override Silent/DND) or normal time-sensitive, per
                   # critical_missed. One payload: iPhones read
@@ -132,6 +175,10 @@
               | replace('MED_GIVEN_', '') | replace('MED_SKIP_', '') | replace('MED_SNOOZE_', '') }}
     ent: "switch.{{ oid }}"
     notify_service: "{{ state_attr(ent, 'notify_service') or 'caretakers' }}"
+    # Grouped-reminder tag for this dose's (patient, time) slot, so a grouped
+    # notification clears too when one of its doses is handled.
+    gtag: >-
+      {{ ('med_grp_' ~ (state_attr(ent, 'patient') or '') ~ '_' ~ (state_attr(ent, 'dose_time') or '')) | replace(' ', '_') | replace(':', '') }}
     is_give_button: >-
       {{ trigger.id == 'notif' and trigger.event.data.action is defined
          and trigger.event.data.action.startswith('MED_GIVEN_') }}
@@ -171,6 +218,12 @@
         message: "clear_notification"
         data:
           tag: "med_missed_{{ oid }}"
+    # Clear the grouped reminder for this dose's slot too (a no-op if there is none).
+    - action: "notify.{{ notify_service }}"
+      data:
+        message: "clear_notification"
+        data:
+          tag: "{{ gtag }}"
   mode: parallel
 
 # Low-supply refill reminder. Fires once a day and pings the patient's notify

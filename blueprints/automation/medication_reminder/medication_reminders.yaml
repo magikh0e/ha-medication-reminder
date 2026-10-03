@@ -4,8 +4,10 @@ blueprint:
     Reminds about due medication doses, nags within each dose's window, and
     escalates a missed dose once. Auto-discovers every dose switch created by the
     Medication Reminder integration, so adding a patient or dose needs no changes
-    here. Import the "mark given from notification" blueprint alongside this one
-    for the action button to work.
+    here. Import the "notification actions" blueprint alongside this one for the
+    Mark given / Skip / Remind me later buttons to work. When several doses are
+    due for the same patient at the same time, the reminders are grouped into one
+    notification (toggle below) that taps through to your dashboard.
   domain: automation
   author: magikh0e
   source_url: https://github.com/magikh0e/ha-medication-reminder/blob/main/blueprints/automation/medication_reminder/medication_reminders.yaml
@@ -28,6 +30,17 @@ blueprint:
       default: false
       selector:
         boolean:
+    group_reminders:
+      name: Group reminders at the same time
+      description: >
+        When several doses are due for the same patient at the same time, send one
+        combined reminder listing them (tap it to open the dashboard and act),
+        instead of a separate notification per dose. The missed-dose alert and
+        single-dose reminders are unchanged. Turn off for one notification per
+        dose, with the Mark given / Skip / Remind me later buttons on each.
+      default: true
+      selector:
+        boolean:
     dashboard_path:
       name: Open dashboard when the notification is tapped
       description: >
@@ -45,10 +58,12 @@ trigger:
 variables:
   default_notify: !input fallback_notify
   critical_missed: !input critical_missed
+  group_reminders: !input group_reminders
   dashboard_path: !input dashboard_path
   nav: >-
     {{ {"clickAction": dashboard_path, "url": dashboard_path} if dashboard_path else {} }}
   today: "{{ ['mon','tue','wed','thu','fri','sat','sun'][now().weekday()] }}"
+  week: "{{ ['mon','tue','wed','thu','fri','sat','sun'] }}"
 action:
   - repeat:
       for_each: >
@@ -65,7 +80,7 @@ action:
             dtime: "{{ state_attr(ent, 'dose_time') }}"
             patient: "{{ state_attr(ent, 'patient') }}"
             meds: "{{ state_attr(ent, 'medications') }}"
-            days: "{{ state_attr(ent, 'days') or ['mon','tue','wed','thu','fri','sat','sun'] }}"
+            days: "{{ state_attr(ent, 'days') or week }}"
             scheduled: "{{ (today in days) if state_attr(ent, 'scheduled_today') is none else state_attr(ent, 'scheduled_today') }}"
             notify_service: "{{ state_attr(ent, 'notify_service') or default_notify }}"
             nag_minutes: "{{ state_attr(ent, 'nag_minutes') | int(45) }}"
@@ -76,10 +91,40 @@ action:
             ref_ts: "{{ [as_timestamp(today_at(dtime)), (as_timestamp(snooze_until) if snooze_until else 0)] | max }}"
             mins_since: "{{ (as_timestamp(now()) - ref_ts) / 60 }}"
             clock: "{{ (as_timestamp(today_at(dtime)) | timestamp_custom('%H:%M')) if state_attr(ent, 'time_format') == '24h' else (as_timestamp(today_at(dtime)) | timestamp_custom('%I:%M %p')).lstrip('0') }}"
+            reminder_due: "{{ scheduled and not handled and mins_since >= 0 and mins_since < nag_minutes and (mins_since % nag_interval) < 5 }}"
+            missed_due: "{{ scheduled and not handled and mins_since >= nag_minutes and mins_since < nag_minutes + 5 }}"
+            # Oids of the doses in this same (patient, time) slot that are
+            # reminder-due on this tick, each judged by its own state and snooze.
+            # Used to group simultaneous reminders; derived live (no serialized
+            # data) so medication or patient names with any characters are safe.
+            slot_reminder: >
+              {% set ns = namespace(l=[]) %}
+              {% for t in states.switch if t.attributes.medications is defined
+                   and t.attributes.patient == patient
+                   and t.attributes.dose_time == dtime %}
+              {% set ta = t.attributes %}
+              {% set th = (t.state == 'on') or (ta.skipped_today | default(false, true)) %}
+              {% set tsch = (today in (ta.days or week)) if ta.scheduled_today is none else ta.scheduled_today %}
+              {% set tsu = ta.snooze_until %}
+              {% set tref = [as_timestamp(today_at(dtime)), (as_timestamp(tsu) if tsu else 0)] | max %}
+              {% set tmins = (as_timestamp(now()) - tref) / 60 %}
+              {% set tnagm = ta.nag_minutes | int(45) %}
+              {% set tnagi = ta.nag_interval | int(15) %}
+              {% if tsch and not th and tmins >= 0 and tmins < tnagm and (tmins % tnagi) < 5 %}
+              {% set ns.l = ns.l + [t.entity_id.split('.')[1]] %}
+              {% endif %}
+              {% endfor %}
+              {{ ns.l | sort }}
+            group_n: "{{ slot_reminder | length }}"
+            is_rep: "{{ slot_reminder and oid == slot_reminder[0] }}"
+            slot_meds: "{{ slot_reminder | map('regex_replace', '^', 'switch.') | map('state_attr', 'medications') | list | join('; ') }}"
+            gtag: "{{ ('med_grp_' ~ patient ~ '_' ~ dtime) | replace(' ', '_') | replace(':', '') }}"
         - choose:
-            # Reminder: scheduled today, within the nag window, not yet handled.
+            # Reminder, per-dose: every due dose when grouping is off, or a dose
+            # that is the only one due in its slot. Identical to the classic
+            # behaviour, with the Mark given / Remind me later / Skip buttons.
             - conditions:
-                - "{{ scheduled and not handled and mins_since >= 0 and mins_since < nag_minutes and (mins_since % nag_interval) < 5 }}"
+                - "{{ reminder_due and (not group_reminders or group_n <= 1) }}"
               sequence:
                 - action: "notify.{{ notify_service }}"
                   data:
@@ -91,9 +136,19 @@ action:
                                       {"action": "MED_SNOOZE_" ~ oid, "title": "⏰ Remind me later"},
                                       {"action": "MED_SKIP_" ~ oid, "title": "⏭️ Skip today"}]}
                          | combine(nav) }}
-            # Missed: past the window-end, fires once.
+            # Reminder, grouped: several doses due in the slot. One message from
+            # the slot's first dose; tap it to open the dashboard and act there.
             - conditions:
-                - "{{ scheduled and not handled and mins_since >= nag_minutes and mins_since < nag_minutes + 5 }}"
+                - "{{ reminder_due and group_reminders and group_n > 1 and is_rep }}"
+              sequence:
+                - action: "notify.{{ notify_service }}"
+                  data:
+                    title: "💊 {{ patient }} ({{ clock }})"
+                    message: "{{ group_n }} doses due: {{ slot_meds }}. Open the dashboard to handle them."
+                    data: "{{ {'tag': gtag} | combine(nav) }}"
+            # Missed: past the window-end, fires once. Per-dose (unchanged).
+            - conditions:
+                - "{{ missed_due }}"
               sequence:
                 # Critical (override Silent/DND) or normal time-sensitive, per
                 # the input. One payload: iPhones read interruption-level/sound,
