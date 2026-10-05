@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.41.0] - 2026-10-04
+### Added
+- Weekly pill-box plan view. A new opt-in per-patient **Pill-box plan view** (Reminder settings, off by default) for filling a pill organiser: pick a day and see, in one table, each medication and the quantity to put in each time-slot compartment. One row per med, a column per time slot, computed for the actual date (so every-N-days, on/off cycles, and monthly schedules come out right, e.g. odd vs even weeks), with the amount from the dose's own value, else the supply's per-dose, else 1. When on, it adds `number.<patient>_planoffset` (the day to show, 0 = today; resets to today at midnight) and `sensor.<patient>_plan` (the day's plan in its `times` / `rows` attributes). The bundled dashboards show a "Pill-box plan" card (the day stepper plus the table), hidden unless the option is on. Built entirely from the integration's existing dose/supply/detail data via a pure `build_day_plan` helper, so the plan always matches the schedule. (Requested by @ph-dekeyser, tracked in #37.)
+
 ## [0.40.2] - 2026-10-04
 ### Fixed
 - Editing a dose from as-needed (PRN) to a scheduled type (or otherwise changing which entities a dose has) no longer leaves the old entities behind as "unavailable". Previously an edit only pruned a dose's entities when its time or medications changed; changing just the schedule type kept the same entity id, so the PRN-only entities (log-dose button, last-taken, doses-today, days-this-month, dose-guard) were not recreated but were not removed either, and lingered in the "As needed (PRN)" dashboard card as unavailable. An in-place edit now prunes exactly the auxiliary entities the new configuration no longer creates (and keeps the dose switch, so its state survives), covering PRN<->scheduled either way, a removed over-dose guard, and a turned-off adjustable-amount field. (Reported by @ph-dekeyser in #38.)

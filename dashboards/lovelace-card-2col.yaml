@@ -287,6 +287,44 @@ cards:
               {%- endfor %}
               {% endfor %}
 
+          # Pill-box plan (opt-in): pick the day with the offset (0 = today); the
+          # table shows that day's meds and amounts per time slot. Both cards are
+          # hidden unless the plan view is enabled for a patient (Settings).
+          - type: custom:auto-entities
+            show_empty: false
+            card:
+              type: entities
+              title: Pill-box plan day
+              card_mod:
+                style: |
+                  ha-card {
+                    --state-icon-color: #90caf9;
+                    --paper-item-icon-color: #90caf9;
+                  }
+            filter:
+              template: >
+                {% for n in states.number if n.attributes.plan_offset is defined %}
+                {{ n.entity_id }}
+                {% endfor %}
+          - type: markdown
+            card_mod:
+              style: |
+                ha-card { {% if (states.sensor | selectattr('attributes.plan_date_long','defined') | list | length) == 0 %}display: none;{% endif %} }
+            content: |-
+              {% set plans = states.sensor | selectattr('attributes.plan_date_long','defined') | selectattr('attributes.patient','defined') | list %}
+              {% set frac = {0.25:'¼',0.5:'½',0.75:'¾',1.25:'1¼',1.5:'1½',1.75:'1¾',2.5:'2½'} %}
+              {% for s in plans | sort(attribute='attributes.patient') %}
+              ### 📅 {{ s.attributes.patient }}: {{ s.attributes.plan_date_long }}
+              {% set times = s.attributes.times %}
+              {% set rows = s.attributes.rows %}
+              {% if rows %}
+              | Med | {% for t in times %}{{ t }} | {% endfor %}
+              |:--|{% for t in times %}:-:|{% endfor %}
+              {% for r in rows %}| {{ r.med }} | {% for t in times %}{% set a = r.amounts.get(t) %}{{ (frac.get(a) or (a|int if a == a|int else a)) if a is not none else '' }} | {% endfor %}
+              {% endfor %}{% else %}
+              _Nothing scheduled for this day._
+              {% endif %}
+              {% endfor %}
           # Per-patient "current medications" (read-only): the "what" and "when"
           # to hand a provider, with each medication's dose times plus any full
           # name / strength / brand / condition / dosage detail you have added

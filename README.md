@@ -48,6 +48,7 @@ Questions, setup help, or want to show off your setup? Come to [Discussions](htt
 - **Supply & refill tracking.** Per-medication counts that decrement as doses are given, with doses-left, a run-out estimate, a low-stock red flag at your reorder threshold, and a refill reminder. Optionally track **refills remaining** on the prescription too: each refill counts one down, and the supply flags when the prescription is out and needs renewing. Per-dose amounts can be fractional (half a pill) and overridden per dose, and an optional per-unit cost surfaces value on hand, cost per dose, and a monthly estimate.
 - **Per-medication detail.** Optional strength, brand, full name, "prescribed for", and a dosage summary per medication, plus a `medications` sensor that lists everything the patient takes for a ready-to-share "current medications" view to hand a vet or doctor.
 - **Next-dose sensor and calendar.** A `next_dose` timestamp and a read-only medication calendar per patient, handy for "remind me before" automations and seeing long cycles laid out.
+- **Weekly pill-box plan.** An optional per-day plan for filling a pill organiser: pick a day and see one table of each med and the amount to put in each time-slot compartment, computed for the actual date (every-N-days, cycles, and monthly schedules included). Off by default.
 - **Zero-edit dashboard.** Auto-discovers every patient and dose, no names to maintain.
 - **Caregiver and admin dashboards.** Split day-to-day care from setup using Home Assistant's own user roles: hand a caregiver a non-admin user and a simplified, safe-to-share dashboard (mark doses given, log a PRN dose, refill a low supply, with no config and no editable counts), and keep an admin dashboard with the full per-patient setup audit, editable supply counts, and an audit trail of who marked or refilled. See [Roles & sharing](#roles--sharing).
 - **Localized UI.** The configuration screens follow your Home Assistant language, with German, Dutch, French, Spanish, Italian, and Russian alongside the English base (all but French community-contributed), and any untranslated text falling back to English. See [Languages](#languages).
@@ -219,7 +220,9 @@ With **Partial-dose skip buttons** turned on (Settings), an extra "Took most of 
 card appears alongside Mark given, with a one-tap "skip <med>" per med for grouped
 doses that are due and not yet given (see [Partial dose marking](#how-marking-works-the-contract)).
 And for any dose with **Ask for amount when marking** turned on, a "Dose amounts"
-card appears for setting the amount before marking given. Both stay hidden when
+card appears for setting the amount before marking given. With **Pill-box plan
+view** on, a "Pill-box plan" card appears, a day stepper plus a table of each
+med and the amount per time slot for the selected day. These stay hidden when
 their option is off or nothing qualifies.
 
 Where a dose has a **Units consumed (this dose)** amount set, the today summary and
@@ -459,6 +462,7 @@ Each patient has its own **Configure, Reminder settings** with:
 - **Nag window** - how long to keep reminding after a dose time (default 45 min).
 - **Re-nag interval** - how often to re-remind within that window (default 15 min).
 - **Partial-dose skip buttons** - off by default. When on, each scheduled dose that groups two or more meds gains a one-tap "Mark given, skip <med>" button per med (see [How marking works](#how-marking-works-the-contract) below). Leave off to avoid the extra button entities if you never partially dose.
+- **Pill-box plan view** - off by default. When on, adds a per-day pill-organiser plan: a `sensor.<patient>_plan` with the day's meds and amounts per time slot, and a `number.<patient>_planoffset` to pick the day (0 = today). The bundled dashboards show it as a "Pill-box plan" card (a day stepper plus a table of each med and the amount per time slot), handy for prepping a weekly box.
 
 The reset time is applied by the integration; the nag window/interval are exposed
 as switch attributes that the companion automations read.
@@ -699,6 +703,7 @@ territory. A future version may move reminders into the integration itself.
 - Snooze a reminder (0.38.0): a "Remind me later" notification button and a `snooze` service defer a dose's reminder by a configurable delay (default 30 min), pushing the nag window and the missed-dose escalation out rather than cancelling them. (Requested by a community member on the forum, tracked in #32.)
 - Adjustable quantity at mark time (0.39.0): a per-dose "Ask for amount when marking" opt-in and a `units` option on `mark_given`, for a med whose dose varies, so the supply decrements by the amount actually taken. Off by default. (Requested by GitHub user ph-dekeyser, tracked in #35.)
 - Grouped reminders by time (0.40.0): when several doses are due for one patient at the same time, the reminder blueprint sends one combined notification (tap to open the dashboard) instead of one per dose. On by default, toggleable; single-dose reminders and the missed alert are unchanged. (Requested by GitHub user ph-dekeyser, tracked in #36.)
+- Weekly pill-box plan view (0.41.0): an opt-in per-day plan for filling a pill organiser, one table of each med and the amount per time slot for a chosen day, computed for the actual date (every-N-days, cycles, monthly included). Adds a plan sensor and a day-offset number; the bundled dashboards show it as a "Pill-box plan" card. Off by default. (Requested by GitHub user ph-dekeyser, tracked in #37.)
 
 ## Acknowledgements
 
