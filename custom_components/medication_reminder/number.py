@@ -31,11 +31,13 @@ from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import slugify
 
 from .const import (
     CONF_ASK_UNITS,
+    CONF_PLAN_VIEW,
     CONF_DOSES,
     CONF_DOSE_UNITS,
     CONF_MEDS,
@@ -96,6 +98,9 @@ async def async_setup_entry(
         if (dose.get(CONF_SCHEDULE_TYPE) or "") == SCHEDULE_PRN:
             continue
         entities.append(MedicationDoseAmountNumber(entry, patient, dose))
+    # Pill-box plan view (opt-in): the day-offset the plan sensor shows.
+    if entry.options.get(CONF_PLAN_VIEW):
+        entities.append(MedicationPlanOffsetNumber(entry, patient))
     async_add_entities(entities)
 
 
@@ -431,4 +436,65 @@ class MedicationDoseAmountNumber(RestoreEntity, NumberEntity):
 
     async def async_set_native_value(self, value: float) -> None:
         self._value = max(0.0, float(value))
+        self.async_write_ha_state()
+
+
+class MedicationPlanOffsetNumber(RestoreEntity, NumberEntity):
+    """Day offset for the pill-box plan view: 0 = today, 1 = tomorrow, -1 = yesterday.
+
+    The plan sensor reads this to choose the date it shows. Resets to 0 (today) at
+    midnight so the default is always today; step it to prep another day's box.
+    Created only when the plan view is enabled for the patient.
+    """
+
+    _attr_should_poll = False
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:calendar-arrow-right"
+    _attr_native_min_value = -14
+    _attr_native_max_value = 60
+    _attr_native_step = 1
+    _attr_mode = NumberMode.BOX
+
+    def __init__(self, entry: ConfigEntry, patient: str) -> None:
+        self._patient = patient
+        self._value = 0.0
+        self._attr_name = "Plan day (offset from today)"
+        self._attr_unique_id = f"{entry.entry_id}_planoffset"
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, entry.entry_id)},
+            "name": patient,
+            "manufacturer": "Medication Reminder",
+        }
+
+    @property
+    def native_value(self) -> float:
+        return self._value
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        # `plan_offset` lets the dashboard find this control among the numbers.
+        return {"patient": self._patient, "plan_offset": True}
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        last = await self.async_get_last_state()
+        if last is not None:
+            try:
+                self._value = float(last.state)
+            except (ValueError, TypeError):
+                pass
+        # Back to today (offset 0) at midnight, so the default is always today.
+        self.async_on_remove(
+            async_track_time_change(
+                self.hass, self._reset_to_today, hour=0, minute=0, second=0
+            )
+        )
+
+    @callback
+    def _reset_to_today(self, _now) -> None:
+        self._value = 0.0
+        self.async_write_ha_state()
+
+    async def async_set_native_value(self, value: float) -> None:
+        self._value = float(value)
         self.async_write_ha_state()

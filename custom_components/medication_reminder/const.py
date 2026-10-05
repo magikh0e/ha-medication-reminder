@@ -35,6 +35,9 @@ CONF_NAG_MINUTES = "nag_minutes"
 CONF_NAG_INTERVAL = "nag_interval"
 CONF_TIME_FORMAT = "time_format"
 CONF_SKIP_BUTTONS = "skip_buttons"  # opt-in per-med skip buttons for grouped doses
+CONF_PLAN_VIEW = (
+    "plan_view"  # opt-in per-patient pill-box plan (offset number + sensor)
+)
 
 # Per-dose schedule type and its interval / cycle settings.
 CONF_SCHEDULE_TYPE = "schedule_type"
@@ -103,6 +106,7 @@ DEFAULT_NAG_MINUTES = 45
 DEFAULT_NAG_INTERVAL = 15
 DEFAULT_TIME_FORMAT = "12h"
 DEFAULT_SKIP_BUTTONS = False
+DEFAULT_PLAN_VIEW = False
 DEFAULT_SNOOZE_MINUTES = 30
 DEFAULT_SUPPLY_UNITS = 30
 DEFAULT_SUPPLY_PER_DOSE = 1
@@ -546,3 +550,100 @@ def current_medications(doses, details):
                 "dosage": str(det.get(CONF_MED_DOSAGE) or "").strip(),
             }
     return [seen[k] for k in sorted(seen)]
+
+
+def schedule_cadence(dose):
+    """A short human cadence string for a dose, for the pill-box plan view.
+
+    E.g. "daily", "every 2 days", "Mon, Wed, Fri", "21 on / 7 off",
+    "monthly on 1, 15", or "as needed".
+    """
+    stype = dose.get(CONF_SCHEDULE_TYPE) or SCHEDULE_WEEKDAYS
+    if stype == SCHEDULE_PRN:
+        return "as needed"
+    if stype == SCHEDULE_INTERVAL:
+        try:
+            n = int(dose.get(CONF_INTERVAL_DAYS) or DEFAULT_INTERVAL_DAYS)
+        except (TypeError, ValueError):
+            n = DEFAULT_INTERVAL_DAYS
+        return "daily" if n == 1 else f"every {n} days"
+    if stype == SCHEDULE_CYCLE:
+        try:
+            on = int(dose.get(CONF_CYCLE_ON) or DEFAULT_CYCLE_ON)
+            off = int(dose.get(CONF_CYCLE_OFF) or DEFAULT_CYCLE_OFF)
+        except (TypeError, ValueError):
+            on, off = DEFAULT_CYCLE_ON, DEFAULT_CYCLE_OFF
+        return f"{on} on / {off} off"
+    if stype == SCHEDULE_MONTHLY:
+        days = dose.get(CONF_MONTH_DAYS) or DEFAULT_MONTH_DAYS
+        return "monthly on " + ", ".join(str(d) for d in days)
+    days = dose.get(CONF_DAYS) or DEFAULT_DAYS
+    if len(days) >= 7:
+        return "daily"
+    return ", ".join(d.capitalize() for d in WEEKDAYS if d in days)
+
+
+def build_day_plan(doses, supplies, details, on_date):
+    """The pill-box plan for one date: per-medication, per-time-slot quantities.
+
+    Only scheduled (non-PRN) doses that are due on ``on_date`` are included (box
+    prep is for scheduled meds, not as-needed). Returns::
+
+        {"times": ["08:00", "20:00"],
+         "rows": [{"med", "prescribed_for", "schedule", "amounts": {time: qty}}]}
+
+    ``qty`` is the dose's own amount when set, else the medication's supply
+    per-dose amount, else 1. Rows are sorted by medication, columns by time. All
+    inputs are the stored option lists (doses / supplies / medication details);
+    pure, so it is computed in the integration and handed to the dashboard.
+    """
+    per_dose = {}
+    for s in supplies or []:
+        med = str(s.get(CONF_SUPPLY_MED, "")).strip().lower()
+        if not med:
+            continue
+        try:
+            per_dose[med] = float(s.get(CONF_SUPPLY_PER_DOSE) or 0)
+        except (TypeError, ValueError):
+            per_dose[med] = 0.0
+    detail_by_med = {d["name"].lower(): d for d in current_medications(doses, details)}
+    times = set()
+    rows = {}
+    for dose in doses or []:
+        if (dose.get(CONF_SCHEDULE_TYPE) or SCHEDULE_WEEKDAYS) == SCHEDULE_PRN:
+            continue
+        if not is_due(dose, on_date):
+            continue
+        time = str(dose.get(CONF_TIME, ""))[:5]
+        try:
+            du = float(dose.get(CONF_DOSE_UNITS) or 0)
+        except (TypeError, ValueError):
+            du = 0.0
+        cadence = schedule_cadence(dose)
+        for med in split_medications(dose.get(CONF_MEDS)):
+            key = med.lower()
+            qty = du if du > 0 else (per_dose.get(key) or 1)
+            row = rows.setdefault(
+                key,
+                {
+                    "med": med,
+                    "prescribed_for": detail_by_med.get(key, {}).get(
+                        "prescribed_for", ""
+                    ),
+                    "cadences": set(),
+                    "amounts": {},
+                },
+            )
+            row["cadences"].add(cadence)
+            row["amounts"][time] = qty
+            times.add(time)
+    result_rows = [
+        {
+            "med": rows[k]["med"],
+            "prescribed_for": rows[k]["prescribed_for"],
+            "schedule": "; ".join(sorted(rows[k]["cadences"])),
+            "amounts": rows[k]["amounts"],
+        }
+        for k in sorted(rows)
+    ]
+    return {"times": sorted(times), "rows": result_rows}

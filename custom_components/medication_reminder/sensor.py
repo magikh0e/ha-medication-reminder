@@ -23,6 +23,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import (
     async_track_time_change,
@@ -35,13 +36,16 @@ from .const import (
     CONF_MEDICATIONS,
     CONF_MEDS,
     CONF_PATIENT,
+    CONF_PLAN_VIEW,
     CONF_RESET_TIME,
     CONF_SCHEDULE_TYPE,
+    CONF_SUPPLIES,
     CONF_TIME,
     DEFAULT_RESET_TIME,
     DOMAIN,
     EVENT_DOSE_LOGGED,
     SCHEDULE_PRN,
+    build_day_plan,
     current_medications,
     is_due,
     med_day,
@@ -80,6 +84,9 @@ async def async_setup_entry(
             MedicationDosesTodaySensor(entry, patient, time, meds, reset_time)
         )
         entities.append(MedicationDaysThisMonthSensor(entry, patient, time, meds))
+    # Pill-box plan view (opt-in): the per-day plan the dashboard card renders.
+    if entry.options.get(CONF_PLAN_VIEW):
+        entities.append(MedicationPlanSensor(entry, patient))
     async_add_entities(entities)
 
 
@@ -426,3 +433,88 @@ class MedicationsSensor(SensorEntity):
             "medications": self._meds,
             "summary": "\n".join(medication_summary_line(m) for m in self._meds),
         }
+
+
+class MedicationPlanSensor(SensorEntity):
+    """The pill-box plan for the selected day: rows = meds, columns = time slots.
+
+    Reads the plan-offset number to choose the date (today + offset), then
+    computes the plan from the stored doses, supplies, and medication details.
+    The state is the plan date; the `times` and `rows` attributes are the table
+    the dashboard card renders. Created only when the plan view is enabled.
+    """
+
+    _attr_should_poll = False
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:calendar-check"
+
+    def __init__(self, entry: ConfigEntry, patient: str) -> None:
+        self._entry = entry
+        self._patient = patient
+        self._doses = entry.options.get(CONF_DOSES, [])
+        self._supplies = entry.options.get(CONF_SUPPLIES, [])
+        self._details = entry.options.get(CONF_MEDICATIONS, [])
+        self._offset_unique_id = f"{entry.entry_id}_planoffset"
+        self._attr_name = "Pill-box plan"
+        self._attr_unique_id = f"{entry.entry_id}_plan"
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, entry.entry_id)},
+            "name": patient,
+            "manufacturer": "Medication Reminder",
+        }
+
+    def _offset(self) -> int:
+        """Current value of this patient's plan-offset number (0 if unavailable)."""
+        registry = er.async_get(self.hass)
+        eid = registry.async_get_entity_id("number", DOMAIN, self._offset_unique_id)
+        if eid and (state := self.hass.states.get(eid)) is not None:
+            try:
+                return int(float(state.state))
+            except (TypeError, ValueError):
+                return 0
+        return 0
+
+    def _plan_date(self):
+        return dt_util.now().date() + timedelta(days=self._offset())
+
+    @property
+    def native_value(self) -> str:
+        return self._plan_date().isoformat()
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        day = self._plan_date()
+        plan = build_day_plan(self._doses, self._supplies, self._details, day)
+        long = f"{day.strftime('%A')} {day.day} {day.strftime('%B %Y')}"
+        return {
+            "patient": self._patient,
+            "plan_date": day.isoformat(),
+            "plan_date_long": long,
+            "offset": self._offset(),
+            "times": plan["times"],
+            "rows": plan["rows"],
+        }
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        # Recompute when the offset number changes, and just after midnight so the
+        # date rolls over even when the offset value itself does not change.
+        self.async_on_remove(
+            self.hass.bus.async_listen("state_changed", self._on_offset_changed)
+        )
+        self.async_on_remove(
+            async_track_time_change(
+                self.hass, self._midnight, hour=0, minute=0, second=5
+            )
+        )
+
+    @callback
+    def _on_offset_changed(self, event: Event) -> None:
+        registry = er.async_get(self.hass)
+        mine = registry.async_get_entity_id("number", DOMAIN, self._offset_unique_id)
+        if event.data.get("entity_id") == mine:
+            self.async_write_ha_state()
+
+    @callback
+    def _midnight(self, _now) -> None:
+        self.async_write_ha_state()

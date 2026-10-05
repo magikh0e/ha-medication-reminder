@@ -40,6 +40,7 @@ from .const import (
     CONF_NOTIFY,
     CONF_PATIENT,
     CONF_PATIENT_TYPE,
+    CONF_PLAN_VIEW,
     CONF_RESET_TIME,
     CONF_SCHEDULE_TYPE,
     CONF_SKIP_BUTTONS,
@@ -67,6 +68,7 @@ from .const import (
     DEFAULT_NAG_MINUTES,
     DEFAULT_PATIENT_TYPE,
     DEFAULT_RESET_TIME,
+    DEFAULT_PLAN_VIEW,
     DEFAULT_SKIP_BUTTONS,
     DEFAULT_SCHEDULE_TYPE,
     DEFAULT_SUPPLY_COST,
@@ -1069,6 +1071,10 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
             options[CONF_NAG_INTERVAL] = int(user_input[CONF_NAG_INTERVAL])
             options[CONF_TIME_FORMAT] = user_input[CONF_TIME_FORMAT]
             options[CONF_SKIP_BUTTONS] = bool(user_input.get(CONF_SKIP_BUTTONS, False))
+            options[CONF_PLAN_VIEW] = bool(user_input.get(CONF_PLAN_VIEW, False))
+            # Turning the plan view off removes its entities so they do not linger.
+            if self._entry.options.get(CONF_PLAN_VIEW) and not options[CONF_PLAN_VIEW]:
+                self._prune_plan_entities()
             return self.async_create_entry(title="", data=options)
         opts = self._entry.options
         schema = vol.Schema(
@@ -1100,6 +1106,23 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
                     CONF_SKIP_BUTTONS,
                     default=bool(opts.get(CONF_SKIP_BUTTONS, DEFAULT_SKIP_BUTTONS)),
                 ): selector.BooleanSelector(),
+                vol.Optional(
+                    CONF_PLAN_VIEW,
+                    default=bool(opts.get(CONF_PLAN_VIEW, DEFAULT_PLAN_VIEW)),
+                ): selector.BooleanSelector(),
             }
         )
         return self.async_show_form(step_id="settings", data_schema=schema)
+
+    def _prune_plan_entities(self) -> None:
+        """Remove the pill-box plan entities (offset number + plan sensor) when
+        the plan view is turned off, so they do not linger as unavailable."""
+        eid = self._entry.entry_id
+        registry = er.async_get(self.hass)
+        for domain, unique_id in (
+            ("number", f"{eid}_planoffset"),
+            ("sensor", f"{eid}_plan"),
+        ):
+            entity_id = registry.async_get_entity_id(domain, DOMAIN, unique_id)
+            if entity_id:
+                registry.async_remove(entity_id)

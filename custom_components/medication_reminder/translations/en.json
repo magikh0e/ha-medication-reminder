@@ -222,11 +222,13 @@
           "reset_time": "Daily reset time",
           "nag_minutes": "Nag window (minutes after dose)",
           "nag_interval": "Re-nag every (minutes)",
-          "skip_buttons": "Partial-dose skip buttons"
+          "skip_buttons": "Partial-dose skip buttons",
+          "plan_view": "Pill-box plan view"
         },
         "data_description": {
           "nag_interval": "Use a multiple of 5; reminders are evaluated on a 5-minute tick, so other values re-nag less evenly.",
-          "skip_buttons": "For doses that group two or more meds, add a button per med that marks the dose given while skipping that one med (its supply is not counted). Off by default; turn on if a med in a grouped dose is sometimes missing."
+          "skip_buttons": "For doses that group two or more meds, add a button per med that marks the dose given while skipping that one med (its supply is not counted). Off by default; turn on if a med in a grouped dose is sometimes missing.",
+          "plan_view": "Add an opt-in per-day plan for filling a pill organiser: a plan sensor and a day-offset number (0 = today) for stepping through days. The bundled dashboards show it as a table of each day's meds and amounts per time slot. Off by default."
         }
       }
     }
