@@ -82,6 +82,9 @@ from .const import (
     SCHEDULE_INTERVAL,
     SCHEDULE_MONTHLY,
     SCHEDULE_PRN,
+    dose_max_per_day,
+    dose_min_interval_hours,
+    partial_skip_meds,
     split_medications,
 )
 
@@ -602,10 +605,18 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
                     data_schema=self._dose_schema(user_input),
                     errors={"base": "duplicate_dose"},
                 )
-            if new_dose[CONF_TIME] != str(current.get(CONF_TIME, ""))[:5] or new_dose[
-                CONF_MEDS
-            ] != current.get(CONF_MEDS):
+            slug_changed = new_dose[CONF_TIME] != str(current.get(CONF_TIME, ""))[
+                :5
+            ] or new_dose[CONF_MEDS] != current.get(CONF_MEDS)
+            if slug_changed:
+                # Time/medications changed: the entity id moves, so prune the
+                # whole old set (it would otherwise linger as unavailable).
                 self._prune_dose_entity(current)
+            else:
+                # Same entity id, but the schedule type or options may have
+                # changed which auxiliary entities apply (e.g. PRN -> scheduled
+                # drops the PRN sensors). Prune the ones no longer created.
+                self._prune_stale_dose_entities(current, new_dose)
             doses[idx] = new_dose
             options = dict(self._entry.options)
             options[CONF_DOSES] = doses
@@ -617,24 +628,65 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
     def _prune_dose_entity(self, dose: dict[str, Any]) -> None:
         """Remove all of a dose's entities from the registry so none linger as
         "unavailable" when the dose is removed, or when an edit changes its time
-        or medications (which moves it to a new entity id). Covers the switch
-        and, for as-needed (PRN) doses, the log-dose button and the last-taken,
-        doses-today, days-this-month, and dose-guard entities."""
+        or medications (which moves it to a new entity id). Covers the switch and
+        every auxiliary entity a dose can create: the amount number, the per-med
+        skip buttons, and (for as-needed/PRN doses) the log-dose button and the
+        last-taken, doses-today, days-this-month, and dose-guard entities."""
         time = str(dose.get(CONF_TIME, ""))[:5]
         meds = str(dose.get(CONF_MEDS, ""))
         slug = slugify(time + "_" + meds)
         eid = self._entry.entry_id
-        targets = [
-            ("switch", f"{eid}_{slug}"),
-            ("number", f"{eid}_amount_{slug}"),
-            ("button", f"{eid}_logdose_{slug}"),
-            ("sensor", f"{eid}_lasttaken_{slug}"),
-            ("sensor", f"{eid}_dosestoday_{slug}"),
-            ("sensor", f"{eid}_daysmonth_{slug}"),
-            ("binary_sensor", f"{eid}_doseguard_{slug}"),
-        ]
+        targets = [("switch", f"{eid}_{slug}")]
+        targets.extend(self._dose_aux_ids(dose, include_all=True))
         registry = er.async_get(self.hass)
         for domain, unique_id in targets:
+            entity_id = registry.async_get_entity_id(domain, DOMAIN, unique_id)
+            if entity_id:
+                registry.async_remove(entity_id)
+
+    def _dose_aux_ids(
+        self, dose: dict[str, Any], include_all: bool = False
+    ) -> set[tuple[str, str]]:
+        """The (domain, unique_id) of a dose's auxiliary entities (everything
+        except the dose switch), by its schedule type and options.
+
+        With ``include_all`` the per-type conditions are ignored and every
+        possible auxiliary id is returned, so a full prune catches an entity even
+        if the stored dose's options have since drifted.
+        """
+        time = str(dose.get(CONF_TIME, ""))[:5]
+        meds = str(dose.get(CONF_MEDS, ""))
+        slug = slugify(time + "_" + meds)
+        eid = self._entry.entry_id
+        stype = dose.get(CONF_SCHEDULE_TYPE) or ""
+        ids: set[tuple[str, str]] = set()
+        if include_all or stype == SCHEDULE_PRN:
+            ids.add(("button", f"{eid}_logdose_{slug}"))
+            ids.add(("sensor", f"{eid}_lasttaken_{slug}"))
+            ids.add(("sensor", f"{eid}_dosestoday_{slug}"))
+            ids.add(("sensor", f"{eid}_daysmonth_{slug}"))
+            if include_all or dose_min_interval_hours(dose) or dose_max_per_day(dose):
+                ids.add(("binary_sensor", f"{eid}_doseguard_{slug}"))
+        if include_all or stype != SCHEDULE_PRN:
+            if include_all or dose.get(CONF_ASK_UNITS):
+                ids.add(("number", f"{eid}_amount_{slug}"))
+            if include_all or self._entry.options.get(CONF_SKIP_BUTTONS):
+                for med in partial_skip_meds(meds, stype):
+                    ids.add(("button", f"{eid}_skipbtn_{slug}_{slugify(med)}"))
+        return ids
+
+    def _prune_stale_dose_entities(
+        self, old_dose: dict[str, Any], new_dose: dict[str, Any]
+    ) -> None:
+        """On an in-place dose edit (same time + medications), remove the
+        auxiliary entities the new configuration no longer creates, so none
+        linger as "unavailable" (e.g. the PRN entities when a dose changes from
+        as-needed to a schedule). The dose switch is kept, so its state survives."""
+        stale = self._dose_aux_ids(old_dose) - self._dose_aux_ids(new_dose)
+        if not stale:
+            return
+        registry = er.async_get(self.hass)
+        for domain, unique_id in stale:
             entity_id = registry.async_get_entity_id(domain, DOMAIN, unique_id)
             if entity_id:
                 registry.async_remove(entity_id)

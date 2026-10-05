@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.40.2] - 2026-10-04
+### Fixed
+- Editing a dose from as-needed (PRN) to a scheduled type (or otherwise changing which entities a dose has) no longer leaves the old entities behind as "unavailable". Previously an edit only pruned a dose's entities when its time or medications changed; changing just the schedule type kept the same entity id, so the PRN-only entities (log-dose button, last-taken, doses-today, days-this-month, dose-guard) were not recreated but were not removed either, and lingered in the "As needed (PRN)" dashboard card as unavailable. An in-place edit now prunes exactly the auxiliary entities the new configuration no longer creates (and keeps the dose switch, so its state survives), covering PRN<->scheduled either way, a removed over-dose guard, and a turned-off adjustable-amount field. (Reported by @ph-dekeyser in #38.)
+
 ## [0.40.1] - 2026-10-03
 ### Changed
 - Documentation: clarified the two ways to add the reminder automations. The blueprint files use Home Assistant's `!input` tag and only work when imported by URL; pasting their contents into `automations.yaml` or a YAML editor gives an `unknown scalar tag !` parse error. The paste-this-YAML route uses only `companion-automations.yaml`, which has no `!input`. Added a note to the README spelling this out. No functional change. (Reported by a community member on the Home Assistant forum.)
