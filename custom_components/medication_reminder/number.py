@@ -7,31 +7,41 @@ schedule, and is user-settable for manual corrections and refills.
 Decrement rules (deliberately simple and safe):
 - Only on a dose switch going off -> on (an actual "mark given"), so the restore
   write on restart (old state is None) never counts.
-- Only for doses scheduled today that include this medication.
-- Once per dose per calendar day, so toggling a dose off and on again does not
-  double-count. Un-marking a given dose (turning the switch off) restores the
-  exact amount that was removed via the dose-undone event, including the
-  early-dose "undo" button; the daily reset does not restore, since the dose
-  was actually given.
+- Only for doses scheduled on this medication day that include this medication.
+- Once per dose per medication day (the day boundary is the patient reset time,
+  not midnight), so toggling a dose off and on again does not double-count, and
+  a dose taken late, after midnight but before the reset, files under the day it
+  belongs to instead of colliding with the next day's dose. Un-marking a given
+  dose (turning the switch off) restores the exact amount that was removed via
+  the dose-undone event, including the early-dose "undo" button; the daily reset
+  does not restore, since the dose was actually given.
 - The per-dose tracking (which doses were counted today and by how much) is
   persisted in the entity attributes and restored on startup, so a reload (the
   options flow reloads the entry on every change) or a restart between a mark
   and an un-mark does not lose it, which would otherwise drop the restore or
   double-count a re-toggle. A manual set or a refill is a fresh baseline and
   clears the tracking.
+- On startup the supply also catches up: a decrement can be lost if a mark lands
+  while this entity is not listening (a reload, or a restart between the mark
+  and now), since the switch restores as given but the live off -> on event
+  never fires again. A catch-up pass re-derives any such missed decrement from
+  the dose switches' restored (crash-safe) given state, deduped by the per-dose
+  tracking so it can only add a missed decrement, never double-count.
 """
 
 from __future__ import annotations
 
+import logging
 from datetime import timedelta
 from typing import Any
 
 import homeassistant.util.dt as dt_util
 from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
+from homeassistant.core import CoreState, Event, HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.event import async_track_time_change
+from homeassistant.helpers.event import async_call_later, async_track_time_change
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import slugify
 
@@ -42,6 +52,7 @@ from .const import (
     CONF_DOSE_UNITS,
     CONF_MEDS,
     CONF_PATIENT,
+    CONF_RESET_TIME,
     CONF_SCHEDULE_TYPE,
     CONF_SUPPLIES,
     CONF_SUPPLY_COST,
@@ -53,6 +64,7 @@ from .const import (
     CONF_SUPPLY_THRESHOLD,
     CONF_SUPPLY_UNITS,
     CONF_TIME,
+    DEFAULT_RESET_TIME,
     DEFAULT_SUPPLY_COST,
     DEFAULT_SUPPLY_PER_DOSE,
     DEFAULT_SUPPLY_REFILLS,
@@ -69,6 +81,7 @@ from .const import (
     dose_consumption,
     doses_per_week,
     is_due,
+    med_day,
     med_skipped,
     meds_contains,
     next_refills_remaining,
@@ -76,6 +89,8 @@ from .const import (
     restore_refills,
     supply_cost_breakdown,
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -86,9 +101,11 @@ async def async_setup_entry(
     """Create a supply number per medication, plus an amount number per
     adjustable-quantity dose."""
     patient: str = entry.data[CONF_PATIENT]
+    reset_time: str = entry.options.get(CONF_RESET_TIME, DEFAULT_RESET_TIME)
     supplies: list[dict[str, Any]] = entry.options.get(CONF_SUPPLIES, [])
     entities: list[NumberEntity] = [
-        MedicationSupplyNumber(entry, patient, supply) for supply in supplies
+        MedicationSupplyNumber(entry, patient, supply, reset_time)
+        for supply in supplies
     ]
     # Amount-input number for each scheduled dose that opted into "ask for amount
     # when marking"; the mark reads it to decrement by the amount actually taken.
@@ -116,9 +133,14 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
     _attr_mode = NumberMode.BOX
 
     def __init__(
-        self, entry: ConfigEntry, patient: str, supply: dict[str, Any]
+        self,
+        entry: ConfigEntry,
+        patient: str,
+        supply: dict[str, Any],
+        reset_time: str,
     ) -> None:
         self._patient = patient
+        self._reset_time = reset_time
         self._med = str(supply[CONF_SUPPLY_MED]).strip()
         self._per_dose = float(
             supply.get(CONF_SUPPLY_PER_DOSE, DEFAULT_SUPPLY_PER_DOSE)
@@ -144,7 +166,7 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
             supply.get(CONF_SUPPLY_REFILLS, DEFAULT_SUPPLY_REFILLS) or 0
         )
         self._refills_remaining = self._refills_cfg
-        # dose entity_id -> calendar date already counted, to avoid double-count.
+        # dose entity_id -> medication-day already counted, to avoid double-count.
         self._consumed: dict[str, str] = {}
         # dose entity_id -> amount decremented today, so an un-mark restores exactly.
         self._consumed_amount: dict[str, float] = {}
@@ -272,6 +294,20 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
         self.async_on_remove(
             self.hass.bus.async_listen(EVENT_DOSE_LOGGED, self._on_dose_logged)
         )
+        # Catch up any dose marked given for the current medication day that was
+        # not counted live, e.g. a decrement lost when a mark landed during an
+        # entry reload or a restart before this entity was listening. The ledger
+        # keeps this idempotent, so it can only add a missed decrement, never
+        # double-count. Run it once the dose switches are available: at HA start,
+        # or shortly after a reload while HA is already running.
+        if self.hass.state is CoreState.running:
+            self.async_on_remove(async_call_later(self.hass, 5, self._reconcile))
+        else:
+            self.async_on_remove(
+                self.hass.bus.async_listen_once(
+                    EVENT_HOMEASSISTANT_STARTED, self._reconcile
+                )
+            )
 
     @callback
     def _on_dose_logged(self, event: Event) -> None:
@@ -322,7 +358,7 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
         un-marked. Only restores if this supply actually decremented for that
         dose today; the daily reset does not fire this event."""
         entity_id = event.data.get("entity_id")
-        date_str = dt_util.now().date().isoformat()
+        date_str = med_day(dt_util.now(), self._reset_time).isoformat()
         if self._consumed.get(entity_id) == date_str:
             del self._consumed[entity_id]
             # Restore exactly what was removed; default 0 (never guess an amount)
@@ -333,7 +369,7 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
 
     @callback
     def _on_state_changed(self, event: Event) -> None:
-        """Decrement when a matching dose is marked given today."""
+        """Decrement when a matching dose is marked given (a real off -> on)."""
         entity_id = event.data.get("entity_id", "")
         if not entity_id.startswith("switch."):
             return
@@ -342,33 +378,95 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
         # Only a real off -> on transition (restore writes have old_state None).
         if old is None or new is None or old.state != "off" or new.state != "on":
             return
-        if new.attributes.get("patient") != self._patient:
-            return
-        meds = new.attributes.get("medications")
+        self._consume_for_state(new, source="mark")
+
+    @callback
+    def _reconcile(self, _now: Any = None) -> None:
+        """Count any dose marked given for the current medication day that this
+        supply has not already recorded.
+
+        A decrement is normally applied by catching the dose switch's live
+        off -> on event. If that event lands while this entity is not listening
+        (an entry reload, or a restart between the mark and now), the switch
+        still restores as given, but the live event never fires again, so the
+        pill would go uncounted and the supply would read high. This catch-up
+        re-derives the decrement from the dose switches' restored given state,
+        which is itself saved crash-safely on every mark. The per-dose ledger
+        makes it idempotent: a dose already counted is skipped, so this can only
+        add a missed decrement, never double-count.
+        """
+        caught = 0
+        for state in self._matching_dose_states():
+            if self._consume_for_state(state, source="reconcile", check_given_day=True):
+                caught += 1
+        if caught:
+            _LOGGER.debug(
+                "Supply '%s' caught up %s uncounted dose(s) at load",
+                self._med,
+                caught,
+            )
+
+    @callback
+    def _consume_for_state(
+        self, state: Any, *, source: str, check_given_day: bool = False
+    ) -> bool:
+        """Decrement this supply for one dose switch currently marked given.
+
+        Shared by the live off -> on handler and the startup catch-up, so both
+        apply the same rules: right patient and medication, not a partial skip
+        of this med, scheduled for the medication day, and not already counted
+        for that day. The day boundary is the patient reset time, not midnight,
+        so a late dose files under the day it belongs to. ``check_given_day``
+        also requires the give-time itself to fall in the current medication
+        day, so the catch-up never counts a stale "given" switch left from an
+        earlier day. Returns True if it decremented.
+        """
+        if state.state != "on":
+            return False
+        attrs = state.attributes
+        if attrs.get("patient") != self._patient:
+            return False
+        meds = attrs.get("medications")
         if meds is None or not meds_contains(meds, self._med):
-            return
-        # Partial dose: this med was marked skipped on this dose today, so the
-        # dose is "given" but this supply should not come down.
-        if med_skipped(new.attributes.get("skipped"), self._med):
-            return
-        if not is_due(new.attributes, dt_util.now().date()):
-            return
-        date_str = dt_util.now().date().isoformat()
-        if self._consumed.get(entity_id) == date_str:
-            return  # already counted this dose today
+            return False
+        # Partial dose: this med was marked skipped on this dose, so the dose is
+        # "given" but this supply should not come down.
+        if med_skipped(attrs.get("skipped"), self._med):
+            return False
+        day = med_day(dt_util.now(), self._reset_time)
+        day_str = day.isoformat()
+        if check_given_day:
+            given_at = dt_util.parse_datetime(attrs.get("given_at") or "")
+            if (
+                given_at is not None
+                and med_day(dt_util.as_local(given_at), self._reset_time) != day
+            ):
+                return False
+        if not is_due(attrs, day):
+            return False
+        if self._consumed.get(state.entity_id) == day_str:
+            return False  # already counted this dose for this medication day
         # Honour an amount chosen at mark time (adjustable-quantity dose); else
         # fall back to the dose's own amount or the supply default.
         amount = resolve_mark_amount(
-            new.attributes.get("marked_units"),
-            new.attributes.get("dose_units"),
-            self._per_dose,
+            attrs.get("marked_units"), attrs.get("dose_units"), self._per_dose
         )
         self._value, removed = apply_consumption(self._value, amount)
-        self._consumed[entity_id] = date_str
+        self._consumed[state.entity_id] = day_str
         # Record what actually came off (clamped at 0), so an un-mark gives back
         # exactly that, never the full requested amount on a near-empty supply.
-        self._consumed_amount[entity_id] = removed
+        self._consumed_amount[state.entity_id] = removed
+        _LOGGER.debug(
+            "Supply '%s' -%s via %s for %s (%s); now %s",
+            self._med,
+            removed,
+            source,
+            state.entity_id,
+            day_str,
+            self._value,
+        )
         self.async_write_ha_state()
+        return True
 
     async def async_set_native_value(self, value: float) -> None:
         """Manual adjust / refill (e.g. set back to a full bottle)."""
