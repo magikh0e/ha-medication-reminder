@@ -1,0 +1,252 @@
+{
+  "issues": {
+    "supply_no_matching_dose": {
+      "title": "Bevakat läkemedelsförråd saknar matchande dos",
+      "description": "Läkemedelsförrådet \"{medication}\" för {patient} matchar inte läkemedlet i någon dos och kommer därför aldrig att minska. Kontrollera stavningen under Konfigurera (namnet måste exakt matcha läkemedelsnamnet i en dos) eller ta bort förrådet."
+    }
+  },
+  "config": {
+    "step": {
+      "user": {
+        "title": "Lägg till en patient",
+        "description": "Skapa ett läkemedelsschema för en person eller ett husdjur. Välj patienttyp (för ikonen) och vem som ska få påminnelser. Därefter kan du lägga till doser.",
+        "data": {
+          "patient": "Patientens namn",
+          "patient_type": "Patienttyp",
+          "notify": "Mottagare av påminnelser (person eller grupp)"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "En patient med det här namnet är redan konfigurerad."
+    }
+  },
+  "options": {
+    "abort": {
+      "no_doses": "Lägg först till en dos. Det finns ännu inga doser att redigera.",
+      "no_medications": "Lägg först till en dos. Läkemedelsinformation kopplas till ett läkemedel som redan ingår i någon av patientens doser.",
+      "no_medication_detail": "Lägg först till läkemedelsinformation. Det finns ännu inget att redigera.",
+      "no_supplies": "Lägg först till ett läkemedelsförråd att bevaka. Det finns ännu inget att redigera."
+    },
+    "error": {
+      "duplicate_dose": "Det finns redan en dos med den här tiden och de här läkemedlen. Välj en annan tid eller kombinera dem till en dos.",
+      "supply_exists": "Det här läkemedlet har redan ett bevakat förråd. Välj Redigera läkemedelsförråd för att ändra det.",
+      "invalid_time": "En av de extra tiderna är ogiltig. Använd 24-timmarsformatet HH:MM och separera tiderna med kommatecken, t.ex. 14:00, 20:00.",
+      "end_before_start": "Slutdatumet infaller före startdatumet. Välj ett slutdatum som är samma som eller senare än startdatumet, eller töm något av datumen."
+    },
+    "step": {
+      "init": {
+        "title": "Hantera läkemedel",
+        "menu_options": {
+          "doses": "Doser",
+          "supplies": "Läkemedelsförråd",
+          "med_details": "Läkemedelsinformation",
+          "settings": "Påminnelseinställningar"
+        }
+      },
+      "doses": {
+        "title": "Doser",
+        "menu_options": {
+          "add_dose": "Lägg till en dos",
+          "edit_dose": "Redigera en dos",
+          "remove_dose": "Ta bort en dos"
+        }
+      },
+      "supplies": {
+        "title": "Läkemedelsförråd",
+        "menu_options": {
+          "add_supply": "Lägg till läkemedelsförråd",
+          "edit_supply": "Redigera läkemedelsförråd",
+          "remove_supply": "Ta bort läkemedelsförråd"
+        }
+      },
+      "med_details": {
+        "title": "Läkemedelsinformation",
+        "menu_options": {
+          "medication_detail": "Lägg till läkemedelsinformation",
+          "edit_medication": "Redigera läkemedelsinformation",
+          "remove_medication": "Ta bort läkemedelsinformation"
+        }
+      },
+      "add_dose": {
+        "title": "Lägg till en dos",
+        "description": "Välj tid och ange läkemedel. Välj sedan hur dosen ska upprepas: på utvalda veckodagar (alla dagar = dagligen), med ett visst antal dagars mellanrum eller i en cykel med dagar med och utan dosering, räknat från ett startdatum.",
+        "data": {
+          "time": "Tid",
+          "meds": "Läkemedel",
+          "schedule_type": "Upprepning",
+          "days": "Veckodagar (för veckovis upprepning)",
+          "interval_days": "Var N:e dag (för intervall)",
+          "cycle_on": "Dagar med dosering (för cykel)",
+          "cycle_off": "Dagar utan dosering (för cykel)",
+          "anchor_date": "Startdatum (valfritt; inga påminnelser före detta datum)",
+          "min_interval_hours": "Minsta antal timmar mellan doser (endast vid behov; 0 = ingen gräns)",
+          "max_per_day": "Högsta antal doser per dag (endast vid behov; 0 = ingen gräns)",
+          "dose_units": "Antal enheter som förbrukas (denna dos)",
+          "ask_units": "Fråga efter mängd vid markering",
+          "additional_times": "Ytterligare tider (valfritt)",
+          "end_date": "Slutdatum (valfritt; inga påminnelser efter detta datum)"
+        },
+        "data_description": {
+          "meds": "Separera flera läkemedel med &, + eller kommatecken. Ett snedstreck fungerar bara som avgränsare om det finns mellanslag på båda sidor, så ett namn som 'Carbimazol 5mg (1/2)' hålls ihop.",
+          "min_interval_hours": "För läkemedel som tas vid behov visas en varning (registreringen blockeras aldrig) om nästa dos registreras tidigare än det angivna antalet timmar, t.ex. om det ska gå minst 4 timmar mellan doser av ett smärtstillande läkemedel.",
+          "max_per_day": "För läkemedel som tas vid behov visas en varning när så här många doser har registrerats under dagen.",
+          "dose_units": "Åsidosätter läkemedlets standardmängd per dos, men bara för denna dos. Ange 0 för att använda standardvärdet. Använd decimaltal som 0.5 för en halv tablett.",
+          "ask_units": "Aktivera för ett läkemedel där dosmängden varierar (t.ex. utifrån ett mätvärde). Då visas ett mängdfält där du anger mängden innan dosen markeras som given. Läkemedelsförrådet minskar med den angivna mängden i stället för den förinställda. Avaktiverad = använd alltid den förinställda mängden.",
+          "additional_times": "Skapa samma dos vid flera tidpunkter samtidigt, t.ex. för ett läkemedel som tas två gånger om dagen. Ange ytterligare tider i 24-timmarsformat, separerade med kommatecken (14:00, 20:00). Varje tid skapar en egen dos med samma läkemedel, schema och inställningar. Lämna tomt om dosen bara ska ges vid en tidpunkt.",
+          "end_date": "Valfritt. Sluta påminna om läkemedlet efter detta datum, t.ex. vid en tidsbegränsad behandling på 7 dagar eller 3 månader. Lämna tomt om påminnelserna ska fortsätta utan slutdatum."
+        }
+      },
+      "edit_dose": {
+        "title": "Redigera en dos",
+        "data": {
+          "dose": "Dos att redigera"
+        }
+      },
+      "edit_dose_details": {
+        "title": "Redigera dos",
+        "description": "Ändra dosen och spara för att ersätta den. Om du bara ändrar schemat behålls samma entitet. Om du ändrar tiden eller läkemedlen skapas en ny entitet och dess historik börjar om.",
+        "data": {
+          "time": "Tid",
+          "meds": "Läkemedel",
+          "schedule_type": "Upprepning",
+          "days": "Veckodagar (för veckovis upprepning)",
+          "interval_days": "Var N:e dag (för intervall)",
+          "cycle_on": "Dagar med dosering (för cykel)",
+          "cycle_off": "Dagar utan dosering (för cykel)",
+          "anchor_date": "Startdatum (valfritt; inga påminnelser före detta datum)",
+          "min_interval_hours": "Minsta antal timmar mellan doser (endast vid behov; 0 = ingen gräns)",
+          "max_per_day": "Högsta antal doser per dag (endast vid behov; 0 = ingen gräns)",
+          "dose_units": "Antal enheter som förbrukas (denna dos)",
+          "ask_units": "Fråga efter mängd vid markering",
+          "end_date": "Slutdatum (valfritt; inga påminnelser efter detta datum)"
+        },
+        "data_description": {
+          "meds": "Separera flera läkemedel med &, + eller kommatecken. Ett snedstreck fungerar bara som avgränsare om det finns mellanslag på båda sidor, så ett namn som 'Carbimazol 5mg (1/2)' hålls ihop.",
+          "min_interval_hours": "För läkemedel som tas vid behov visas en varning (registreringen blockeras aldrig) om nästa dos registreras tidigare än det angivna antalet timmar, t.ex. om det ska gå minst 4 timmar mellan doser av ett smärtstillande läkemedel.",
+          "max_per_day": "För läkemedel som tas vid behov visas en varning när så här många doser har registrerats under dagen.",
+          "dose_units": "Åsidosätter läkemedlets standardmängd per dos, men bara för denna dos. Ange 0 för att använda standardvärdet. Använd decimaltal som 0.5 för en halv tablett.",
+          "ask_units": "Aktivera för ett läkemedel där dosmängden varierar (t.ex. utifrån ett mätvärde). Då visas ett mängdfält där du anger mängden innan dosen markeras som given. Läkemedelsförrådet minskar med den angivna mängden i stället för den förinställda. Avaktiverad = använd alltid den förinställda mängden.",
+          "end_date": "Valfritt. Sluta påminna om läkemedlet efter detta datum, t.ex. vid en tidsbegränsad behandling på 7 dagar eller 3 månader. Lämna tomt om påminnelserna ska fortsätta utan slutdatum."
+        }
+      },
+      "remove_dose": {
+        "title": "Ta bort doser",
+        "data": {
+          "remove": "Doser att ta bort"
+        }
+      },
+      "add_supply": {
+        "title": "Bevaka ett läkemedelsförråd",
+        "description": "Håll reda på hur mycket som finns kvar av ett läkemedel. Förrådet minskar varje gång en dos med läkemedlet markeras som given, varnar när mängden når din gräns för lågt saldo och beräknar när läkemedlet kan ta slut utifrån schemat. Välj ett läkemedel som ingår i patientens doser.",
+        "data": {
+          "supply_med": "Läkemedlets namn",
+          "supply_units": "Antal enheter i förrådet",
+          "supply_per_dose": "Antal enheter som förbrukas per dos",
+          "supply_threshold": "Gräns för lågt lagersaldo",
+          "supply_refill_to": "Påfyllningsmängd (fullt förråd)",
+          "supply_refill_add": "Lägg till mängden vid påfyllning (ny förpackning)",
+          "supply_cost": "Kostnad per enhet (0 = följ inte upp)",
+          "supply_refills": "Återstående uttag på receptet (0 = följ inte upp)",
+          "supply_unit": "Enhet eller beredningsform (valfritt)"
+        },
+        "data_description": {
+          "supply_refill_add": "Vid påfyllning läggs påfyllningsmängden till den mängd som redan finns kvar (t.ex. 17 + 30 = 47), i stället för att saldot sätts till påfyllningsmängden.",
+          "supply_cost": "Kostnaden för en enhet (t.ex. en tablett eller en ml) i din valuta. Används för att beräkna förrådets värde och kostnaden per dos. Ange 0 om kostnader inte ska följas upp.",
+          "supply_refills": "Hur många uttag som återstår på receptet. Varje gång du trycker på påfyllningsknappen minskar antalet med ett. När det når noll flaggas förrådet som lågt så att du vet att det är dags att ordna ett nytt recept. Ange 0 för att inte följa upp uttagen.",
+          "supply_unit": "Den enhet som läkemedlet räknas i (tabletter, droppar, ml, sprutor, pennor osv.). Välj en enhet eller skriv en egen. Enheten visas bredvid antalet och dosmängden, t.ex. '30 tabletter'. Lämna tomt om endast siffran ska visas."
+        }
+      },
+      "edit_supply": {
+        "title": "Redigera läkemedelsförråd",
+        "data": {
+          "supply_med": "Läkemedel"
+        }
+      },
+      "edit_supply_details": {
+        "title": "Redigera läkemedelsförråd för {medication}",
+        "description": "Uppdatera det bevakade läkemedelsförrådet för {medication}.",
+        "data": {
+          "supply_units": "Antal enheter i förrådet",
+          "supply_per_dose": "Antal enheter som förbrukas per dos",
+          "supply_threshold": "Gräns för lågt lagersaldo",
+          "supply_refill_to": "Påfyllningsmängd (fullt förråd)",
+          "supply_refill_add": "Lägg till mängden vid påfyllning (ny förpackning)",
+          "supply_cost": "Kostnad per enhet (0 = följ inte upp)",
+          "supply_refills": "Återstående uttag på receptet (0 = följ inte upp)",
+          "supply_unit": "Enhet eller beredningsform (valfritt)"
+        },
+        "data_description": {
+          "supply_refill_add": "Vid påfyllning läggs påfyllningsmängden till den mängd som redan finns kvar (t.ex. 17 + 30 = 47), i stället för att saldot sätts till påfyllningsmängden.",
+          "supply_cost": "Kostnaden för en enhet (t.ex. en tablett eller en ml) i din valuta. Används för att beräkna förrådets värde och kostnaden per dos. Ange 0 om kostnader inte ska följas upp.",
+          "supply_refills": "Hur många uttag som återstår på receptet. Varje gång du trycker på påfyllningsknappen minskar antalet med ett. När det når noll flaggas förrådet som lågt så att du vet att det är dags att ordna ett nytt recept. Ange 0 för att inte följa upp uttagen.",
+          "supply_unit": "Den enhet som läkemedlet räknas i (tabletter, droppar, ml, sprutor, pennor osv.). Välj en enhet eller skriv en egen. Enheten visas bredvid antalet och dosmängden, t.ex. '30 tabletter'. Lämna tomt om endast siffran ska visas."
+        }
+      },
+      "remove_supply": {
+        "title": "Ta bort bevakade läkemedelsförråd",
+        "data": {
+          "remove": "Läkemedelsförråd att sluta bevaka"
+        }
+      },
+      "medication_detail": {
+        "title": "Läkemedelsinformation",
+        "description": "Valfria kompletterande uppgifter om ett läkemedel, som sparas separat från det korta namn som används för dosen. Välj ett läkemedel från patientens doser. Om information redan finns uppdateras den när du sparar.",
+        "data": {
+          "med_name": "Läkemedlets namn",
+          "full_name": "Fullständigt namn (valfritt)",
+          "strength": "Styrka (t.ex. 5 mg)",
+          "brand": "Varumärke (valfritt)",
+          "prescribed_for": "Ordinerat för (tillstånd)",
+          "dosage": "Doseringsbeskrivning (t.ex. 2 tabletter två gånger dagligen)"
+        }
+      },
+      "edit_medication": {
+        "title": "Redigera läkemedelsinformation",
+        "data": {
+          "med_name": "Läkemedel"
+        }
+      },
+      "edit_medication_details": {
+        "title": "Redigera läkemedelsinformation för {medication}",
+        "description": "Uppdatera läkemedelsinformationen för {medication}.",
+        "data": {
+          "full_name": "Fullständigt namn (valfritt)",
+          "strength": "Styrka (t.ex. 5 mg)",
+          "brand": "Varumärke (valfritt)",
+          "prescribed_for": "Ordinerat för (tillstånd)",
+          "dosage": "Doseringsbeskrivning (t.ex. 2 tabletter två gånger dagligen)"
+        }
+      },
+      "remove_medication": {
+        "title": "Ta bort läkemedelsinformation",
+        "data": {
+          "remove": "Läkemedel vars information ska tas bort"
+        }
+      },
+      "settings": {
+        "title": "Påminnelseinställningar",
+        "description": "Ange patienttyp, vem som ska få påminnelser, tidsformat, tidpunkt för daglig återställning av dosstatus och hur påminnelser ska upprepas.",
+        "data": {
+          "patient_type": "Patienttyp",
+          "notify": "Mottagare av påminnelser (person eller grupp)",
+          "time_format": "Tidsformat",
+          "reset_time": "Tid för daglig återställning",
+          "nag_minutes": "Påminnelseperiod (minuter efter dos)",
+          "nag_interval": "Intervall för upprepade påminnelser (minuter)",
+          "skip_buttons": "Knappar för att hoppa över enstaka läkemedel",
+          "plan_view": "Doseringsplan för dosett",
+          "pause_switches": "Reglage för att pausa doser",
+          "streak": "Dagar i följd med tagna doser"
+        },
+        "data_description": {
+          "nag_interval": "Använd ett tal som är delbart med 5. Påminnelser kontrolleras var femte minut, så andra värden ger ojämna intervall mellan upprepningarna.",
+          "skip_buttons": "För doser som innehåller minst två läkemedel läggs en knapp till för varje läkemedel. Knappen markerar dosen som given men hoppar över det aktuella läkemedlet, så dess förråd inte minskar. Avaktiverat som standard. Aktivera om ett läkemedel i en kombinerad dos ibland behöver hoppas över.",
+          "plan_view": "Lägg till en valfri dagsplan för att fylla en dosett: en plansensor och ett numeriskt värde för att bläddra mellan dagar (0 = i dag). De medföljande kontrollpanelerna visar en tabell över dagens läkemedel och mängder för varje doseringstid. Avaktiverat som standard.",
+          "pause_switches": "Lägg till ett pausreglage för varje schemalagd dos. Aktivera det för att pausa doseringen tills du stänger av reglaget igen, t.ex. vid ett tillfälligt uppehåll enligt läkarens ordination eller för säsongsmedicinering. Inga påminnelser skickas, dosen markeras inte som missad och förrådet minskar inte. Pausen gäller över flera dagar, till skillnad från att hoppa över dagens dos. Avaktiverat som standard.",
+          "streak": "Lägg till en sensor per patient som följer hur många dagar i följd alla schemalagda doser har tagits. Den visar även den längsta sammanhängande perioden, senaste dagen med en missad dos och följsamhet i procent under de senaste 30 dagarna. En dos som hoppats över bryter inte perioden men sänker procenttalet; en missad dos bryter perioden. Avaktiverat som standard. En kort daglig historik sparas så att tidigare perioder kan visas."
+        }
+      }
+    }
+  }
+}
