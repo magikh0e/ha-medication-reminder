@@ -19,8 +19,10 @@ Decrement rules (deliberately simple and safe):
   persisted in the entity attributes and restored on startup, so a reload (the
   options flow reloads the entry on every change) or a restart between a mark
   and an un-mark does not lose it, which would otherwise drop the restore or
-  double-count a re-toggle. A manual set or a refill is a fresh baseline and
-  clears the tracking.
+  double-count a re-toggle. An additive refill preserves that tracking. A
+  manual count or set-to refill records already-given doses with zero refundable
+  amount, so the authoritative new count is neither decremented nor refunded
+  for those earlier marks after a reload.
 - On startup the supply also catches up: a decrement can be lost if a mark lands
   while this entity is not listening (a reload, or a restart between the mark
   and now), since the switch restores as given but the live off -> on event
@@ -353,10 +355,11 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
                 )
             else:
                 self._value = float(self._refill_to)
-            # A refill is a fresh baseline; drop today's decrement tracking so a
-            # later un-mark cannot add a dose back on top of the refilled count.
-            self._consumed.clear()
-            self._consumed_amount.clear()
+                # A set-to count already includes earlier doses. Remember them
+                # without a refund so reconciliation cannot deduct them again.
+                self._reset_consumption_baseline()
+            # Adding a package leaves earlier consumption/refunds valid; retain
+            # their ledger across both reconciliation and entity restoration.
             # Using a refill spends one of the prescription's refills.
             if self._refills_cfg > 0:
                 self._refills_remaining = next_refills_remaining(
@@ -419,6 +422,47 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
             )
 
     @callback
+    def _reset_consumption_baseline(self) -> None:
+        """Treat an explicit count as authoritative for already-given doses.
+
+        Keep deduplication markers (with no refundable amount) for the current
+        medication day. Clearing all markers would let startup reconciliation
+        subtract those doses from the new count a second time.
+        """
+        self._consumed.clear()
+        self._consumed_amount.clear()
+        for state in self._matching_dose_states():
+            day_str = self._consumption_day(state, check_given_day=True)
+            if day_str is not None:
+                self._consumed[state.entity_id] = day_str
+                self._consumed_amount[state.entity_id] = 0.0
+
+    @callback
+    def _consumption_day(self, state: Any, *, check_given_day: bool) -> str | None:
+        """Medication day for a matching, given, non-skipped scheduled dose."""
+        if state.state != "on":
+            return None
+        attrs = state.attributes
+        if attrs.get("patient") != self._patient:
+            return None
+        meds = attrs.get("medications")
+        if meds is None or not meds_contains(meds, self._med):
+            return None
+        if med_skipped(attrs.get("skipped"), self._med):
+            return None
+        day = med_day(dt_util.now(), self._reset_time)
+        if check_given_day:
+            given_at = dt_util.parse_datetime(attrs.get("given_at") or "")
+            if (
+                given_at is not None
+                and med_day(dt_util.as_local(given_at), self._reset_time) != day
+            ):
+                return None
+        if not is_due(attrs, day):
+            return None
+        return day.isoformat()
+
+    @callback
     def _consume_for_state(
         self, state: Any, *, source: str, check_given_day: bool = False
     ) -> bool:
@@ -433,29 +477,10 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
         day, so the catch-up never counts a stale "given" switch left from an
         earlier day. Returns True if it decremented.
         """
-        if state.state != "on":
+        day_str = self._consumption_day(state, check_given_day=check_given_day)
+        if day_str is None:
             return False
         attrs = state.attributes
-        if attrs.get("patient") != self._patient:
-            return False
-        meds = attrs.get("medications")
-        if meds is None or not meds_contains(meds, self._med):
-            return False
-        # Partial dose: this med was marked skipped on this dose, so the dose is
-        # "given" but this supply should not come down.
-        if med_skipped(attrs.get("skipped"), self._med):
-            return False
-        day = med_day(dt_util.now(), self._reset_time)
-        day_str = day.isoformat()
-        if check_given_day:
-            given_at = dt_util.parse_datetime(attrs.get("given_at") or "")
-            if (
-                given_at is not None
-                and med_day(dt_util.as_local(given_at), self._reset_time) != day
-            ):
-                return False
-        if not is_due(attrs, day):
-            return False
         if self._consumed.get(state.entity_id) == day_str:
             return False  # already counted this dose for this medication day
         # Honour an amount chosen at mark time (adjustable-quantity dose); else
@@ -483,10 +508,9 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
     async def async_set_native_value(self, value: float) -> None:
         """Manual adjust / refill (e.g. set back to a full bottle)."""
         self._value = max(0.0, float(value))
-        # A manual correction is authoritative; drop today's decrement tracking
-        # so a later un-mark does not add a dose back on top of the new value.
-        self._consumed.clear()
-        self._consumed_amount.clear()
+        # The new physical count already accounts for earlier doses. Preserve
+        # their deduplication markers, but no refund against this new baseline.
+        self._reset_consumption_baseline()
         self.async_write_ha_state()
 
 
