@@ -31,6 +31,7 @@ from .const import (
     CONF_DAYS,
     CONF_DOSES,
     CONF_DOSE_UNITS,
+    CONF_END_DATE,
     CONF_INTERVAL_DAYS,
     CONF_MEDS,
     CONF_MONTH_DAYS,
@@ -256,6 +257,7 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         _off = dose.get(CONF_CYCLE_OFF)
         self._cycle_off = int(_off if _off is not None else DEFAULT_CYCLE_OFF)
         self._anchor_date = dose.get(CONF_ANCHOR_DATE) or ""
+        self._end_date = dose.get(CONF_END_DATE) or ""
         self._month_days = dose.get(CONF_MONTH_DAYS) or list(DEFAULT_MONTH_DAYS)
         # When the dose was last marked given (ISO), persisted across restarts.
         self._given_at: str | None = None
@@ -311,6 +313,7 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
             CONF_DAYS: self._days,
             CONF_INTERVAL_DAYS: self._interval_days,
             CONF_ANCHOR_DATE: self._anchor_date,
+            CONF_END_DATE: self._end_date,
             CONF_CYCLE_ON: self._cycle_on,
             CONF_CYCLE_OFF: self._cycle_off,
             CONF_MONTH_DAYS: self._month_days,
@@ -355,6 +358,7 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
             "schedule_type": self._schedule_type,
             "interval_days": self._interval_days,
             "anchor_date": self._anchor_date,
+            "end_date": self._end_date,
             "cycle_on": self._cycle_on,
             "cycle_off": self._cycle_off,
             "month_days": self._month_days,
