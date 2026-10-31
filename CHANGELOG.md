@@ -5,6 +5,11 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.46.3] - 2026-10-31
+### Fixed
+- Supply stock no longer drops by an extra dose after a refill or a manual count. When a dose had already been marked given and you then added a package or set the count by hand, the next reload re-subtracted that same dose, so a bottle that should have read 41 came back as 40. Adding a package now keeps the day's consumption record intact, so an un-mark still gives back exactly what came off, while a manual count or a set-to refill is treated as authoritative: the already-given doses are remembered as counted, so reconciliation cannot deduct them again and an un-mark cannot inflate the total, and a dose genuinely missed while the integration was not listening is still caught. (Contributed by GitHub user aandreimc-cyber, #57.)
+- A dose with an end date now stops counting as scheduled once the course is over. The dose switch was not carrying the configured end date into its schedule and exposed state attributes, so a finished course could still report as scheduled for today, show as pending or overdue, and have its medication counted down from the supply. The end date added in 0.46.0 is now honoured everywhere the switch is read, not only by `is_due`; doses without an end date are unchanged. (Contributed by GitHub user aandreimc-cyber, #58.)
+
 ## [0.46.2] - 2026-10-24
 ### Fixed
 - Bundled dashboards now sort the time-ordered cards by dose time instead of display name. The **Mark given**, **Dose amounts**, **Took most of it**, and **Pause a medication** auto-entities cards sorted alphabetically by the entity name, so in 12-hour format a dose like "10:00 PM" sorted before "2:00 PM" and the list fell out of chronological order. They now sort on the `dose_time` attribute (24-hour `HH:MM`), so every layout lists doses in true time order regardless of the 12h/24h display setting. The supply, as-needed, and adherence cards are unchanged (they are name-ordered by design). Re-paste (or re-import) your dashboard to pick up the fix. (Reported by a user.)
