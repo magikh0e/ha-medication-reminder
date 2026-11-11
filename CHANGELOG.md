@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.46.4] - 2026-11-10
+### Fixed
+- The adherence streak no longer counts paused medications as missed. If a dose was paused (suspended), the streak sensor still treated it as due for the day, but a paused med is never marked given or skipped, so every day scored as a miss: the streak stuck at 0 and the 30-day adherence percentage read 0%. Paused doses are now left out of the streak scoring, the same way they are already left out of the pill-box plan, so a day on which every due dose was taken or paused counts as a clean day and the streak keeps running. Only affects setups using both the opt-in pause switches and the opt-in adherence streak. (Reported by GitHub user Fleurelle13, #60.)
+
 ## [0.46.3] - 2026-10-31
 ### Fixed
 - Supply stock no longer drops by an extra dose after a refill or a manual count. When a dose had already been marked given and you then added a package or set the count by hand, the next reload re-subtracted that same dose, so a bottle that should have read 41 came back as 40. Adding a package now keeps the day's consumption record intact, so an un-mark still gives back exactly what came off, while a manual count or a set-to refill is treated as authoritative: the already-given doses are remembered as counted, so reconciliation cannot deduct them again and an un-mark cannot inflate the total, and a dose genuinely missed while the integration was not listening is still caught. (Contributed by GitHub user aandreimc-cyber, #57.)
