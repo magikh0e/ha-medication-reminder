@@ -623,11 +623,32 @@ class MedicationStreakSensor(SensorEntity):
         """The current medication day (reset-time bounded, not midnight)."""
         return med_day(dt_util.now(), self._reset_time)
 
+    def _paused_keys(self) -> set:
+        """(time, meds) of this patient's doses currently paused (suspended)."""
+        keys = set()
+        for s in self.hass.states.async_all("switch"):
+            if s.attributes.get("patient") != self._patient:
+                continue
+            if s.attributes.get("paused"):
+                keys.add(
+                    (
+                        str(s.attributes.get("dose_time")),
+                        str(s.attributes.get("medications")),
+                    )
+                )
+        return keys
+
     def _scheduled_keys(self, day) -> set:
-        """Keys of this patient's scheduled (non-PRN) doses due on `day`."""
+        """Keys of this patient's scheduled (non-PRN) doses due on `day`,
+        excluding any currently paused (suspended) dose. A paused med is left
+        out, same as the pill-box plan, so a day on which everything due was
+        taken or paused stays a clean day instead of scoring as missed."""
+        paused = self._paused_keys()
         keys = set()
         for dose in self._doses:
             if (dose.get(CONF_SCHEDULE_TYPE) or "") == SCHEDULE_PRN:
+                continue
+            if (str(dose.get(CONF_TIME))[:5], str(dose.get(CONF_MEDS))) in paused:
                 continue
             if is_due(dose, day):
                 keys.add(self._dose_key(dose.get(CONF_TIME), dose.get(CONF_MEDS)))
