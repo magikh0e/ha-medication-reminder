@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.46.5] - 2026-11-12
+### Fixed
+- Supply now deducts for a dose marked given a day late (or early). A medication scheduled for a specific day, for example a weekly dose on Saturdays, did not come down from the stock if it was marked given after the day had rolled over (say on Sunday morning), because the supply only decremented when the dose was due on the current medication day. Consumption now follows the mark itself: marking a scheduled dose given decrements the supply whether it is on time, a day late, or early, as long as it is still within the medication's course. A dose past its end date, or an as-needed (PRN) med, is unchanged. (Reported by GitHub user pppingme, #61.)
+
 ## [0.46.4] - 2026-11-10
 ### Fixed
 - The adherence streak no longer counts paused medications as missed. If a dose was paused (suspended), the streak sensor still treated it as due for the day, but a paused med is never marked given or skipped, so every day scored as a miss: the streak stuck at 0 and the 30-day adherence percentage read 0%. Paused doses are now left out of the streak scoring, the same way they are already left out of the pill-box plan, so a day on which every due dose was taken or paused counts as a clean day and the streak keeps running. Only affects setups using both the opt-in pause switches and the opt-in adherence streak. (Reported by GitHub user Fleurelle13, #60.)
