@@ -198,7 +198,10 @@ def test_pending_dose_after_manual_count_is_still_consumed_once(harness):
         {"patient": "Other patient"},
         {"medications": "Other med"},
         {"given_at": "2026-05-31T14:00:00+00:00"},
-        {"schedule_type": "monthly", "month_days": [2]},
+        # Outside its date range (course ended): not eligible even if marked on.
+        # A dose merely not due *today* (e.g. taken a day late or early) now is
+        # eligible, so it is no longer an ineligible case here.
+        {"end_date": "2026-05-01"},
     ],
 )
 def test_authoritative_count_does_not_track_ineligible_doses(harness, attributes):

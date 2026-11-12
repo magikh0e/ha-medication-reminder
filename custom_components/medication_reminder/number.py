@@ -83,7 +83,7 @@ from .const import (
     apply_consumption,
     dose_consumption,
     doses_per_week,
-    is_due,
+    in_schedule_window,
     med_day,
     med_skipped,
     meds_contains,
@@ -439,7 +439,16 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
 
     @callback
     def _consumption_day(self, state: Any, *, check_given_day: bool) -> str | None:
-        """Medication day for a matching, given, non-skipped scheduled dose."""
+        """Medication day for a matching, given, non-skipped dose.
+
+        A dose counts once it is marked given, whether or not today is one of its
+        scheduled days, so a dose taken a day late (or early) still decrements
+        the supply. It must still be inside the dose's active date range (on or
+        after its start date, on or before its end date); an ended course and an
+        as-needed (PRN) dose are not counted here (PRN comes down through its own
+        log-dose button). The daily switch reset and the per-dose ledger keep a
+        counted dose from counting twice.
+        """
         if state.state != "on":
             return None
         attrs = state.attributes
@@ -451,6 +460,8 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
         if med_skipped(attrs.get("skipped"), self._med):
             return None
         day = med_day(dt_util.now(), self._reset_time)
+        if not in_schedule_window(attrs, day):
+            return None
         if check_given_day:
             given_at = dt_util.parse_datetime(attrs.get("given_at") or "")
             if (
@@ -458,8 +469,6 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
                 and med_day(dt_util.as_local(given_at), self._reset_time) != day
             ):
                 return None
-        if not is_due(attrs, day):
-            return None
         return day.isoformat()
 
     @callback
@@ -470,9 +479,9 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
 
         Shared by the live off -> on handler and the startup catch-up, so both
         apply the same rules: right patient and medication, not a partial skip
-        of this med, scheduled for the medication day, and not already counted
-        for that day. The day boundary is the patient reset time, not midnight,
-        so a late dose files under the day it belongs to. ``check_given_day``
+        of this med, not an as-needed (PRN) dose, and not already counted for
+        that day. The day boundary is the patient reset time, not midnight, so a
+        late dose files under the day it belongs to. ``check_given_day``
         also requires the give-time itself to fall in the current medication
         day, so the catch-up never counts a stale "given" switch left from an
         earlier day. Returns True if it decremented.

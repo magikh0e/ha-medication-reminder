@@ -481,6 +481,28 @@ def is_due(data, on_date):
     return WEEKDAYS[on_date.weekday()] in days
 
 
+def in_schedule_window(data, on_date):
+    """Whether `on_date` falls within a dose's active date range.
+
+    True when the dose has started (on or after its start/anchor date) and has
+    not ended (on or before its end date). Unlike `is_due`, this ignores the
+    recurrence pattern (which weekday, interval, cycle, or month-day), so a dose
+    taken a day late or early still counts as inside its own course. Used for
+    supply consumption, which follows the mark rather than the schedule day; a
+    dose outside its date range, or an as-needed (PRN) dose, is not in a window.
+    """
+    stype = data.get(CONF_SCHEDULE_TYPE) or SCHEDULE_WEEKDAYS
+    if stype == SCHEDULE_PRN:
+        return False
+    anchor = _parse_iso_date(data.get(CONF_ANCHOR_DATE))
+    if anchor is not None and on_date < anchor:
+        return False
+    end = _parse_iso_date(data.get(CONF_END_DATE))
+    if end is not None and on_date > end:
+        return False
+    return True
+
+
 def reset_hms(reset_time):
     """Parse a daily reset time string into an (hour, minute, second) tuple.
 
