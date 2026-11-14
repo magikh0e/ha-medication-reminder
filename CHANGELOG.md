@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.47.0] - 2026-11-14
+### Added
+- Dose switches now expose a `reset_time` attribute carrying the patient's configured daily reset time. This is for dashboards and templates: a dose's `dose_time` is a bare `HH:MM`, so when the daily reset is set to something other than midnight (for example 04:00) a dose scheduled before the reset belongs to the previous medication day, and `today_at(dose_time)` can land on the wrong date. With `reset_time` available alongside `dose_time` on each dose entity, a template has the boundary it needs to place every dose on the correct day. It is an extra attribute only; nothing about the integration's behaviour changes. (Requested by GitHub user msacharewicz, #64.)
+
 ## [0.46.5] - 2026-11-12
 ### Fixed
 - Supply now deducts for a dose marked given a day late (or early). A medication scheduled for a specific day, for example a weekly dose on Saturdays, did not come down from the stock if it was marked given after the day had rolled over (say on Sunday morning), because the supply only decremented when the dose was due on the current medication day. Consumption now follows the mark itself: marking a scheduled dose given decrements the supply whether it is on time, a day late, or early, as long as it is still within the medication's course. A dose past its end date, or an as-needed (PRN) med, is unchanged. (Reported by GitHub user pppingme, #61.)
