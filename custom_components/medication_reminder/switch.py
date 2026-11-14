@@ -258,6 +258,10 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         self._cycle_off = int(_off if _off is not None else DEFAULT_CYCLE_OFF)
         self._anchor_date = dose.get(CONF_ANCHOR_DATE) or ""
         self._end_date = dose.get(CONF_END_DATE) or ""
+        # The patient's daily reset time, echoed so a dashboard can place a bare
+        # dose_time ("HH:MM") on the right medication day when the reset is not
+        # midnight (a dose before the reset belongs to the previous day).
+        self._reset_time = str(entry.options.get(CONF_RESET_TIME, DEFAULT_RESET_TIME))
         self._month_days = dose.get(CONF_MONTH_DAYS) or list(DEFAULT_MONTH_DAYS)
         # When the dose was last marked given (ISO), persisted across restarts.
         self._given_at: str | None = None
@@ -372,6 +376,7 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
             "nag_minutes": self._nag_minutes,
             "nag_interval": self._nag_interval,
             "time_format": self._time_format,
+            "reset_time": self._reset_time,
             "given_at": self._given_at,
             # Suspended until resumed: no reminders, not overdue, left out of the
             # day summary and the pill-box plan. Persists across the daily reset.
