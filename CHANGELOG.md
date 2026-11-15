@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.47.1] - 2026-11-15
+### Fixed
+- The supply run-out estimate no longer stays blank for a medication that has not been used since startup. The estimated run-out date (and the related doses-per-week and cost figures) is derived from a medication's scheduled doses, and it was recomputed only when the supply's count next changed. At startup a supply could publish its first value before the dose entities had finished loading, find no matching dose, and cache an empty run-out that persisted until the next change, so supplies whose dose had not been marked given or refilled since the last restart stayed blank while their stock and doses-left still looked right. The supply now refreshes these derived values on the catch-up pass it runs just after startup, once the dose entities are available, so every supply fills in without waiting to be touched. (Reported by GitHub user msacharewicz, #63.)
+
 ## [0.47.0] - 2026-11-14
 ### Added
 - Dose switches now expose a `reset_time` attribute carrying the patient's configured daily reset time. This is for dashboards and templates: a dose's `dose_time` is a bare `HH:MM`, so when the daily reset is set to something other than midnight (for example 04:00) a dose scheduled before the reset belongs to the previous medication day, and `today_at(dose_time)` can land on the wrong date. With `reset_time` available alongside `dose_time` on each dose entity, a template has the boundary it needs to place every dose on the correct day. It is an extra attribute only; nothing about the integration's behaviour changes. (Requested by GitHub user msacharewicz, #64.)
