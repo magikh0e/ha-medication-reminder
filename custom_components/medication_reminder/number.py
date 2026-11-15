@@ -420,6 +420,16 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
                 self._med,
                 caught,
             )
+        else:
+            # Nothing to decrement, but refresh the state anyway. The run-out,
+            # doses-per-week and cost attributes are derived from the matching
+            # dose switches, and the supply's first state write at startup can
+            # land before those switches exist, caching est_runout_date as None
+            # until the supply next changes. This catch-up runs once the switches
+            # are loaded (at HA start, or shortly after a reload), so a plain
+            # re-write recomputes those attributes for a supply that is not
+            # otherwise touched.
+            self.async_write_ha_state()
 
     @callback
     def _reset_consumption_baseline(self) -> None:
