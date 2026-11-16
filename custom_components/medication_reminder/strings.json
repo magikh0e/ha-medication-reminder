@@ -70,7 +70,7 @@
       },
       "add_dose": {
         "title": "Add a dose",
-        "description": "Pick the time and list the medications, then choose how it repeats: on chosen days of the week (all days = daily), every N days, or an on/off cycle, from a start date.",
+        "description": "Pick the time and list the medications, then choose how it repeats: on chosen days of the week (all days = daily), every N days, an on/off cycle, or a relative/interval chain (N a day, each timed from when the last was taken), from a start date.",
         "data": {
           "time": "Time",
           "meds": "Medications",
@@ -79,6 +79,8 @@
           "interval_days": "Every N days (for the interval option)",
           "cycle_on": "Days on (for the on/off cycle)",
           "cycle_off": "Days off (for the on/off cycle)",
+          "relative_count": "Doses per day (for the relative/interval option)",
+          "relative_offset_hours": "Hours between doses (for the relative/interval option)",
           "anchor_date": "Start date (optional; no reminders before this date)",
           "min_interval_hours": "Minimum hours between doses (as-needed only; 0 = no limit)",
           "max_per_day": "Max doses per day (as-needed only; 0 = no limit)",
@@ -91,6 +93,7 @@
           "meds": "Separate multiple medications with &, +, or a comma. A slash only splits with spaces around it, so a name like 'Carbimazol 5mg (1/2)' stays whole.",
           "min_interval_hours": "For an as-needed medication, warn (never block) when it is logged again sooner than this many hours, e.g. a pain med no less than 4 hours apart.",
           "max_per_day": "For an as-needed medication, warn once this many doses have been logged today.",
+          "relative_offset_hours": "For the relative/interval option: the first dose is at the time above, then each later dose becomes due this many hours after you mark the previous one taken, up to the doses-per-day count, resetting the next day. Good for 'every N hours' courses like antibiotics.",
           "dose_units": "Overrides the medication's default units per dose, for this dose only. Leave 0 to use the default; use decimals like 0.5 for half a pill.",
           "ask_units": "Turn on for a medication whose dose varies (e.g. adjusted from a reading). It adds an amount field you set before marking the dose given, and the supply decrements by that amount instead of the configured one. Off = always use the configured amount.",
           "additional_times": "Create the same dose at more than one time in one go, e.g. a twice-daily med. Enter extra 24-hour times separated by commas (14:00, 20:00); each becomes its own dose with the same medication, schedule, and options. Leave blank for a single time.",
@@ -114,6 +117,8 @@
           "interval_days": "Every N days (for the interval option)",
           "cycle_on": "Days on (for the on/off cycle)",
           "cycle_off": "Days off (for the on/off cycle)",
+          "relative_count": "Doses per day (for the relative/interval option)",
+          "relative_offset_hours": "Hours between doses (for the relative/interval option)",
           "anchor_date": "Start date (optional; no reminders before this date)",
           "min_interval_hours": "Minimum hours between doses (as-needed only; 0 = no limit)",
           "max_per_day": "Max doses per day (as-needed only; 0 = no limit)",
@@ -125,6 +130,7 @@
           "meds": "Separate multiple medications with &, +, or a comma. A slash only splits with spaces around it, so a name like 'Carbimazol 5mg (1/2)' stays whole.",
           "min_interval_hours": "For an as-needed medication, warn (never block) when it is logged again sooner than this many hours, e.g. a pain med no less than 4 hours apart.",
           "max_per_day": "For an as-needed medication, warn once this many doses have been logged today.",
+          "relative_offset_hours": "For the relative/interval option: the first dose is at the time above, then each later dose becomes due this many hours after you mark the previous one taken, up to the doses-per-day count, resetting the next day. Good for 'every N hours' courses like antibiotics.",
           "dose_units": "Overrides the medication's default units per dose, for this dose only. Leave 0 to use the default; use decimals like 0.5 for half a pill.",
           "ask_units": "Turn on for a medication whose dose varies (e.g. adjusted from a reading). It adds an amount field you set before marking the dose given, and the supply decrements by that amount instead of the configured one. Off = always use the configured amount.",
           "end_date": "Optional. Stop reminding for this medication after this date, for a course with a set length (e.g. 7 days or 3 months). Leave blank to continue indefinitely."

@@ -2,7 +2,7 @@
 
 import calendar
 import re
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 DOMAIN = "medication_reminder"
 
@@ -54,6 +54,13 @@ CONF_END_DATE = "end_date"  # optional stop date: no reminders after it
 CONF_CYCLE_ON = "cycle_on"
 CONF_CYCLE_OFF = "cycle_off"
 CONF_MONTH_DAYS = "month_days"
+# Relative / interval dosing (intra-day chain): N doses a day, the first at a
+# fixed anchor time, each later one due a set number of hours after the previous
+# one was actually taken. `offset_hours` is the gap, `count` is the doses per day.
+# `position` is set only on the expanded per-occurrence doses (0 = the anchor).
+CONF_RELATIVE_OFFSET_HOURS = "relative_offset_hours"
+CONF_RELATIVE_COUNT = "relative_count"
+CONF_RELATIVE_POSITION = "relative_position"
 
 # Over-dose guard for as-needed (PRN) doses: warn when taken too soon or too often.
 CONF_MIN_INTERVAL_HOURS = "min_interval_hours"
@@ -105,11 +112,16 @@ SCHEDULE_INTERVAL = "interval"  # every N days from an anchor date
 SCHEDULE_CYCLE = "cycle"  # X days on / Y days off from an anchor date
 SCHEDULE_PRN = "prn"  # as-needed: no schedule, no reminders, log manually when taken
 SCHEDULE_MONTHLY = "monthly"  # on chosen day(s) of the month (clamped to last day)
+SCHEDULE_RELATIVE = (
+    "relative"  # N/day, each dose timed from when the previous was taken
+)
 DEFAULT_SCHEDULE_TYPE = SCHEDULE_WEEKDAYS
 DEFAULT_INTERVAL_DAYS = 2
 DEFAULT_CYCLE_ON = 21
 DEFAULT_CYCLE_OFF = 7
 DEFAULT_MONTH_DAYS = [1]
+DEFAULT_RELATIVE_OFFSET_HOURS = 6.0
+DEFAULT_RELATIVE_COUNT = 2
 DEFAULT_RESET_TIME = "00:01:00"
 DEFAULT_NAG_MINUTES = 45
 DEFAULT_NAG_INTERVAL = 15
@@ -415,6 +427,68 @@ def _cycle_days(data):
     return _n(CONF_CYCLE_ON, DEFAULT_CYCLE_ON, 1), _n(
         CONF_CYCLE_OFF, DEFAULT_CYCLE_OFF, 0
     )
+
+
+def relative_count(data):
+    """How many doses a day a relative/interval chain has (>= 2)."""
+    try:
+        n = int(data.get(CONF_RELATIVE_COUNT) or DEFAULT_RELATIVE_COUNT)
+    except (TypeError, ValueError):
+        n = DEFAULT_RELATIVE_COUNT
+    return max(n, 2)
+
+
+def relative_offset_hours(data):
+    """The gap, in hours, between one relative dose and the next (>= 0)."""
+    try:
+        v = float(data.get(CONF_RELATIVE_OFFSET_HOURS) or DEFAULT_RELATIVE_OFFSET_HOURS)
+    except (TypeError, ValueError):
+        v = DEFAULT_RELATIVE_OFFSET_HOURS
+    return max(v, 0.0)
+
+
+def relative_due_at(prev_given_at, offset_hours):
+    """When the next relative leg is due: the previous dose's actual give time
+    plus the offset, as an ISO string. None when the previous dose has no
+    recorded give time (the chain has not reached this leg yet), so a leg stays
+    un-due until the one before it is marked given.
+
+    ``prev_given_at`` is an ISO datetime string (a dose switch's ``given_at``).
+    Pure: no timezone conversion, so the result keeps the input's offset.
+    """
+    if not prev_given_at:
+        return None
+    try:
+        base = datetime.fromisoformat(str(prev_given_at))
+    except (ValueError, TypeError):
+        return None
+    try:
+        hours = float(offset_hours or 0)
+    except (TypeError, ValueError):
+        hours = 0.0
+    return (base + timedelta(hours=hours)).isoformat()
+
+
+def expand_doses(doses):
+    """Flatten stored doses into one entry per dose switch to create.
+
+    A relative/interval dose (N doses a day) expands into N occurrence dicts:
+    position 0 is the fixed anchor (a normal daily dose at its time), positions
+    1..N-1 are the relative legs, each timed from when the one before it was
+    actually taken. Every other dose passes through unchanged. Pure, so it is
+    used wherever the dose switches are created; other platforms keep reading the
+    stored (un-expanded) doses and project the chain's anchor.
+    """
+    out = []
+    for dose in doses or []:
+        if (dose.get(CONF_SCHEDULE_TYPE) or "") != SCHEDULE_RELATIVE:
+            out.append(dose)
+            continue
+        for pos in range(relative_count(dose)):
+            occ = dict(dose)
+            occ[CONF_RELATIVE_POSITION] = pos
+            out.append(occ)
+    return out
 
 
 def _month_days(data):
@@ -777,6 +851,11 @@ def schedule_cadence(dose):
     if stype == SCHEDULE_MONTHLY:
         days = dose.get(CONF_MONTH_DAYS) or DEFAULT_MONTH_DAYS
         return "monthly on " + ", ".join(str(d) for d in days)
+    if stype == SCHEDULE_RELATIVE:
+        n = relative_count(dose)
+        off = relative_offset_hours(dose)
+        off_str = f"{off:g}h"
+        return f"{n}x/day, {off_str} apart"
     days = dose.get(CONF_DAYS) or DEFAULT_DAYS
     if len(days) >= 7:
         return "daily"

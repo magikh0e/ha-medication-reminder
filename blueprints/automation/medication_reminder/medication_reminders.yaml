@@ -101,13 +101,26 @@ action:
             nag_minutes: "{{ state_attr(ent, 'nag_minutes') | int(45) }}"
             nag_interval: "{{ state_attr(ent, 'nag_interval') | int(15) }}"
             snooze_until: "{{ state_attr(ent, 'snooze_until') }}"
-            # A snooze ("remind me later") pushes the whole nag/missed window out:
-            # time the dose from the later of its scheduled time and the snooze.
-            ref_ts: "{{ [as_timestamp(today_at(dtime)), (as_timestamp(snooze_until) if snooze_until else 0)] | max }}"
+            # Relative / interval chain: a leg (chain_position > 0) is timed off
+            # its computed due_at (the previous dose's give time + offset), not a
+            # fixed clock time. A leg with no due_at yet (the chain has not reached
+            # it) is pending: not due, so no reminder and no missed alert. The
+            # anchor (position 0) is a normal fixed-time dose, timed off dtime.
+            is_relative: "{{ state_attr(ent, 'relative') | default(false, true) }}"
+            chain_pos: "{{ state_attr(ent, 'chain_position') | int(0) }}"
+            due_at: "{{ state_attr(ent, 'due_at') }}"
+            pending: "{{ is_relative and chain_pos > 0 and not due_at }}"
+            # The time this dose is judged from: its due_at when it is a due
+            # relative leg, else its fixed clock time. A snooze ("remind me
+            # later") pushes the whole nag/missed window out past the snooze.
+            base_ts: "{{ as_timestamp(due_at) if due_at else as_timestamp(today_at(dtime)) }}"
+            ref_ts: "{{ [base_ts, (as_timestamp(snooze_until) if snooze_until else 0)] | max }}"
             mins_since: "{{ (as_timestamp(now()) - ref_ts) / 60 }}"
-            clock: "{{ (as_timestamp(today_at(dtime)) | timestamp_custom('%H:%M')) if state_attr(ent, 'time_format') == '24h' else (as_timestamp(today_at(dtime)) | timestamp_custom('%I:%M %p')).lstrip('0') }}"
-            reminder_due: "{{ scheduled and not handled and mins_since >= 0 and mins_since < nag_minutes and (mins_since % nag_interval) < 5 }}"
-            missed_due: "{{ scheduled and not handled and mins_since >= nag_minutes and mins_since < nag_minutes + 5 }}"
+            clock: "{{ (base_ts | timestamp_custom('%H:%M')) if state_attr(ent, 'time_format') == '24h' else (base_ts | timestamp_custom('%I:%M %p')).lstrip('0') }}"
+            # Relative legs are never grouped; each is its own notification.
+            groupable: "{{ group_reminders and not is_relative }}"
+            reminder_due: "{{ scheduled and not handled and not pending and mins_since >= 0 and mins_since < nag_minutes and (mins_since % nag_interval) < 5 }}"
+            missed_due: "{{ scheduled and not handled and not pending and mins_since >= nag_minutes and mins_since < nag_minutes + 5 }}"
             # Oids of the doses in this same (patient, time) slot that are
             # reminder-due on this tick, each judged by its own state and snooze.
             # Used to group simultaneous reminders; derived live (no serialized
@@ -116,7 +129,8 @@ action:
               {% set ns = namespace(l=[]) %}
               {% for t in states.switch if t.attributes.medications is defined
                    and t.attributes.patient == patient
-                   and t.attributes.dose_time == dtime %}
+                   and t.attributes.dose_time == dtime
+                   and not (t.attributes.relative | default(false, true)) %}
               {% set ta = t.attributes %}
               {% set th = (t.state == 'on') or (ta.skipped_today | default(false, true)) or (ta.paused | default(false, true)) %}
               {% set tsch = (today in (ta.days or week)) if ta.scheduled_today is none else ta.scheduled_today %}
@@ -148,7 +162,7 @@ action:
             # that is the only one due in its slot. Identical to the classic
             # behaviour, with the Mark given / Remind me later / Skip buttons.
             - conditions:
-                - "{{ reminder_due and (not group_reminders or group_n <= 1) }}"
+                - "{{ reminder_due and (not groupable or group_n <= 1) }}"
               sequence:
                 - action: "notify.{{ notify_service }}"
                   data:
@@ -159,7 +173,7 @@ action:
             # Reminder, grouped: several doses due in the slot. One message from
             # the slot's first dose; tap it to open the dashboard and act there.
             - conditions:
-                - "{{ reminder_due and group_reminders and group_n > 1 and is_rep }}"
+                - "{{ reminder_due and groupable and group_n > 1 and is_rep }}"
               sequence:
                 - action: "notify.{{ notify_service }}"
                   data:

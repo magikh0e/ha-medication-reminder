@@ -11,7 +11,7 @@ import homeassistant.util.dt as dt_util
 import voluptuous as vol
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers import (
     config_validation as cv,
     entity_platform,
@@ -41,6 +41,7 @@ from .const import (
     CONF_PATIENT,
     CONF_PATIENT_TYPE,
     CONF_PAUSE_SWITCHES,
+    CONF_RELATIVE_POSITION,
     CONF_RESET_TIME,
     CONF_SCHEDULE_TYPE,
     CONF_TIME,
@@ -62,13 +63,18 @@ from .const import (
     EVENT_DOSE_SNOOZED,
     EVENT_DOSE_UNDONE,
     SCHEDULE_PRN,
+    SCHEDULE_RELATIVE,
     SCHEDULE_WEEKDAYS,
     SERVICE_MARK_GIVEN,
     SERVICE_SKIP_TODAY,
     SERVICE_SNOOZE,
     clamp_snooze_minutes,
+    expand_doses,
     is_due,
     normalize_skipped,
+    relative_count,
+    relative_due_at,
+    relative_offset_hours,
 )
 
 
@@ -125,7 +131,9 @@ async def async_setup_entry(
 
     dose_switches: list[MedicationDoseSwitch] = []
     entities: list[SwitchEntity] = []
-    for dose in doses:
+    # A relative/interval dose expands into one switch per daily occurrence (the
+    # fixed anchor plus its relative legs); every other dose yields one switch.
+    for dose in expand_doses(doses):
         dose_switch = MedicationDoseSwitch(
             entry,
             patient,
@@ -144,7 +152,15 @@ async def async_setup_entry(
         # Pause toggle only for scheduled (non-PRN) doses: a PRN dose has no
         # schedule to suspend. Added after its dose switch so the dose switch's
         # state restores first. It drives the dose switch's paused flag directly.
-        if pause_enabled and (dose.get(CONF_SCHEDULE_TYPE) or "") != SCHEDULE_PRN:
+        # For a relative chain only the anchor (position 0) gets a toggle: pausing
+        # it leaves the chain un-anchored, so the legs never come due either.
+        is_relative = (dose.get(CONF_SCHEDULE_TYPE) or "") == SCHEDULE_RELATIVE
+        is_leg = is_relative and int(dose.get(CONF_RELATIVE_POSITION) or 0) > 0
+        if (
+            pause_enabled
+            and (dose.get(CONF_SCHEDULE_TYPE) or "") != SCHEDULE_PRN
+            and not is_leg
+        ):
             pause_switch = MedicationDosePauseSwitch(entry, patient, dose, dose_switch)
             dose_switch.register_pause_switch(pause_switch)
             entities.append(pause_switch)
@@ -263,6 +279,14 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         # midnight (a dose before the reset belongs to the previous day).
         self._reset_time = str(entry.options.get(CONF_RESET_TIME, DEFAULT_RESET_TIME))
         self._month_days = dose.get(CONF_MONTH_DAYS) or list(DEFAULT_MONTH_DAYS)
+        # Relative / interval chain (one switch per daily occurrence): position 0
+        # is the fixed anchor, positions 1.. are legs timed from the previous
+        # dose's actual give time. A leg's reminder fires off its computed
+        # `due_at` instead of a fixed clock time; see _relative_due_at.
+        self._relative = self._schedule_type == SCHEDULE_RELATIVE
+        self._position = int(dose.get(CONF_RELATIVE_POSITION) or 0)
+        self._chain_count = relative_count(dose) if self._relative else 1
+        self._offset_hours = relative_offset_hours(dose) if self._relative else 0.0
         # When the dose was last marked given (ISO), persisted across restarts.
         self._given_at: str | None = None
         # Meds in this dose skipped on today's mark (partial dose). Empty unless
@@ -276,20 +300,37 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         # "Remind me later": an ISO time until which the reminder (and its missed
         # escalation) is deferred. Cleared on mark-given, skip, un-mark, and reset.
         self._snooze_until: str | None = None
+        # A relative chain's switches share the same time+meds, so each occurrence
+        # gets a position suffix to stay a distinct entity, and a leg records the
+        # id of the dose before it to read that dose's give time for its own due.
+        id_base = slugify(self._time + "_" + self._meds)
+        if self._relative:
+            id_base_rel = f"{id_base}_r{self._position}"
+        else:
+            id_base_rel = id_base
+        self._pred_unique_id = (
+            f"{entry.entry_id}_{slugify(self._time + '_' + self._meds)}_r"
+            f"{self._position - 1}"
+            if self._relative and self._position > 0
+            else None
+        )
         # Name: as-needed (PRN) doses have no meaningful time, so name them by
-        # the medication; scheduled doses lead with their display time.
+        # the medication; scheduled doses lead with their display time. A relative
+        # chain numbers its occurrences; only the anchor has a fixed clock time.
         if self._schedule_type == SCHEDULE_PRN:
             self._attr_name = f"{self._meds} (as needed)"
+        elif self._relative and self._position == 0:
+            self._attr_name = (
+                f"{self._format_time(self._time)} ({self._meds}) 1/{self._chain_count}"
+            )
+        elif self._relative:
+            self._attr_name = f"({self._meds}) {self._position + 1}/{self._chain_count}"
         else:
             self._attr_name = f"{self._format_time(self._time)} ({self._meds})"
-        self._attr_unique_id = (
-            f"{entry.entry_id}_{slugify(self._time + '_' + self._meds)}"
-        )
+        self._attr_unique_id = f"{entry.entry_id}_{id_base_rel}"
         # The sibling amount-input number (created only for ask_units doses), read
         # at mark time so the normal mark-given honours the chosen amount.
-        self._amount_unique_id = (
-            f"{entry.entry_id}_amount_{slugify(self._time + '_' + self._meds)}"
-        )
+        self._amount_unique_id = f"{entry.entry_id}_amount_{id_base_rel}"
         self._attr_is_on = False
         self._attr_device_info = {
             "identifiers": {(DOMAIN, entry.entry_id)},
@@ -326,6 +367,18 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
     def _scheduled_today(self) -> bool:
         """Whether this dose is due today, honouring its schedule type."""
         return is_due(self._schedule_attrs(), dt_util.now().date())
+
+    def _relative_due_at(self) -> str | None:
+        """When this relative leg is due: the previous dose in the chain's actual
+        give time plus the offset, as an ISO string. None for the anchor (it is a
+        normal fixed-time dose) and for a leg whose predecessor is not yet given
+        (the chain has not reached it, so it must not remind). The reminder
+        blueprint times a leg off this instead of a fixed clock time."""
+        if not self._relative or self._position == 0 or self._pred_unique_id is None:
+            return None
+        return relative_due_at(
+            self._given_state.get(self._pred_unique_id), self._offset_hours
+        )
 
     def _read_amount(self) -> float | None:
         """The current value of this dose's amount-input number, if it has one.
@@ -366,6 +419,14 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
             "cycle_on": self._cycle_on,
             "cycle_off": self._cycle_off,
             "month_days": self._month_days,
+            # Relative / interval chain: a leg reminds off `due_at` (previous
+            # dose's give time + offset), not its anchor clock time. `due_at` is
+            # None for the anchor and for a leg not yet reached by the chain.
+            "relative": self._relative,
+            "chain_position": self._position,
+            "chain_count": self._chain_count,
+            "relative_offset_hours": self._offset_hours,
+            "due_at": self._relative_due_at(),
             "scheduled_today": self._scheduled_today(),
             "skipped": self._skipped,
             "skipped_today": self._skipped_today,
@@ -470,6 +531,33 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         if self._attr_is_on and self._attr_unique_id not in self._given_state:
             self._given_state[self._attr_unique_id] = self._given_at
             await self._save_given()
+        # A relative leg's `due_at` depends on the dose before it in the chain, so
+        # refresh this entity's state whenever a chain-mate is given, un-done,
+        # skipped, or reset. That re-publishes due_at (which the reminder
+        # blueprint reads) the moment the previous dose is taken, arming this
+        # leg's reminder, and clears it again if that dose is undone.
+        if self._relative and self._position > 0:
+            for event_type in (
+                EVENT_DOSE_GIVEN,
+                EVENT_DOSE_UNDONE,
+                EVENT_DOSE_SKIPPED,
+            ):
+                self.async_on_remove(
+                    self.hass.bus.async_listen(event_type, self._on_chain_event)
+                )
+
+    @callback
+    def _on_chain_event(self, event: Event) -> None:
+        """Re-publish state (and so `due_at`) when another dose in this chain
+        changes. Scoped to this chain by patient, medications, and anchor time,
+        which every occurrence of the chain shares."""
+        data = event.data
+        if (
+            data.get("patient") == self._patient
+            and data.get("medications") == self._meds
+            and data.get("dose_time") == self._time
+        ):
+            self.async_write_ha_state()
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Mark this dose given now ("Take Now")."""
@@ -529,12 +617,15 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         # early-dose warning and scheduled-today flag reflect when it was taken.
         when = dt_util.parse_datetime(self._given_at or "") or dt_util.now()
         minutes_early: int | None = None
-        try:
-            hour, minute = (int(p) for p in self._time.split(":")[:2])
-            due = when.replace(hour=hour, minute=minute, second=0, microsecond=0)
-            minutes_early = round((due - when).total_seconds() / 60)
-        except (ValueError, AttributeError):
-            minutes_early = None
+        # A relative leg has no fixed clock time (its due shifts with the previous
+        # dose), so an early/late figure against the anchor would be meaningless.
+        if not (self._relative and self._position > 0):
+            try:
+                hour, minute = (int(p) for p in self._time.split(":")[:2])
+                due = when.replace(hour=hour, minute=minute, second=0, microsecond=0)
+                minutes_early = round((due - when).total_seconds() / 60)
+            except (ValueError, AttributeError):
+                minutes_early = None
         self.hass.bus.async_fire(
             EVENT_DOSE_GIVEN,
             {

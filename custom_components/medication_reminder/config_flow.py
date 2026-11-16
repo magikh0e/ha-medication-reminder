@@ -44,6 +44,8 @@ from .const import (
     CONF_PATIENT_TYPE,
     CONF_PAUSE_SWITCHES,
     CONF_PLAN_VIEW,
+    CONF_RELATIVE_COUNT,
+    CONF_RELATIVE_OFFSET_HOURS,
     CONF_STREAK,
     CONF_RESET_TIME,
     CONF_SCHEDULE_TYPE,
@@ -72,6 +74,8 @@ from .const import (
     DEFAULT_NAG_INTERVAL,
     DEFAULT_NAG_MINUTES,
     DEFAULT_PATIENT_TYPE,
+    DEFAULT_RELATIVE_COUNT,
+    DEFAULT_RELATIVE_OFFSET_HOURS,
     DEFAULT_RESET_TIME,
     DEFAULT_PAUSE_SWITCHES,
     DEFAULT_STREAK,
@@ -91,6 +95,7 @@ from .const import (
     SCHEDULE_INTERVAL,
     SCHEDULE_MONTHLY,
     SCHEDULE_PRN,
+    SCHEDULE_RELATIVE,
     SUPPLY_UNITS,
     dose_max_per_day,
     dose_min_interval_hours,
@@ -171,6 +176,10 @@ def _schedule_type_selector() -> selector.SelectSelector:
                 {"value": "cycle", "label": "On/off cycle (X days on, Y days off)"},
                 {"value": "monthly", "label": "Monthly (on chosen days of the month)"},
                 {
+                    "value": "relative",
+                    "label": "Relative/interval (N a day, each timed from the last)",
+                },
+                {
                     "value": "prn",
                     "label": "As needed (PRN) - no schedule, no reminders",
                 },
@@ -217,6 +226,32 @@ def _cycle_selector(low: int) -> selector.NumberSelector:
             step=1,
             mode=selector.NumberSelectorMode.BOX,
             unit_of_measurement="days",
+        )
+    )
+
+
+def _relative_offset_selector() -> selector.NumberSelector:
+    """Hours between one relative/interval dose and the next."""
+    return selector.NumberSelector(
+        selector.NumberSelectorConfig(
+            min=0.5,
+            max=24,
+            step=0.5,
+            mode=selector.NumberSelectorMode.BOX,
+            unit_of_measurement="hours",
+        )
+    )
+
+
+def _relative_count_selector() -> selector.NumberSelector:
+    """How many doses a day a relative/interval chain has (2 or more)."""
+    return selector.NumberSelector(
+        selector.NumberSelectorConfig(
+            min=2,
+            max=12,
+            step=1,
+            mode=selector.NumberSelectorMode.BOX,
+            unit_of_measurement="doses",
         )
     )
 
@@ -480,6 +515,20 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
                 int(d) for d in (user_input.get(CONF_MONTH_DAYS) or DEFAULT_MONTH_DAYS)
             ]
             dose[CONF_DAYS] = list(DEFAULT_DAYS)
+        elif stype == SCHEDULE_RELATIVE:
+            # N doses a day, the first at the chosen time (the anchor), each later
+            # one timed from when the previous was taken. Runs on the chosen days;
+            # ask-for-amount is not offered here (legs share the chain's amount).
+            dose[CONF_RELATIVE_COUNT] = int(
+                user_input.get(CONF_RELATIVE_COUNT, DEFAULT_RELATIVE_COUNT)
+            )
+            dose[CONF_RELATIVE_OFFSET_HOURS] = float(
+                user_input.get(
+                    CONF_RELATIVE_OFFSET_HOURS, DEFAULT_RELATIVE_OFFSET_HOURS
+                )
+            )
+            dose[CONF_DAYS] = user_input.get(CONF_DAYS) or list(DEFAULT_DAYS)
+            dose[CONF_ASK_UNITS] = False
         elif stype == SCHEDULE_PRN:
             # As needed: no schedule fields. days are ignored by is_due() for PRN,
             # but keep the key present for a uniform dose shape. The over-dose
@@ -586,6 +635,16 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
                 CONF_MONTH_DAYS,
                 default=[str(x) for x in _val(CONF_MONTH_DAYS, DEFAULT_MONTH_DAYS)],
             ): _month_days_selector(),
+            vol.Optional(
+                CONF_RELATIVE_COUNT,
+                default=int(_val(CONF_RELATIVE_COUNT, DEFAULT_RELATIVE_COUNT)),
+            ): _relative_count_selector(),
+            vol.Optional(
+                CONF_RELATIVE_OFFSET_HOURS,
+                default=float(
+                    _val(CONF_RELATIVE_OFFSET_HOURS, DEFAULT_RELATIVE_OFFSET_HOURS)
+                ),
+            ): _relative_offset_selector(),
             vol.Optional(
                 CONF_MIN_INTERVAL_HOURS,
                 default=float(

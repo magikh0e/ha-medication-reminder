@@ -253,8 +253,27 @@ class NeedsAttentionBinarySensor(_DoseLookupMixin, BinarySensorEntity):
         for s in self._todays_doses():
             if dose_handled(s.state, s.attributes.get("skipped_today")):
                 continue  # given or skipped for today -> fine
-            dose_time = s.attributes.get("dose_time")
             nag = s.attributes.get("nag_minutes", DEFAULT_NAG_MINUTES)
+            # A relative/interval leg has no fixed clock time: it is due at its
+            # computed due_at (previous dose's give time + offset). Until that is
+            # set the chain has not reached it, so it is pending, not overdue. The
+            # anchor (position 0) is a normal fixed-time dose and uses its time.
+            due_at = s.attributes.get("due_at")
+            is_leg = (
+                s.attributes.get("relative")
+                and int(s.attributes.get("chain_position") or 0) > 0
+            )
+            if is_leg:
+                if not due_at:
+                    continue  # pending: the previous dose is not taken yet
+                due = dt_util.parse_datetime(due_at)
+                if due is None:
+                    overdue.append(s)
+                    continue
+                if now >= dt_util.as_local(due) + timedelta(minutes=int(nag)):
+                    overdue.append(s)
+                continue
+            dose_time = s.attributes.get("dose_time")
             try:
                 hour, minute = (int(p) for p in str(dose_time).split(":")[:2])
                 due = now.replace(
