@@ -1,0 +1,258 @@
+{
+  "issues": {
+    "supply_no_matching_dose": {
+      "title": "Takip edilen stok hiçbir dozla eşleşmiyor",
+      "description": "{patient} için \"{medication}\" stoku hiçbir dozdaki ilaçlarla eşleşmediği için hiç azalmayacak. Yapılandır bölümünde yazımı kontrol edin (bir dozdaki ilaç adıyla birebir aynı olmalı) veya stoku kaldırın."
+    }
+  },
+  "config": {
+    "step": {
+      "user": {
+        "title": "Hasta ekle",
+        "description": "Bir evcil hayvan veya kişi için ilaç takvimi oluşturun. Hasta türünü (simge için) ve kime hatırlatılacağını seçin; dozlarını ardından ekleyebilirsiniz.",
+        "data": {
+          "patient": "Hasta adı",
+          "patient_type": "Hasta türü",
+          "notify": "Bildirim hedefi (kişi veya grup)"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Bu adla bir hasta zaten yapılandırılmış."
+    }
+  },
+  "options": {
+    "abort": {
+      "no_doses": "Önce bir doz ekleyin. Henüz düzenlenecek doz yok.",
+      "no_medications": "Önce bir doz ekleyin. İlaç bilgisi, bu hastanın dozlarından birinde zaten kullanılan bir ilaca eklenir.",
+      "no_medication_detail": "Önce ilaç bilgisi ekleyin. Henüz düzenlenecek bir şey yok.",
+      "no_supplies": "Önce bir stok takibi başlatın. Henüz düzenlenecek bir şey yok."
+    },
+    "error": {
+      "duplicate_dose": "Bu saatte ve bu ilaçlarla bir doz zaten var. Farklı bir saat kullanın veya bunları tek bir dozda birleştirin.",
+      "supply_exists": "Bu ilacın stoku zaten takip ediliyor. Değiştirmek için Stoku düzenle'yi kullanın.",
+      "invalid_time": "Ek saatlerden biri geçerli bir saat değil. 24 saatlik SS:DD biçimini kullanın ve virgülle ayırın, ör. 14:00, 20:00.",
+      "end_before_start": "Bitiş tarihi başlangıç tarihinden önce. Başlangıç tarihiyle aynı gün veya sonrasında bir bitiş tarihi seçin ya da tarihlerden birini temizleyin."
+    },
+    "step": {
+      "init": {
+        "title": "İlaçları yönet",
+        "menu_options": {
+          "doses": "Dozlar",
+          "supplies": "Stoklar",
+          "med_details": "İlaç bilgileri",
+          "settings": "Hatırlatma ayarları"
+        }
+      },
+      "doses": {
+        "title": "Dozlar",
+        "menu_options": {
+          "add_dose": "Doz ekle",
+          "edit_dose": "Dozu düzenle",
+          "remove_dose": "Dozu kaldır"
+        }
+      },
+      "supplies": {
+        "title": "Stoklar",
+        "menu_options": {
+          "add_supply": "Stok takip et",
+          "edit_supply": "Stoku düzenle",
+          "remove_supply": "Stoku kaldır"
+        }
+      },
+      "med_details": {
+        "title": "İlaç bilgileri",
+        "menu_options": {
+          "medication_detail": "İlaç bilgisi ekle",
+          "edit_medication": "İlaç bilgisini düzenle",
+          "remove_medication": "İlaç bilgisini kaldır"
+        }
+      },
+      "add_dose": {
+        "title": "Doz ekle",
+        "description": "Saati seçin ve ilaçları yazın, ardından nasıl tekrarlanacağını belirleyin: haftanın seçili günlerinde (tüm günler = her gün), N günde bir, kullan/ara ver döngüsüyle veya göreli/aralıklı bir zincirle (günde N doz, her biri bir öncekinin alındığı andan itibaren zamanlanır), bir başlangıç tarihinden itibaren.",
+        "data": {
+          "time": "Saat",
+          "meds": "İlaçlar",
+          "schedule_type": "Tekrar",
+          "days": "Haftanın günleri (haftalık seçenek için)",
+          "interval_days": "N günde bir (aralık seçeneği için)",
+          "cycle_on": "Kullanım günleri (kullan/ara ver döngüsü için)",
+          "cycle_off": "Ara günleri (kullan/ara ver döngüsü için)",
+          "relative_count": "Günlük doz sayısı (göreli/aralıklı seçenek için)",
+          "relative_offset_hours": "Dozlar arası saat (göreli/aralıklı seçenek için)",
+          "anchor_date": "Başlangıç tarihi (isteğe bağlı; bu tarihten önce hatırlatma yapılmaz)",
+          "min_interval_hours": "Dozlar arası en az saat (yalnızca gerektiğinde kullanılan ilaçlar; 0 = sınır yok)",
+          "max_per_day": "Günlük en fazla doz (yalnızca gerektiğinde kullanılan ilaçlar; 0 = sınır yok)",
+          "dose_units": "Kullanılan birim (bu doz)",
+          "ask_units": "İşaretlerken miktarı sor",
+          "additional_times": "Ek saatler (isteğe bağlı)",
+          "end_date": "Bitiş tarihi (isteğe bağlı; bu tarihten sonra hatırlatma yapılmaz)"
+        },
+        "data_description": {
+          "meds": "Birden fazla ilacı &, + veya virgülle ayırın. Eğik çizgi yalnızca iki yanında boşluk varsa ayırır; böylece 'Carbimazol 5mg (1/2)' gibi bir ad bölünmez.",
+          "min_interval_hours": "Gerektiğinde kullanılan bir ilaç bu kadar saatten önce tekrar kaydedilirse uyar (asla engellemez), ör. en az 4 saat arayla alınması gereken bir ağrı kesici.",
+          "max_per_day": "Gerektiğinde kullanılan bir ilaç için bugün bu kadar doz kaydedildiğinde uyar.",
+          "relative_offset_hours": "Göreli/aralıklı seçenek için: ilk doz yukarıdaki saattedir, sonraki her doz bir öncekini alındı olarak işaretledikten bu kadar saat sonra gelir; günlük doz sayısına ulaşınca durur ve ertesi gün sıfırlanır. Antibiyotik gibi 'N saatte bir' kullanılan tedaviler için uygundur.",
+          "dose_units": "İlacın doz başına varsayılan birimini yalnızca bu doz için değiştirir. Varsayılanı kullanmak için 0 bırakın; yarım tablet için 0.5 gibi ondalık değerler kullanın.",
+          "ask_units": "Dozu değişen bir ilaç için açın (ör. bir ölçüm değerine göre ayarlanan). Dozu verildi olarak işaretlemeden önce girdiğiniz bir miktar alanı ekler ve stok, ayarlanan miktar yerine bu miktar kadar azalır. Kapalı = her zaman ayarlanan miktarı kullan.",
+          "additional_times": "Aynı dozu tek seferde birden fazla saat için oluşturun, ör. günde iki kez alınan bir ilaç. Ek saatleri 24 saatlik biçimde virgülle ayırarak girin (14:00, 20:00); her biri aynı ilaç, takvim ve seçeneklerle ayrı bir doz olur. Tek bir saat için boş bırakın.",
+          "end_date": "İsteğe bağlı. Belirli süreli bir tedavi için (ör. 7 gün veya 3 ay) bu tarihten sonra bu ilaç için hatırlatmayı durdurur. Süresiz devam etmesi için boş bırakın."
+        }
+      },
+      "edit_dose": {
+        "title": "Dozu düzenle",
+        "data": {
+          "dose": "Düzenlenecek doz"
+        }
+      },
+      "edit_dose_details": {
+        "title": "Dozu düzenle",
+        "description": "Bu dozu değiştirip kaydederek eskisinin yerine koyun. Yalnızca takvimi düzenlemek aynı varlığı korur; saati veya ilaçları değiştirmek yeni bir varlık oluşturur (geçmişi sıfırlanır).",
+        "data": {
+          "time": "Saat",
+          "meds": "İlaçlar",
+          "schedule_type": "Tekrar",
+          "days": "Haftanın günleri (haftalık seçenek için)",
+          "interval_days": "N günde bir (aralık seçeneği için)",
+          "cycle_on": "Kullanım günleri (kullan/ara ver döngüsü için)",
+          "cycle_off": "Ara günleri (kullan/ara ver döngüsü için)",
+          "relative_count": "Günlük doz sayısı (göreli/aralıklı seçenek için)",
+          "relative_offset_hours": "Dozlar arası saat (göreli/aralıklı seçenek için)",
+          "anchor_date": "Başlangıç tarihi (isteğe bağlı; bu tarihten önce hatırlatma yapılmaz)",
+          "min_interval_hours": "Dozlar arası en az saat (yalnızca gerektiğinde kullanılan ilaçlar; 0 = sınır yok)",
+          "max_per_day": "Günlük en fazla doz (yalnızca gerektiğinde kullanılan ilaçlar; 0 = sınır yok)",
+          "dose_units": "Kullanılan birim (bu doz)",
+          "ask_units": "İşaretlerken miktarı sor",
+          "end_date": "Bitiş tarihi (isteğe bağlı; bu tarihten sonra hatırlatma yapılmaz)"
+        },
+        "data_description": {
+          "meds": "Birden fazla ilacı &, + veya virgülle ayırın. Eğik çizgi yalnızca iki yanında boşluk varsa ayırır; böylece 'Carbimazol 5mg (1/2)' gibi bir ad bölünmez.",
+          "min_interval_hours": "Gerektiğinde kullanılan bir ilaç bu kadar saatten önce tekrar kaydedilirse uyar (asla engellemez), ör. en az 4 saat arayla alınması gereken bir ağrı kesici.",
+          "max_per_day": "Gerektiğinde kullanılan bir ilaç için bugün bu kadar doz kaydedildiğinde uyar.",
+          "relative_offset_hours": "Göreli/aralıklı seçenek için: ilk doz yukarıdaki saattedir, sonraki her doz bir öncekini alındı olarak işaretledikten bu kadar saat sonra gelir; günlük doz sayısına ulaşınca durur ve ertesi gün sıfırlanır. Antibiyotik gibi 'N saatte bir' kullanılan tedaviler için uygundur.",
+          "dose_units": "İlacın doz başına varsayılan birimini yalnızca bu doz için değiştirir. Varsayılanı kullanmak için 0 bırakın; yarım tablet için 0.5 gibi ondalık değerler kullanın.",
+          "ask_units": "Dozu değişen bir ilaç için açın (ör. bir ölçüm değerine göre ayarlanan). Dozu verildi olarak işaretlemeden önce girdiğiniz bir miktar alanı ekler ve stok, ayarlanan miktar yerine bu miktar kadar azalır. Kapalı = her zaman ayarlanan miktarı kullan.",
+          "end_date": "İsteğe bağlı. Belirli süreli bir tedavi için (ör. 7 gün veya 3 ay) bu tarihten sonra bu ilaç için hatırlatmayı durdurur. Süresiz devam etmesi için boş bırakın."
+        }
+      },
+      "remove_dose": {
+        "title": "Dozları kaldır",
+        "data": {
+          "remove": "Kaldırılacak dozlar"
+        }
+      },
+      "add_supply": {
+        "title": "İlaç stoku takip et",
+        "description": "Bir ilaçtan elinizde ne kadar olduğunu sayın. Bu ilacı içeren bir doz her verildi olarak işaretlendiğinde azalır, belirlediğiniz eşikte düşük stok uyarısı verir ve takvime göre bitiş tarihini tahmin eder. İlacı dozlarınızdan seçin.",
+        "data": {
+          "supply_med": "İlaç adı",
+          "supply_units": "Şu an eldeki miktar",
+          "supply_per_dose": "Doz başına kullanılan birim",
+          "supply_threshold": "Düşük stok eşiği",
+          "supply_refill_to": "Yenileme miktarı (tam stok)",
+          "supply_refill_add": "Yenilemede ekle (kutu yenileme)",
+          "supply_cost": "Birim maliyeti (0 = takip etme)",
+          "supply_refills": "Reçetede kalan yenileme hakkı (0 = takip etme)",
+          "supply_unit": "Birim / form (isteğe bağlı)"
+        },
+        "data_description": {
+          "supply_refill_add": "Yenilemede, sayıyı yenileme miktarına eşitlemek yerine yenileme miktarını kalanın üzerine ekler (ör. 17 + 30 = 47).",
+          "supply_cost": "Bir birimin (tablet, ml vb.) kendi para biriminizdeki maliyeti; eldeki değer ve doz başına maliyet öznitelikleri için kullanılır. Maliyet takibini atlamak için 0 bırakın.",
+          "supply_refills": "Reçetenin daha kaç kez yenilenebileceği. Yenileme düğmesine her bastığınızda bir azalır ve sıfıra ulaştığında stok düşük olarak işaretlenir, böylece yeni reçete almanız gerektiğini bilirsiniz. Yenileme takibini atlamak için 0 bırakın.",
+          "supply_unit": "Bu ilacın sayıldığı birim (tablet, damla, ml, enjektör, kalem, ...). Birini seçin veya kendiniz yazın. Sayının ve doz miktarının yanında gösterilir, ör. '30 tablet'. Yalnızca sayı için boş bırakın."
+        }
+      },
+      "edit_supply": {
+        "title": "Stoku düzenle",
+        "data": {
+          "supply_med": "İlaç"
+        }
+      },
+      "edit_supply_details": {
+        "title": "{medication} stokunu düzenle",
+        "description": "{medication} için takip edilen stoku güncelleyin.",
+        "data": {
+          "supply_units": "Şu an eldeki miktar",
+          "supply_per_dose": "Doz başına kullanılan birim",
+          "supply_threshold": "Düşük stok eşiği",
+          "supply_refill_to": "Yenileme miktarı (tam stok)",
+          "supply_refill_add": "Yenilemede ekle (kutu yenileme)",
+          "supply_cost": "Birim maliyeti (0 = takip etme)",
+          "supply_refills": "Reçetede kalan yenileme hakkı (0 = takip etme)",
+          "supply_unit": "Birim / form (isteğe bağlı)"
+        },
+        "data_description": {
+          "supply_refill_add": "Yenilemede, sayıyı yenileme miktarına eşitlemek yerine yenileme miktarını kalanın üzerine ekler (ör. 17 + 30 = 47).",
+          "supply_cost": "Bir birimin (tablet, ml vb.) kendi para biriminizdeki maliyeti; eldeki değer ve doz başına maliyet öznitelikleri için kullanılır. Maliyet takibini atlamak için 0 bırakın.",
+          "supply_refills": "Reçetenin daha kaç kez yenilenebileceği. Yenileme düğmesine her bastığınızda bir azalır ve sıfıra ulaştığında stok düşük olarak işaretlenir, böylece yeni reçete almanız gerektiğini bilirsiniz. Yenileme takibini atlamak için 0 bırakın.",
+          "supply_unit": "Bu ilacın sayıldığı birim (tablet, damla, ml, enjektör, kalem, ...). Birini seçin veya kendiniz yazın. Sayının ve doz miktarının yanında gösterilir, ör. '30 tablet'. Yalnızca sayı için boş bırakın."
+        }
+      },
+      "remove_supply": {
+        "title": "Takip edilen stokları kaldır",
+        "data": {
+          "remove": "Takibi durdurulacak stoklar"
+        }
+      },
+      "medication_detail": {
+        "title": "İlaç bilgisi",
+        "description": "Bir ilaç için kısa doz adından ayrı tutulan, isteğe bağlı başvuru bilgisi. Bu hastanın dozlarından bir ilaç seçin; bilgisi zaten olan bir ilaç için kaydetmek bilgiyi günceller.",
+        "data": {
+          "med_name": "İlaç adı",
+          "full_name": "Tam adı (isteğe bağlı)",
+          "strength": "Etken madde miktarı (ör. 5 mg)",
+          "brand": "Ticari adı (isteğe bağlı)",
+          "prescribed_for": "Kullanım nedeni (hastalık)",
+          "dosage": "Kullanım şekli (ör. günde 2 kez 2 tablet)"
+        }
+      },
+      "edit_medication": {
+        "title": "İlaç bilgisini düzenle",
+        "data": {
+          "med_name": "İlaç"
+        }
+      },
+      "edit_medication_details": {
+        "title": "{medication} bilgisini düzenle",
+        "description": "{medication} için başvuru bilgisini güncelleyin.",
+        "data": {
+          "full_name": "Tam adı (isteğe bağlı)",
+          "strength": "Etken madde miktarı (ör. 5 mg)",
+          "brand": "Ticari adı (isteğe bağlı)",
+          "prescribed_for": "Kullanım nedeni (hastalık)",
+          "dosage": "Kullanım şekli (ör. günde 2 kez 2 tablet)"
+        }
+      },
+      "remove_medication": {
+        "title": "İlaç bilgisini kaldır",
+        "data": {
+          "remove": "Bilgisi temizlenecek ilaçlar"
+        }
+      },
+      "settings": {
+        "title": "Hatırlatma ayarları",
+        "description": "Hasta türü, kime bildirileceği, saat gösterimi, dozların gün için ne zaman sıfırlanacağı ve hatırlatmaların ne sıklıkla yineleneceği.",
+        "data": {
+          "patient_type": "Hasta türü",
+          "notify": "Bildirim hedefi (kişi veya grup)",
+          "time_format": "Saat biçimi",
+          "reset_time": "Günlük sıfırlama saati",
+          "nag_minutes": "Yineleme süresi (dozdan sonraki dakika)",
+          "nag_interval": "Yineleme aralığı (dakika)",
+          "skip_buttons": "Kısmi doz atlama düğmeleri",
+          "plan_view": "İlaç kutusu plan görünümü",
+          "pause_switches": "Duraklatma anahtarları",
+          "streak": "Tedaviye uyum serisi"
+        },
+        "data_description": {
+          "nag_interval": "5'in katı kullanın; hatırlatmalar 5 dakikada bir değerlendirilir, bu yüzden diğer değerler daha düzensiz yinelenir.",
+          "skip_buttons": "İki veya daha fazla ilacı bir arada içeren dozlar için, her ilaca dozu verildi olarak işaretleyip yalnızca o ilacı atlayan bir düğme ekler (o ilacın stoku düşülmez). Varsayılan olarak kapalıdır; bir arada verilen dozdaki bir ilaç bazen eksikse açın.",
+          "plan_view": "İlaç kutusunu doldurmak için isteğe bağlı günlük bir plan ekler: bir plan sensörü ve günler arasında gezinmek için bir gün kaydırma sayısı (0 = bugün). Hazır panolar bunu, her günün ilaçlarını ve her saat dilimindeki miktarlarını gösteren bir tablo olarak sunar. Varsayılan olarak kapalıdır.",
+          "pause_switches": "Takvimli her doza bir duraklatma anahtarı ekler. Doktor ilacı geçici olarak kestiğinde veya ilaç mevsimlik olduğunda olduğu gibi, ilacı siz tekrar kapatana kadar askıya almak için açın: hatırlatma yapılmaz, kaçırıldı olarak işaretlenmez ve stok düşülmez. Yalnızca bir gün süren bugün atla seçeneğinin aksine günler boyunca duraklatılmış kalır. Varsayılan olarak kapalıdır.",
+          "streak": "Takvimdeki her dozun alındığı ardışık günleri, en uzun seriyi, son kaçırılan günü ve son 30 gündeki uyum yüzdesini izleyen, hastaya özel bir sensör ekler. Atlanan bir doz seriyi bozmaz ama yüzdeyi düşürür; kaçırılan bir doz seriyi bozar. Varsayılan olarak kapalıdır. Geçmiş serileri gösterebilmek için günlük küçük bir geçmiş tutar."
+        }
+      }
+    }
+  }
+}
