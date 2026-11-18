@@ -60,7 +60,7 @@ views:
         {%- if ps %}
         **Supplies:**
         {% for s in ps %}
-        - {{ s.attributes.medication }}: {{ s.state | int }} left, reorder at {{ s.attributes.threshold }}, refill {{ 'adds' if s.attributes.refill_add else 'sets' }} {{ s.attributes.refill_to }}
+        - {{ s.attributes.medication }}: {{ s.state | int }} left, reorder at {{ s.attributes.threshold }}, refill {{ 'adds' if s.attributes.refill_add else 'sets' }} {{ s.attributes.refill_to }}{% if s.attributes.refills_configured is defined %}, {{ s.attributes.refills_remaining }} Rx refill(s) left{% if s.attributes.refills_out %} (last fill){% endif %}{% endif %}
         {%- endfor %}
         {%- endif %}
         {% endfor %}
