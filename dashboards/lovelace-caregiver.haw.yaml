@@ -1,0 +1,366 @@
+# ============================================================
+# PROOF OF CONCEPT: ʻŌlelo Hawaiʻi (Hawaiian) caregiver dashboard
+#
+# A hand-translated variant of lovelace-caregiver.yaml. Home Assistant does not
+# yet support Hawaiian as a UI language, so this works only because a Lovelace
+# dashboard is literal text the integration does not own: the labels below
+# render exactly as written no matter what your HA language is set to. The
+# dynamic values (patient names, medication names, times, dates) come from your
+# own data and appear in whatever language you typed them.
+#
+# ⚠️ UNREVIEWED DRAFT. The Hawaiian here is a good-faith translation but has NOT
+# been checked by a fluent ʻŌlelo Hawaiʻi speaker. Most of it uses well-attested
+# vocabulary (lāʻau, hāʻawi, hoʻopiha hou, and the weekday names Pōʻakahi through
+# Lāpule), but a few interface terms have no settled convention and were phrased
+# by meaning: "dose" (ka nui o ka lāʻau / lāʻau), "mark given" (kaha i ka
+# hāʻawi), and "adherence streak" (ka moʻo hoʻokō). Please have a speaker review
+# before any real use. ʻOkina (ʻ) and kahakō (ā ē ī ō ū) are included throughout.
+#
+# Only human-readable labels were translated. Every bit of automation logic,
+# entity id, attribute name, and schedule key is unchanged from the English file,
+# so behaviour is identical. Setup is identical too: new dashboard → ⋮ menu →
+# Edit dashboard → ⋮ menu → Raw configuration editor → paste this whole file.
+#
+# Needs the same two HACS cards as the other layouts:
+#   - auto-entities  https://github.com/thomasloven/lovelace-auto-entities
+#   - card-mod       https://github.com/thomasloven/lovelace-card-mod
+# Requires Home Assistant 2024.3+ (Sections view).
+# ============================================================
+
+views:
+  - title: Nā Lāʻau
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        cards:
+          # 1. Status panel (red/green)
+          - type: markdown
+            card_mod:
+              style: |
+                ha-card { background: {% if (states.binary_sensor | selectattr('entity_id','search','_needs_attention') | selectattr('attributes.patient','defined') | selectattr('state','eq','on') | list | length) > 0 %}rgba(244, 67, 54, 0.15){% else %}rgba(76, 175, 80, 0.12){% endif %} !important; }
+            content: |-
+              {% set s = states.binary_sensor | selectattr('entity_id','search','_needs_attention') | selectattr('attributes.patient','defined') | list %}
+              {% set red = s | selectattr('state','eq','on') | list %}
+              {% if red | length == 0 %}
+              # 🟢 Ua pau pono
+              {% else %}
+              # 🔴 Pono e nānā
+              {% for p in red %}
+              - **{{ p.attributes.patient }}**: {{ p.attributes.overdue | map('replace', p.attributes.patient ~ ' ', '', 1) | join(', ') }}
+              {% endfor %}
+              {% endif %}
+
+          # 2. Today summary (read-only)
+          - type: markdown
+            content: |-
+              {% set today = ['mon','tue','wed','thu','fri','sat','sun'][now().weekday()] %}
+              {% set week = ['mon','tue','wed','thu','fri','sat','sun'] %}
+              {% set show_patient = (states.switch | selectattr('attributes.medications','defined') | map(attribute='attributes.patient') | unique | list | length) > 1 %}
+              {% set ns = namespace(meds=[]) %}
+              {% for s in states.switch if s.attributes.medications is defined and s.attributes.get('scheduled_today', today in (s.attributes.days or week)) %}
+              {% set ns.meds = ns.meds + [s] %}
+              {% endfor %}
+              {% set given = ns.meds | selectattr('state','eq','on') | list %}
+              {% set skipped = ns.meds | selectattr('attributes.skipped_today','eq',true) | list %}
+              {% set pending = ns.meds | selectattr('state','eq','off') | rejectattr('attributes.skipped_today','eq',true) | list %}
+              {% set ns2 = namespace(overdue=[], upcoming=[]) %}
+              {% for x in pending %}
+              {% set mins = (as_timestamp(now()) - as_timestamp(today_at(x.attributes.dose_time))) / 60 %}
+              {% if mins >= (x.attributes.nag_minutes | int(45)) %}
+              {% set ns2.overdue = ns2.overdue + [x] %}
+              {% else %}
+              {% set ns2.upcoming = ns2.upcoming + [x] %}
+              {% endif %}
+              {% endfor %}
+              ### 💊 Nā lāʻau i kēia lā: {{ given|length }}/{{ ns.meds|length }} i hāʻawi ʻia{% if skipped %}, {{ skipped|length }} i kāpae ʻia{% endif %}
+              {% if skipped %}**⏭️ Kāpae ʻia:** {{ skipped | map(attribute='attributes.medications') | join(', ') }}{% endif %}
+              {% if ns.meds|length == 0 -%}
+              ʻAʻohe lāʻau i hoʻonohonoho ʻia no kēia lā.
+              {%- elif not pending -%}
+              ✅ Ua {{ 'mālama' if skipped else 'hāʻawi' }} ʻia nā lāʻau a pau no kēia lā.
+              {%- else -%}
+              {% if ns2.overdue %}**⚠️ Ua hala ka manawa:**
+              {% for x in ns2.overdue | sort(attribute='attributes.dose_time') %}
+              {%- set f = '%H:%M' if x.attributes.time_format == '24h' else '%I:%M %p' %}
+              - {% if show_patient %}{{ x.attributes.patient }} {% endif %}{{ as_timestamp(today_at(x.attributes.dose_time)) | timestamp_custom(f) }} ({{ x.attributes.medications }}{%- set du = x.attributes.dose_units | float(0) %}{%- if du > 0 %} {{ {0.25:'¼',0.5:'½',0.75:'¾'}.get(du) or ((du | int) if du == (du | int) else du) }}{%- endif %})
+              {%- endfor %}
+              {% endif %}
+              {% if ns2.upcoming %}**⏳ E hiki mai ana:**
+              {% for x in ns2.upcoming | sort(attribute='attributes.dose_time') %}
+              {%- set f = '%H:%M' if x.attributes.time_format == '24h' else '%I:%M %p' %}
+              - {% if show_patient %}{{ x.attributes.patient }} {% endif %}{{ as_timestamp(today_at(x.attributes.dose_time)) | timestamp_custom(f) }} ({{ x.attributes.medications }}{%- set du = x.attributes.dose_units | float(0) %}{%- if du > 0 %} {{ {0.25:'¼',0.5:'½',0.75:'¾'}.get(du) or ((du | int) if du == (du | int) else du) }}{%- endif %})
+              {%- endfor %}
+              {% endif %}
+              {%- endif %}
+              {% set low = states.binary_sensor | selectattr('attributes.low_count','defined') | selectattr('state','eq','on') | list %}
+              {% if low %}
+
+              **📦 E hoʻopiha hou koke:** {% for b in low %}{{ b.attributes.patient }} ({{ (b.attributes.low or []) | join(', ') }}){% if not loop.last %}; {% endif %}{% endfor %}
+              {% endif %}
+              {% if given|length > 0 %}
+
+              **Ua hāʻawi mua ʻia:**
+              {% for x in given | sort(attribute='last_changed') %}
+              {%- set gat = x.attributes.given_at or x.last_changed %}
+              {%- set f = '%H:%M' if x.attributes.time_format == '24h' else '%I:%M %p' %}
+              - ✅ {% if show_patient %}{{ x.attributes.patient }} {% endif %}{{ x.attributes.medications }}{%- set du = x.attributes.dose_units | float(0) %}{%- if du > 0 %} {{ {0.25:'¼',0.5:'½',0.75:'¾'}.get(du) or ((du | int) if du == (du | int) else du) }}{%- endif %} ma {{ as_timestamp(gat) | timestamp_custom(f) }}
+              {%- endfor %}
+              {% endif %}
+
+          # 3. Every dose due today (tap to mark given), auto-discovers all patients
+          - type: custom:auto-entities
+            card:
+              type: entities
+              title: Kaha i ka hāʻawi
+              show_header_toggle: false
+              card_mod:
+                style: |
+                  ha-card {
+                    --state-switch-on-color: #2196f3;
+                    --state-active-color: #2196f3;
+                    --state-icon-active-color: #2196f3;
+                    --paper-item-icon-active-color: #2196f3;
+                    --state-icon-color: #90caf9;
+                    --paper-item-icon-color: #90caf9;
+                  }
+            filter:
+              template: >
+                {% set today = ['mon','tue','wed','thu','fri','sat','sun'][now().weekday()] %}
+                {% for s in states.switch if s.attributes.medications is defined
+                   and s.attributes.get('scheduled_today', today in (s.attributes.days or ['mon','tue','wed','thu','fri','sat','sun'])) %}
+                {{ s.entity_id }}
+                {% endfor %}
+            sort:
+              method: attribute
+              attribute: dose_time
+          # 3b2. Adjustable-quantity doses (opt-in): set the amount about to be
+          # taken, then Mark given uses it. Only for doses with "Ask for amount
+          # when marking" turned on; hidden otherwise.
+          - type: custom:auto-entities
+            show_empty: false
+            card:
+              type: entities
+              title: Ka nui o ka lāʻau
+              card_mod:
+                style: |
+                  ha-card {
+                    --state-icon-color: #90caf9;
+                    --paper-item-icon-color: #90caf9;
+                  }
+            filter:
+              template: >
+                {% for n in states.number if n.attributes.dose_time is defined %}
+                {{ n.entity_id }}
+                {% endfor %}
+            sort:
+              method: attribute
+              attribute: dose_time
+          # 3c. Partial dose (opt-in): "mark given, skip <med>" per med, for doses
+          # that group 2+ meds. Shows only when Reminder settings has the skip-buttons
+          # option on and the dose is due and not yet given; empty/hidden otherwise.
+          - type: custom:auto-entities
+            show_empty: false
+            card:
+              type: entities
+              title: Ua lawe i ka hapa nui (kāpae i kekahi lāʻau)
+              show_header_toggle: false
+              card_mod:
+                style: |
+                  ha-card {
+                    --state-icon-color: #90caf9;
+                    --paper-item-icon-color: #90caf9;
+                  }
+            filter:
+              template: >
+                {% set today = ['mon','tue','wed','thu','fri','sat','sun'][now().weekday()] %}
+                {% for b in states.button if b.attributes.skip_med is defined %}
+                {% set sw = states.switch
+                   | selectattr('attributes.medications','defined')
+                   | selectattr('attributes.patient','eq', b.attributes.patient)
+                   | selectattr('attributes.dose_time','eq', b.attributes.dose_time)
+                   | selectattr('attributes.medications','eq', b.attributes.medications)
+                   | list | first %}
+                {% if sw and sw.state == 'off'
+                   and sw.attributes.get('scheduled_today', today in (sw.attributes.days or ['mon','tue','wed','thu','fri','sat','sun'])) %}
+                {{ b.entity_id }}
+                {% endif %}
+                {% endfor %}
+            sort:
+              method: attribute
+              attribute: dose_time
+          # 3d. Pause (opt-in): a toggle per scheduled dose to suspend a med until
+          # resumed (no reminders, not overdue, no supply counted, kept paused
+          # across days). Shows only when the pause option is on; hidden otherwise.
+          - type: custom:auto-entities
+            show_empty: false
+            card:
+              type: entities
+              title: Hoʻomaha i kekahi lāʻau
+              show_header_toggle: false
+            filter:
+              template: >
+                {% for s in states.switch if s.attributes.pause_control is defined %}
+                {{ s.entity_id }}
+                {% endfor %}
+            sort:
+              method: attribute
+              attribute: dose_time
+          # Adherence streak (opt-in): consecutive days every scheduled dose was
+          # taken; longest streak / last missed / 30-day adherence as attributes.
+          # Shows only when the streak option is on; hidden otherwise.
+          - type: custom:auto-entities
+            show_empty: false
+            card:
+              type: entities
+              title: Ka moʻo hoʻokō
+            filter:
+              template: >
+                {% for s in states.sensor if s.attributes.adherence_percent is defined %}
+                {{ s.entity_id }}
+                {% endfor %}
+            sort:
+              method: name
+      - type: grid
+        cards:
+          # 3b. As-needed (PRN) meds: tap "Log dose" to record one (decrements supply),
+          # with each med's "last taken" time shown beside it. Hidden if you have no PRN
+          # doses.
+          - type: custom:auto-entities
+            show_empty: false
+            card:
+              type: entities
+              title: I ka wā e pono ai (PRN)
+              show_header_toggle: false
+              card_mod:
+                style: |
+                  ha-card {
+                    --state-icon-color: #2196f3;
+                    --paper-item-icon-color: #2196f3;
+                  }
+            filter:
+              template: >
+                {% for s in states.button if s.name and 'Log ' in s.name and s.name.endswith('dose') %}
+                {{ s.entity_id }}
+                {% endfor %}
+                {% for s in states.sensor if s.name and s.name.endswith('last taken') %}
+                {{ s.entity_id }}
+                {% endfor %}
+                {% for s in states.sensor if s.name and s.name.endswith('doses today') %}
+                {{ s.entity_id }}
+                {% endfor %}
+                {% for s in states.sensor if s.name and s.name.endswith('days this month') %}
+                {{ s.entity_id }}
+                {% endfor %}
+            sort:
+              method: name
+
+          # 4. Refill buttons for low supplies (read-only count lives in the Today card;
+          #    caregivers refill, they do not edit raw counts, that stays on the admin view)
+          - type: custom:auto-entities
+            show_empty: false
+            card:
+              type: entities
+              title: E hoʻopiha hou koke
+              show_header_toggle: false
+              card_mod:
+                style: |
+                  ha-card {
+                    --state-icon-color: #2196f3;
+                    --paper-item-icon-color: #2196f3;
+                  }
+            filter:
+              template: >
+                [{% for n in states.number if n.attributes.medication is defined and n.attributes.low %}
+                  {% for b in states.button if b.attributes.medication is defined and b.attributes.patient == n.attributes.patient and b.attributes.medication == n.attributes.medication %}
+                  {{ {'entity': b.entity_id} }},
+                  {% endfor %}
+                {% endfor %}]
+            sort:
+              method: name
+      - type: grid
+        cards:
+          # Pill-box plan (opt-in): pick the day with the offset (0 = today); the
+          # table shows that day's meds and amounts per time slot. Both cards are
+          # hidden unless the plan view is enabled for a patient (Settings).
+          - type: custom:auto-entities
+            show_empty: false
+            card:
+              type: entities
+              title: Ka lā papahana lāʻau
+              card_mod:
+                style: |
+                  ha-card {
+                    --state-icon-color: #90caf9;
+                    --paper-item-icon-color: #90caf9;
+                  }
+            filter:
+              template: >
+                {% for n in states.number if n.attributes.plan_offset is defined %}
+                {{ n.entity_id }}
+                {% endfor %}
+          - type: markdown
+            card_mod:
+              style: |
+                ha-card { {% if (states.sensor | selectattr('attributes.plan_date_long','defined') | list | length) == 0 %}display: none;{% endif %} }
+            content: |-
+              {% set plans = states.sensor | selectattr('attributes.plan_date_long','defined') | selectattr('attributes.patient','defined') | list %}
+              {% set frac = {0.25:'¼',0.5:'½',0.75:'¾',1.25:'1¼',1.5:'1½',1.75:'1¾',2.5:'2½'} %}
+              {% for s in plans | sort(attribute='attributes.patient') %}
+              ### 📅 {{ s.attributes.patient }}: {{ s.attributes.plan_date_long }}
+              {% set times = s.attributes.times %}
+              {% set rows = s.attributes.rows %}
+              {% if rows %}
+              | Lāʻau | {% for t in times %}{{ t }} | {% endfor %}
+              |:--|{% for t in times %}:-:|{% endfor %}
+              {% for r in rows %}| {{ r.med }} | {% for t in times %}{% set a = r.amounts.get(t) %}{{ (frac.get(a) or (a|int if a == a|int else a)) if a is not none else '' }} | {% endfor %}
+              {% endfor %}{% else %}
+              _ʻAʻohe lāʻau no kēia lā._
+              {% endif %}
+              {% endfor %}
+          # 7. Per-patient "current medications" (read-only): the "what" and "when" to
+          # hand a provider, with each medication's dose times plus any full name /
+          # strength / brand / condition / dosage detail you have added under Configure.
+          # Auto-discovers every patient.
+          - type: markdown
+            content: |-
+              ## 💊 Nā Lāʻau i kēia manawa
+              {% set week = ['mon','tue','wed','thu','fri','sat','sun'] %}
+              {% set sensors = states.sensor | selectattr('entity_id','search','_medications$') | selectattr('attributes.medications','defined') | selectattr('attributes.patient','defined') | list %}
+              {% set medsw = states.switch | selectattr('attributes.medications','defined') | list %}
+              {% for s in sensors | sort(attribute='attributes.patient') %}
+              {%- set sw = medsw | selectattr('attributes.patient','eq',s.attributes.patient) | list | first %}
+              {%- set ptype = (sw.attributes.patient_type if sw else 'person') | default('person') %}
+              ### {{ {'dog':'🐕','cat':'🐈','person':'🧑','bird':'🐦','rabbit':'🐇','other':'🐾'}.get(ptype,'💊') }} {{ s.attributes.patient }}
+              {% for m in s.attributes.medications %}
+              - **{{ m.full_name or m.name }}**{% if m.brand %} ({{ m.brand }}){% endif %}{% if m.strength %} {{ m.strength }}{% endif %}{% if m.prescribed_for %}, no {{ m.prescribed_for }}{% endif %}{% if m.dosage %}, {{ m.dosage }}{% endif %}
+              {%- set ns = namespace(md=[]) %}
+              {%- for d in medsw if d.attributes.patient == s.attributes.patient and (m.name | lower) in ((d.attributes.medications | regex_replace('[&+]|\s+/\s+', ',')).split(',') | map('trim') | map('lower') | list) %}
+              {%- set ns.md = ns.md + [d] %}
+              {%- endfor %}
+              {%- set ordered = (ns.md | rejectattr('attributes.schedule_type','eq','prn') | sort(attribute='attributes.dose_time') | list) + (ns.md | selectattr('attributes.schedule_type','eq','prn') | list) %}
+              {%- for d in ordered %}
+              {%- set fmt = '%H:%M' if d.attributes.time_format == '24h' else '%I:%M %p' %}
+              {%- set stype = d.attributes.schedule_type %}
+              {%- set days = d.attributes.days or week %}
+              {%- set n = d.attributes.interval_days | int(2) %}
+              {%- if stype == 'interval' %}
+              {%- set cad = 'i kēlā me kēia lā' if n == 1 else 'i kēlā me kēia ' ~ n ~ ' lā' %}
+              {%- elif stype == 'cycle' %}
+              {%- set cad = (d.attributes.cycle_on | int(21)) ~ ' lā hāʻawi / ' ~ (d.attributes.cycle_off | int(7)) ~ ' lā hoʻomaha' %}
+              {%- elif stype == 'monthly' %}
+              {%- set cad = 'i kēlā me kēia mahina ma ka lā ' ~ (d.attributes.month_days | join(', ')) %}
+              {%- else %}
+              {%- set hwday = {'mon':'Pōʻakahi','tue':'Pōʻalua','wed':'Pōʻakolu','thu':'Pōʻahā','fri':'Pōʻalima','sat':'Pōʻaono','sun':'Lāpule'} %}
+              {%- set dn = namespace(list=[]) %}
+              {%- for wd in week if wd in days %}{%- set dn.list = dn.list + [hwday[wd]] %}{%- endfor %}
+              {%- set cad = 'i kēlā me kēia lā' if days|length == 7 else (dn.list | join(', ')) %}
+              {%- endif %}
+              {%- if stype == 'prn' %}
+                  - 🕐 I ka wā e pono ai
+              {%- else %}
+                  - 🕐 {{ as_timestamp(today_at(d.attributes.dose_time)) | timestamp_custom(fmt) }} ({{ cad }})
+              {%- endif %}
+              {%- endfor %}
+              {%- endfor %}
+              {% endfor %}
