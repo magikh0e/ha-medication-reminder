@@ -30,7 +30,9 @@
     },
     "error": {
       "duplicate_dose": "Ya existe una dosis con esta hora y estos medicamentos. Utiliza una hora diferente o combínalos en una sola dosis.",
-      "supply_exists": "Este medicamento ya tiene un control de stock. Utiliza Editar stock para modificarlo."
+      "supply_exists": "Este medicamento ya tiene un control de stock. Utiliza Editar stock para modificarlo.",
+      "invalid_time": "Una de las horas adicionales no es una hora válida. Utiliza el formato de 24 horas HH:MM, separadas por comas, por ejemplo, 14:00, 20:00.",
+      "end_before_start": "La fecha de fin es anterior a la fecha de inicio. Elige una fecha de fin igual o posterior a la fecha de inicio, o borra una de las dos."
     },
     "step": {
       "init": {
@@ -77,16 +79,25 @@
           "interval_days": "Cada N días (para la opción de intervalo)",
           "cycle_on": "Días de toma (para el ciclo de toma/descanso)",
           "cycle_off": "Días de descanso (para el ciclo de toma/descanso)",
+          "relative_count": "Dosis al día (para la opción relativa/de intervalo)",
+          "relative_offset_hours": "Horas entre dosis (para la opción relativa/de intervalo)",
           "anchor_date": "Fecha de inicio (para la opción de intervalo o ciclo)",
           "min_interval_hours": "Horas mínimas entre dosis (solo según necesidad; 0 = sin límite)",
           "max_per_day": "Máximo de dosis por día (solo según necesidad; 0 = sin límite)",
-          "dose_units": "Unidades consumidas (esta dosis)"
+          "dose_units": "Unidades consumidas (esta dosis)",
+          "ask_units": "Pedir la cantidad al marcar",
+          "additional_times": "Horas adicionales (opcional)",
+          "end_date": "Fecha de fin (opcional; sin recordatorios después)"
         },
         "data_description": {
           "meds": "Separa varios medicamentos con &, + o una coma. Una barra / solo los separa si tiene espacios a ambos lados, por lo que un nombre como 'Carbimazol 5mg (1/2)' se mantiene completo.",
           "min_interval_hours": "Para un medicamento según necesidad, muestra una advertencia (sin bloquear nunca) si se registra de nuevo antes de que hayan transcurrido estas horas; por ejemplo, un analgésico con un intervalo mínimo de 4 horas.",
           "max_per_day": "Para un medicamento según necesidad, muestra una advertencia cuando se haya registrado esta cantidad de dosis durante el día.",
-          "dose_units": "Sustituye las unidades predeterminadas por dosis del medicamento únicamente para esta dosis. Deja 0 para usar el valor predeterminado; utiliza decimales como 0.5 para media pastilla."
+          "relative_offset_hours": "Para la opción relativa/de intervalo: la primera dosis se toma a la hora indicada arriba y cada dosis posterior vence tantas horas después de marcar la anterior como tomada, hasta alcanzar el número de dosis al día, y se reinicia al día siguiente. Útil para tratamientos «cada N horas», como los antibióticos.",
+          "dose_units": "Sustituye las unidades predeterminadas por dosis del medicamento únicamente para esta dosis. Deja 0 para usar el valor predeterminado; utiliza decimales como 0.5 para media pastilla.",
+          "ask_units": "Actívalo para un medicamento cuya dosis varía (por ejemplo, se ajusta según una lectura). Añade un campo de cantidad que estableces antes de marcar la dosis como administrada, y el stock disminuye en esa cantidad en lugar de la configurada. Desactivado = se usa siempre la cantidad configurada.",
+          "additional_times": "Crea la misma dosis a más de una hora de una sola vez, por ejemplo, un medicamento de dos tomas al día. Introduce las horas adicionales en formato de 24 horas separadas por comas (14:00, 20:00); cada una se convierte en una dosis propia con el mismo medicamento, programación y opciones. Déjalo en blanco para una sola hora.",
+          "end_date": "Opcional. Deja de recordar este medicamento después de esta fecha, para un tratamiento de duración determinada (por ejemplo, 7 días o 3 meses). Déjalo en blanco para continuar indefinidamente."
         }
       },
       "edit_dose": {
@@ -106,16 +117,23 @@
           "interval_days": "Cada N días (para la opción de intervalo)",
           "cycle_on": "Días de toma (para el ciclo de toma/descanso)",
           "cycle_off": "Días de descanso (para el ciclo de toma/descanso)",
+          "relative_count": "Dosis al día (para la opción relativa/de intervalo)",
+          "relative_offset_hours": "Horas entre dosis (para la opción relativa/de intervalo)",
           "anchor_date": "Fecha de inicio (para la opción de intervalo o ciclo)",
           "min_interval_hours": "Horas mínimas entre dosis (solo según necesidad; 0 = sin límite)",
           "max_per_day": "Máximo de dosis por día (solo según necesidad; 0 = sin límite)",
-          "dose_units": "Unidades consumidas (esta dosis)"
+          "dose_units": "Unidades consumidas (esta dosis)",
+          "ask_units": "Pedir la cantidad al marcar",
+          "end_date": "Fecha de fin (opcional; sin recordatorios después)"
         },
         "data_description": {
           "meds": "Separa varios medicamentos con &, + o una coma. Una barra / solo los separa si tiene espacios a ambos lados, por lo que un nombre como 'Carbimazol 5mg (1/2)' se mantiene completo.",
           "min_interval_hours": "Para un medicamento según necesidad, muestra una advertencia (sin bloquear nunca) si se registra de nuevo antes de que hayan transcurrido estas horas; por ejemplo, un analgésico con un intervalo mínimo de 4 horas.",
           "max_per_day": "Para un medicamento según necesidad, muestra una advertencia cuando se haya registrado esta cantidad de dosis durante el día.",
-          "dose_units": "Sustituye las unidades predeterminadas por dosis del medicamento únicamente para esta dosis. Deja 0 para usar el valor predeterminado; utiliza decimales como 0.5 para media pastilla."
+          "relative_offset_hours": "Para la opción relativa/de intervalo: la primera dosis se toma a la hora indicada arriba y cada dosis posterior vence tantas horas después de marcar la anterior como tomada, hasta alcanzar el número de dosis al día, y se reinicia al día siguiente. Útil para tratamientos «cada N horas», como los antibióticos.",
+          "dose_units": "Sustituye las unidades predeterminadas por dosis del medicamento únicamente para esta dosis. Deja 0 para usar el valor predeterminado; utiliza decimales como 0.5 para media pastilla.",
+          "ask_units": "Actívalo para un medicamento cuya dosis varía (por ejemplo, se ajusta según una lectura). Añade un campo de cantidad que estableces antes de marcar la dosis como administrada, y el stock disminuye en esa cantidad en lugar de la configurada. Desactivado = se usa siempre la cantidad configurada.",
+          "end_date": "Opcional. Deja de recordar este medicamento después de esta fecha, para un tratamiento de duración determinada (por ejemplo, 7 días o 3 meses). Déjalo en blanco para continuar indefinidamente."
         }
       },
       "remove_dose": {
@@ -134,11 +152,15 @@
           "supply_threshold": "Umbral de stock bajo",
           "supply_refill_to": "Cantidad de reposición (stock completo)",
           "supply_refill_add": "Añadir al reponer (reposición por paquete)",
-          "supply_cost": "Costo por unidad (0 = no controlar)"
+          "supply_cost": "Costo por unidad (0 = no controlar)",
+          "supply_refills": "Reposiciones restantes de la receta (0 = no controlar)",
+          "supply_unit": "Unidad / forma (opcional)"
         },
         "data_description": {
           "supply_refill_add": "Al reponer, añade la cantidad de reposición a lo que queda (por ejemplo, 17 + 30 = 47) en lugar de establecer el stock directamente en la cantidad de reposición.",
-          "supply_cost": "Costo de una unidad (una pastilla, ml, etc.) en tu moneda, utilizado para los atributos de valor disponible y costo por dosis. Deja 0 para no realizar un seguimiento del costo."
+          "supply_cost": "Costo de una unidad (una pastilla, ml, etc.) en tu moneda, utilizado para los atributos de valor disponible y costo por dosis. Deja 0 para no realizar un seguimiento del costo.",
+          "supply_refills": "Cuántas reposiciones permite todavía la receta. Cada vez que pulsas el botón de reposición, se descuenta una, y el stock se indica como bajo cuando llega a cero para que sepas que debes pedir más. Déjalo en 0 para no controlar las reposiciones.",
+          "supply_unit": "La unidad en la que se cuenta este medicamento (comprimidos, gotas, ml, jeringas, plumas, ...). Elige una o escribe la tuya. Se muestra junto a la cantidad y a la cantidad por dosis, por ejemplo, «30 comprimidos». Déjalo en blanco para un número simple."
         }
       },
       "edit_supply": {
@@ -156,11 +178,15 @@
           "supply_threshold": "Umbral de stock bajo",
           "supply_refill_to": "Cantidad de reposición (stock completo)",
           "supply_refill_add": "Añadir al reponer (reposición por paquete)",
-          "supply_cost": "Costo por unidad (0 = no controlar)"
+          "supply_cost": "Costo por unidad (0 = no controlar)",
+          "supply_refills": "Reposiciones restantes de la receta (0 = no controlar)",
+          "supply_unit": "Unidad / forma (opcional)"
         },
         "data_description": {
           "supply_refill_add": "Al reponer, añade la cantidad de reposición a lo que queda (por ejemplo, 17 + 30 = 47) en lugar de establecer el stock directamente en la cantidad de reposición.",
-          "supply_cost": "Costo de una unidad (una pastilla, ml, etc.) en tu moneda, utilizado para los atributos de valor disponible y costo por dosis. Deja 0 para no realizar un seguimiento del costo."
+          "supply_cost": "Costo de una unidad (una pastilla, ml, etc.) en tu moneda, utilizado para los atributos de valor disponible y costo por dosis. Deja 0 para no realizar un seguimiento del costo.",
+          "supply_refills": "Cuántas reposiciones permite todavía la receta. Cada vez que pulsas el botón de reposición, se descuenta una, y el stock se indica como bajo cuando llega a cero para que sepas que debes pedir más. Déjalo en 0 para no controlar las reposiciones.",
+          "supply_unit": "La unidad en la que se cuenta este medicamento (comprimidos, gotas, ml, jeringas, plumas, ...). Elige una o escribe la tuya. Se muestra junto a la cantidad y a la cantidad por dosis, por ejemplo, «30 comprimidos». Déjalo en blanco para un número simple."
         }
       },
       "remove_supply": {
@@ -213,10 +239,18 @@
           "time_format": "Formato de hora",
           "reset_time": "Hora de reinicio diario",
           "nag_minutes": "Ventana de recordatorios (minutos después de la dosis)",
-          "nag_interval": "Repetir recordatorio cada (minutos)"
+          "nag_interval": "Repetir recordatorio cada (minutos)",
+          "skip_buttons": "Botones para omitir una parte de la dosis",
+          "plan_view": "Vista del plan del pastillero",
+          "pause_switches": "Interruptores de pausa",
+          "streak": "Racha de cumplimiento"
         },
         "data_description": {
-          "nag_interval": "Utiliza un múltiplo de 5; los recordatorios se evalúan cada 5 minutos, por lo que otros valores hacen que la repetición sea menos uniforme."
+          "nag_interval": "Utiliza un múltiplo de 5; los recordatorios se evalúan cada 5 minutos, por lo que otros valores hacen que la repetición sea menos uniforme.",
+          "skip_buttons": "Para dosis que agrupan dos o más medicamentos, añade un botón por medicamento que marca la dosis como administrada omitiendo ese medicamento (su stock no se descuenta). Desactivado por defecto; actívalo si a veces falta algún medicamento de una dosis agrupada.",
+          "plan_view": "Añade un plan diario opcional para llenar un pastillero: un sensor del plan y un número de desplazamiento de días (0 = hoy) para recorrer los días. Los paneles incluidos lo muestran como una tabla con los medicamentos y las cantidades de cada día por franja horaria. Desactivado por defecto.",
+          "pause_switches": "Añade un interruptor de pausa a cada dosis programada. Actívalo para suspender ese medicamento hasta que lo desactives de nuevo, por ejemplo, cuando un médico lo deja en espera o es estacional: sin recordatorios, sin marcarlo como no tomado y sin descontar stock. Permanece en pausa durante varios días, a diferencia de «omitir hoy», que solo vale para un día. Desactivado por defecto.",
+          "streak": "Añade un sensor por paciente que registra los días consecutivos en que se tomaron todas las dosis programadas, además de la racha más larga, el último día con una dosis no tomada y un porcentaje de cumplimiento de los últimos 30 días. Una dosis omitida mantiene la racha pero reduce el porcentaje; una dosis no tomada la rompe. Desactivado por defecto. Guarda un pequeño historial diario para poder mostrar rachas pasadas."
         }
       }
     }
