@@ -70,7 +70,7 @@
       },
       "add_dose": {
         "title": "Lägg till en dos",
-        "description": "Välj tid och ange läkemedel. Välj sedan hur dosen ska upprepas: på utvalda veckodagar (alla dagar = dagligen), med ett visst antal dagars mellanrum eller i en cykel med dagar med och utan dosering, räknat från ett startdatum.",
+        "description": "Välj tid och ange läkemedel. Välj sedan hur dosen ska upprepas: på utvalda veckodagar (alla dagar = dagligen), med ett visst antal dagars mellanrum, i en cykel med dagar med och utan dosering eller med relativ dosering (ett visst antal doser per dag där varje ny dos schemaläggs utifrån när den föregående togs), räknat från ett startdatum.",
         "data": {
           "time": "Tid",
           "meds": "Läkemedel",
@@ -79,6 +79,8 @@
           "interval_days": "Var N:e dag (för intervall)",
           "cycle_on": "Dagar med dosering (för cykel)",
           "cycle_off": "Dagar utan dosering (för cykel)",
+          "relative_count": "Antal doser per dag (för relativ dosering/intervall)",
+          "relative_offset_hours": "Timmar mellan doser (för relativ dosering/intervall)",
           "anchor_date": "Startdatum (valfritt; inga påminnelser före detta datum)",
           "min_interval_hours": "Minsta antal timmar mellan doser (endast vid behov; 0 = ingen gräns)",
           "max_per_day": "Högsta antal doser per dag (endast vid behov; 0 = ingen gräns)",
@@ -91,6 +93,7 @@
           "meds": "Separera flera läkemedel med &, + eller kommatecken. Ett snedstreck fungerar bara som avgränsare om det finns mellanslag på båda sidor, så ett namn som 'Carbimazol 5mg (1/2)' hålls ihop.",
           "min_interval_hours": "För läkemedel som tas vid behov visas en varning (registreringen blockeras aldrig) om nästa dos registreras tidigare än det angivna antalet timmar, t.ex. om det ska gå minst 4 timmar mellan doser av ett smärtstillande läkemedel.",
           "max_per_day": "För läkemedel som tas vid behov visas en varning när så här många doser har registrerats under dagen.",
+          "relative_offset_hours": "För relativ dosering/intervall: Den första dosen är schemalagd till tiden ovan. Därefter schemaläggs varje dos så här många timmar efter att den föregående markerats som given, upp till angivet antal doser per dag. Nästa dag börjar schemat om. Passar exempelvis läkemedelskurer med dosering var N:e timme, som antibiotika.",
           "dose_units": "Åsidosätter läkemedlets standardmängd per dos, men bara för denna dos. Ange 0 för att använda standardvärdet. Använd decimaltal som 0.5 för en halv tablett.",
           "ask_units": "Aktivera för ett läkemedel där dosmängden varierar (t.ex. utifrån ett mätvärde). Då visas ett mängdfält där du anger mängden innan dosen markeras som given. Läkemedelsförrådet minskar med den angivna mängden i stället för den förinställda. Avaktiverad = använd alltid den förinställda mängden.",
           "additional_times": "Skapa samma dos vid flera tidpunkter samtidigt, t.ex. för ett läkemedel som tas två gånger om dagen. Ange ytterligare tider i 24-timmarsformat, separerade med kommatecken (14:00, 20:00). Varje tid skapar en egen dos med samma läkemedel, schema och inställningar. Lämna tomt om dosen bara ska ges vid en tidpunkt.",
@@ -114,6 +117,8 @@
           "interval_days": "Var N:e dag (för intervall)",
           "cycle_on": "Dagar med dosering (för cykel)",
           "cycle_off": "Dagar utan dosering (för cykel)",
+          "relative_count": "Antal doser per dag (för relativ dosering/intervall)",
+          "relative_offset_hours": "Timmar mellan doser (för relativ dosering/intervall)",
           "anchor_date": "Startdatum (valfritt; inga påminnelser före detta datum)",
           "min_interval_hours": "Minsta antal timmar mellan doser (endast vid behov; 0 = ingen gräns)",
           "max_per_day": "Högsta antal doser per dag (endast vid behov; 0 = ingen gräns)",
@@ -125,6 +130,7 @@
           "meds": "Separera flera läkemedel med &, + eller kommatecken. Ett snedstreck fungerar bara som avgränsare om det finns mellanslag på båda sidor, så ett namn som 'Carbimazol 5mg (1/2)' hålls ihop.",
           "min_interval_hours": "För läkemedel som tas vid behov visas en varning (registreringen blockeras aldrig) om nästa dos registreras tidigare än det angivna antalet timmar, t.ex. om det ska gå minst 4 timmar mellan doser av ett smärtstillande läkemedel.",
           "max_per_day": "För läkemedel som tas vid behov visas en varning när så här många doser har registrerats under dagen.",
+          "relative_offset_hours": "För relativ dosering/intervall: Den första dosen är schemalagd till tiden ovan. Därefter schemaläggs varje dos så här många timmar efter att den föregående markerats som given, upp till angivet antal doser per dag. Nästa dag börjar schemat om. Passar exempelvis läkemedelskurer med dosering var N:e timme, som antibiotika.",
           "dose_units": "Åsidosätter läkemedlets standardmängd per dos, men bara för denna dos. Ange 0 för att använda standardvärdet. Använd decimaltal som 0.5 för en halv tablett.",
           "ask_units": "Aktivera för ett läkemedel där dosmängden varierar (t.ex. utifrån ett mätvärde). Då visas ett mängdfält där du anger mängden innan dosen markeras som given. Läkemedelsförrådet minskar med den angivna mängden i stället för den förinställda. Avaktiverad = använd alltid den förinställda mängden.",
           "end_date": "Valfritt. Sluta påminna om läkemedlet efter detta datum, t.ex. vid en tidsbegränsad behandling på 7 dagar eller 3 månader. Lämna tomt om påminnelserna ska fortsätta utan slutdatum."
