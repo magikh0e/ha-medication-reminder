@@ -5,6 +5,14 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.48.1] - 2026-11-17
+### Added
+- The bundled dashboards now show how many prescription refills are left for each tracked supply. A new read-only **Prescription refills** card sits under **Supplies on hand** on the single-card, sections, and two-column layouts, and the figure is added to the supply line on the admin layout. It auto-discovers your supplies, stays hidden unless a supply has refills configured, and flags the last fill when refills run out, so you can see refills at a glance without opening the supply's settings. Re-paste (or re-import) your dashboard to pick it up. (Requested by GitHub user conundrum89, #65.)
+- A dashboards gallery: `dashboards/README.md` now shows a screenshot of each bundled layout beside its YAML, so you can see what each one looks like before choosing.
+
+### Changed
+- German and Dutch translations are back to 100% coverage for the relative/interval dose fields added in 0.48.0. Swedish was already completed for them by GitHub user el97 (#66).
+
 ## [0.48.0] - 2026-11-15
 ### Added
 - Relative/interval dose schedules, for a medication taken several times a day with each dose timed from when you actually took the one before rather than at fixed clock times. The Add/Edit dose form has a new **Relative/interval** schedule option: pick the first dose's time, how many doses a day, and the hours between them. The first dose is a normal fixed-time reminder (the anchor); when you mark it given the next dose becomes due that many hours later, and each dose you mark schedules the next, up to the day's count, then the chain stops until the next morning re-anchors it from the first dose. Because the timing follows the actual mark, a dose taken late pushes the rest of the day out with it, so a strict gap (an antibiotic every 6 hours, or a twice-daily medication at least 6 hours apart) stays correct however your day shifts. Each dose in the chain is a full dose switch, so supply, adherence, mark/skip/snooze, and the daily reset all work as they do for any other dose. Existing doses are unaffected. To receive the relative reminders you need to re-import the "Medication Reminder - dose reminders" blueprint, which now times a relative dose off its computed next-due; your other reminders are unchanged. (Requested by GitHub user mnul, #40.)

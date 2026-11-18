@@ -282,6 +282,23 @@ cards:
     sort:
       method: name
 
+  # 4b. Prescription refills remaining (read-only), auto-discovers; hidden unless
+  # a supply tracks refills. Shows refills left per medication and flags the last fill.
+  - type: markdown
+    card_mod:
+      style: |
+        ha-card { {% if (states.number | selectattr('attributes.refills_configured','defined') | list | length) == 0 %}display: none;{% endif %} }
+    content: |-
+      {% set rx = states.number | selectattr('attributes.refills_configured','defined') | selectattr('attributes.medication','defined') | list %}
+      {% if rx %}
+      ## 🔁 Prescription refills
+      {% set show_patient = (rx | map(attribute='attributes.patient') | unique | list | length) > 1 %}
+      {% for s in rx | sort(attribute='attributes.patient') %}
+      {%- set rem = s.attributes.refills_remaining | int(0) %}
+      - {% if show_patient %}{{ s.attributes.patient }} {% endif %}{{ s.attributes.medication }}: **{{ rem }}** left{% if s.attributes.refills_out %} ⚠️ last fill, reorder Rx{% endif %}
+      {%- endfor %}
+      {% endif %}
+
   # 5. Per-patient schedule overview (read-only), auto-discovers
   - type: markdown
     content: |-
